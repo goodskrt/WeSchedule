@@ -1,32 +1,331 @@
 <!DOCTYPE html>
-<html xmlns:th="http://www.thymeleaf.org">
+<html lang="fr" xmlns:th="http://www.thymeleaf.org">
 <head>
     <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="description" content="WeSchedule - Plateforme de gestion d'emploi du temps pour établissements éducatifs">
     <title>WeSchedule - Connexion</title>
-    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css" rel="stylesheet">
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <link rel="stylesheet" href="/css/auth-professional.css">
     <style>
-        body { background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); min-height: 100vh; }
-        .login-box { max-width: 400px; margin: 100px auto; padding: 40px; background: white; border-radius: 15px; box-shadow: 0 15px 35px rgba(0,0,0,0.1); }
+        /* Overlay de chargement */
+        .loading-overlay {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: rgba(255, 255, 255, 0.95);
+            backdrop-filter: blur(8px);
+            display: none;
+            align-items: center;
+            justify-content: center;
+            z-index: 9999;
+            transition: all 0.3s ease;
+        }
+
+        .loading-overlay.show {
+            display: flex;
+        }
+
+        .loading-content {
+            text-align: center;
+            padding: 2rem;
+            background: white;
+            border-radius: 1rem;
+            box-shadow: 0 20px 25px -5px rgb(0 0 0 / 0.1);
+            border: 1px solid var(--gray-200);
+            max-width: 300px;
+            width: 90%;
+        }
+
+        .loading-spinner {
+            width: 3rem;
+            height: 3rem;
+            border: 4px solid var(--gray-200);
+            border-top: 4px solid var(--primary-color);
+            border-radius: 50%;
+            animation: spin 1s linear infinite;
+            margin: 0 auto 1rem;
+        }
+
+        .loading-text {
+            color: var(--gray-700);
+            font-weight: 500;
+            font-size: 1rem;
+            margin-bottom: 0.5rem;
+        }
+
+        .loading-subtext {
+            color: var(--gray-500);
+            font-size: 0.875rem;
+        }
+
+        /* Animation des points */
+        .loading-dots::after {
+            content: '';
+            animation: dots 1.5s steps(4, end) infinite;
+        }
+
+        @keyframes dots {
+            0%, 20% { content: ''; }
+            40% { content: '.'; }
+            60% { content: '..'; }
+            80%, 100% { content: '...'; }
+        }
+
+        /* Amélioration du bouton de connexion */
+        .btn-loading {
+            position: relative;
+            overflow: hidden;
+        }
+
+        .btn-loading .btn-text {
+            transition: opacity 0.3s ease;
+        }
+
+        .btn-loading.loading .btn-text {
+            opacity: 0;
+        }
+
+        .btn-loading .btn-spinner {
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            opacity: 0;
+            transition: opacity 0.3s ease;
+        }
+
+        .btn-loading.loading .btn-spinner {
+            opacity: 1;
+        }
+
+        /* Animation de pulsation pour le logo pendant le chargement */
+        .auth-logo.loading img {
+            animation: logoPulse 2s ease-in-out infinite;
+        }
+
+        @keyframes logoPulse {
+            0%, 100% { transform: scale(1); opacity: 1; }
+            50% { transform: scale(1.05); opacity: 0.8; }
+        }
     </style>
 </head>
 <body>
-<div class="login-box">
-    <h2 class="text-center mb-4">WeSchedule</h2>
-    <form th:action="@{/login}" method="post">
-        <div class="mb-3">
-            <label class="form-label">Email</label>
-            <input type="email" name="email" class="form-control" required placeholder="admin@weschedule.com">
-        </div>
-        <div class="mb-3">
-            <label class="form-label">Mot de passe</label>
-            <input type="password" name="motDePasse" class="form-control" required placeholder="123456">
-        </div>
-        <div th:if="${error}" class="alert alert-danger" th:text="${error}"></div>
-        <button type="submit" class="btn btn-primary w-100">Se connecter</button>
-    </form>
-    <div class="text-center mt-3 text-muted">
-        <small>Compte test : admin@weschedule.com / 123456</small>
+<!-- Overlay de chargement -->
+<div class="loading-overlay" id="loadingOverlay">
+    <div class="loading-content">
+        <div class="loading-spinner"></div>
+        <div class="loading-text">Connexion en cours<span class="loading-dots"></span></div>
+        <div class="loading-subtext">Vérification de vos identifiants</div>
     </div>
 </div>
+
+<div class="auth-container fade-in">
+    <div class="auth-header">
+        <div class="auth-logo" id="authLogo">
+            <img src="/images/logo.jpeg" alt="WeSchedule Logo">
+        </div>
+        <h1 class="auth-title">WeSchedule</h1>
+        <p class="auth-subtitle">Gestion d'emploi du temps - Connexion sécurisée</p>
+    </div>
+
+    <!-- Alertes -->
+    <div th:if="${error}" class="alert alert-danger" role="alert">
+        <span class="alert-icon"><i class="fas fa-exclamation-circle"></i></span>
+        <strong>Erreur !</strong>
+        <span th:text="${error}"></span>
+    </div>
+
+    <div th:if="${logout}" class="alert alert-success" role="alert">
+        <span class="alert-icon"><i class="fas fa-check-circle"></i></span>
+        <strong>Succès !</strong>
+        Vous avez été déconnecté avec succès.
+    </div>
+
+    <!-- Formulaire -->
+    <form th:action="@{/login}" method="post" id="loginForm" class="auth-form">
+        <div class="form-group">
+            <label class="form-label" for="username">
+                <i class="fas fa-envelope"></i> Email
+            </label>
+            <div class="input-group">
+                <i class="input-icon fas fa-envelope"></i>
+                <input type="email"
+                       class="form-input"
+                       id="username"
+                       name="username"
+                       autofocus
+                       placeholder="votre.email@exemple.com">
+            </div>
+        </div>
+
+        <div class="form-group">
+            <label class="form-label" for="password">
+                <i class="fas fa-lock"></i> Mot de passe
+            </label>
+            <div class="input-group">
+                <i class="input-icon fas fa-lock"></i>
+                <input type="password"
+                       class="form-input"
+                       id="password"
+                       name="password"
+                       placeholder="••••••••">
+                <button type="button" class="input-toggle" onclick="togglePasswordVisibility()">
+                    <i class="fas fa-eye"></i>
+                </button>
+            </div>
+        </div>
+
+        <div class="form-actions">
+            <div></div>
+            <a href="/reset-password-request" class="auth-link">
+                <i class="fas fa-question-circle"></i> Mot de passe oublié ?
+            </a>
+        </div>
+
+        <button type="submit" class="btn btn-primary btn-full btn-loading" id="submitBtn">
+            <span class="btn-text">
+                <i class="fas fa-sign-in-alt"></i> Se connecter
+            </span>
+            <span class="btn-spinner">
+                <span class="spinner"></span>
+            </span>
+        </button>
+    </form>
+</div>
+
+<script>
+    // Toggle visibilité du mot de passe
+    function togglePasswordVisibility() {
+        const passwordInput = document.getElementById('password');
+        const toggleIcon = document.querySelector('.input-toggle i');
+
+        if (passwordInput.type === 'password') {
+            passwordInput.type = 'text';
+            toggleIcon.classList.remove('fa-eye');
+            toggleIcon.classList.add('fa-eye-slash');
+        } else {
+            passwordInput.type = 'password';
+            toggleIcon.classList.remove('fa-eye-slash');
+            toggleIcon.classList.add('fa-eye');
+        }
+    }
+
+    // Gestion du chargement lors de la soumission
+    document.getElementById('loginForm').addEventListener('submit', function(e) {
+        const submitBtn = document.getElementById('submitBtn');
+        const loadingOverlay = document.getElementById('loadingOverlay');
+        const authLogo = document.getElementById('authLogo');
+        const usernameInput = document.getElementById('username');
+        const passwordInput = document.getElementById('password');
+
+        // Validation basique côté client - mais ne pas empêcher la soumission
+        if (!usernameInput.value.trim() || !passwordInput.value.trim()) {
+            // Laisser le navigateur gérer la validation HTML5
+            return;
+        }
+
+        // Afficher le loading SANS empêcher la soumission
+        submitBtn.disabled = true;
+        submitBtn.classList.add('loading');
+        loadingOverlay.classList.add('show');
+        authLogo.classList.add('loading');
+
+        // NE PAS désactiver les champs - cela peut empêcher la soumission
+        // usernameInput.disabled = true;
+        // passwordInput.disabled = true;
+
+        // Laisser le formulaire se soumettre naturellement
+        // Ne pas utiliser preventDefault() ou setTimeout()
+    });
+
+    // Masquer le loading si on revient sur la page (bouton retour du navigateur)
+    window.addEventListener('pageshow', function(event) {
+        if (event.persisted) {
+            hideLoading();
+        }
+    });
+
+    // Masquer le loading en cas d'erreur (page rechargée avec erreur)
+    window.addEventListener('load', function() {
+        // Si on est sur la page de login avec une erreur, masquer le loading
+        const errorAlert = document.querySelector('.alert-danger');
+        if (errorAlert) {
+            hideLoading();
+        }
+    });
+
+    // Fonction pour masquer le loading
+    function hideLoading() {
+        const submitBtn = document.getElementById('submitBtn');
+        const loadingOverlay = document.getElementById('loadingOverlay');
+        const authLogo = document.getElementById('authLogo');
+        const usernameInput = document.getElementById('username');
+        const passwordInput = document.getElementById('password');
+
+        if (submitBtn) {
+            submitBtn.disabled = false;
+            submitBtn.classList.remove('loading');
+        }
+        if (loadingOverlay) {
+            loadingOverlay.classList.remove('show');
+        }
+        if (authLogo) {
+            authLogo.classList.remove('loading');
+        }
+        if (usernameInput) {
+            usernameInput.disabled = false;
+        }
+        if (passwordInput) {
+            passwordInput.disabled = false;
+        }
+    }
+
+    // Auto-focus sur le premier champ
+    document.addEventListener('DOMContentLoaded', function() {
+        const usernameInput = document.getElementById('username');
+        if (usernameInput && !usernameInput.value) {
+            usernameInput.focus();
+        }
+    });
+
+    // Validation en temps réel (optionnelle, n'interfère pas avec la soumission)
+    document.addEventListener('DOMContentLoaded', function() {
+        const inputs = document.querySelectorAll('.form-input');
+        inputs.forEach(input => {
+            input.addEventListener('blur', function() {
+                if (this.value.trim()) {
+                    this.classList.add('is-valid');
+                    this.classList.remove('is-invalid');
+                } else {
+                    this.classList.add('is-invalid');
+                    this.classList.remove('is-valid');
+                }
+            });
+
+            input.addEventListener('input', function() {
+                this.classList.remove('is-valid', 'is-invalid');
+            });
+        });
+
+        // Validation email
+        const emailInput = document.getElementById('username');
+        if (emailInput) {
+            emailInput.addEventListener('blur', function() {
+                const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+                if (this.value.trim() && emailRegex.test(this.value)) {
+                    this.classList.add('is-valid');
+                    this.classList.remove('is-invalid');
+                } else if (this.value.trim()) {
+                    this.classList.add('is-invalid');
+                    this.classList.remove('is-valid');
+                }
+            });
+        }
+    });
+</script>
 </body>
 </html>

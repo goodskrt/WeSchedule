@@ -1,14 +1,15 @@
 package com.iusjc.weschedule.security;
 
+import com.iusjc.weschedule.service.UserDetailsServiceImpl;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.security.authentication.AuthenticationManager;
+import org.springframework.security.authentication.dao.DaoAuthenticationProvider;
 import org.springframework.security.config.annotation.authentication.configuration.AuthenticationConfiguration;
 import org.springframework.security.config.annotation.web.builders.HttpSecurity;
 import org.springframework.security.config.http.SessionCreationPolicy;
 import org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder;
-import org.springframework.security.crypto.password.NoOpPasswordEncoder;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.security.web.SecurityFilterChain;
 import org.springframework.security.web.authentication.UsernamePasswordAuthenticationFilter;
@@ -19,13 +20,20 @@ public class SecurityConfig {
     @Autowired
     private JwtAuthenticationFilter jwtAuthenticationFilter;
 
-    /*@Bean
-    public PasswordEncoder passwordEncoder() {
-        return new BCryptPasswordEncoder();
-    }*/
+    @Autowired
+    private UserDetailsServiceImpl userDetailsService;
+
     @Bean
     public PasswordEncoder passwordEncoder() {
-        return NoOpPasswordEncoder.getInstance(); // ← ligne magique
+        return new BCryptPasswordEncoder();
+    }
+
+    @Bean
+    public DaoAuthenticationProvider authenticationProvider() {
+        DaoAuthenticationProvider provider = new DaoAuthenticationProvider();
+        provider.setUserDetailsService(userDetailsService);
+        provider.setPasswordEncoder(passwordEncoder());
+        return provider;
     }
 
     @Bean
@@ -36,22 +44,44 @@ public class SecurityConfig {
     @Bean
     public SecurityFilterChain securityFilterChain(HttpSecurity http) throws Exception {
         http
-                // 1. On désactive le CSRF (pas besoin avec JWT)
+                // 1. Désactiver CSRF
                 .csrf(csrf -> csrf.disable())
 
-                // 2. Pas de session HTTP (on utilise JWT)
-                .sessionManagement(session -> session.sessionCreationPolicy(SessionCreationPolicy.STATELESS))
+                // 2. Gestion des sessions
+                .sessionManagement(session -> session.sessionCreationPolicy(SessionCreationPolicy.IF_REQUIRED))
 
-                // 3. LES RÈGLES D’ACCÈS ← C’EST ICI QUE TOUT SE JOUE
+                // 3. Règles d'accès
                 .authorizeHttpRequests(auth -> auth
-                        // CES URL SONT ACCESSIBLES À TOUT LE MONDE (même pas connecté)
-                        .requestMatchers("/", "/login", "/css/**", "/js/**", "/images/**", "/error").permitAll()
+                        // URLs publiques
+                        .requestMatchers("/", "/login", "/register", "/admin/signup", 
+                                "/css/**", "/js/**", "/images/**", "/error").permitAll()
+                        
+                        // Pages et API endpoints pour mot de passe oublié/réinitialisation
+                        .requestMatchers("/reset-password-request", "/reset-password", "/reset-password-error", 
+                                "/reset-password-success", "/api/forgot-password", "/api/reset-password-with-token", 
+                                "/api/auto-login", "/api/validate-new-password").permitAll()
 
-                        // TOUTES LES AUTRES PAGES → il faut être connecté
+                        // Toutes les autres pages → authentication requise
                         .anyRequest().authenticated()
                 )
 
-                // 4. On ajoute notre videur JWT (il vérifie le token)
+                // 4. Configuration du formulaire de login
+                .formLogin(form -> form
+                        .loginPage("/login")
+                        .loginProcessingUrl("/login")
+                        .defaultSuccessUrl("/dashboard", true)
+                        .failureUrl("/login?error=true")
+                        .permitAll()
+                )
+
+                // 5. Logout
+                .logout(logout -> logout
+                        .logoutUrl("/logout")
+                        .logoutSuccessUrl("/login?logout=true")
+                        .permitAll()
+                )
+
+                // 6. JWT Filter (optionnel si on utilise des sessions)
                 .addFilterBefore(jwtAuthenticationFilter, UsernamePasswordAuthenticationFilter.class);
 
         return http.build();

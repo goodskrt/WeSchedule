@@ -31,3 +31,21 @@ build/
 
 ### VS Code ###
 .vscode/
+
+### Logs ###
+*.log
+logs/
+
+### OS Files ###
+.DS_Store
+Thumbs.db
+
+### Application Properties (sensitive data) ###
+# Décommente si tu veux exclure les configs sensibles
+# application-prod.properties
+# application-local.properties
+
+### Temporary files ###
+*.tmp
+*.bak
+*.swp

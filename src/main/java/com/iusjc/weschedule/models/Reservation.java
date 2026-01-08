@@ -30,7 +30,7 @@ public class Reservation {
     private Salle salle;
 
     @ManyToOne
-    private Creneau creneau;
+    private PlageHoraire plageHoraire;
 
     @ManyToOne
     private Cours cours;

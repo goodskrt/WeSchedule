@@ -1,6 +1,8 @@
 package com.iusjc.weschedule.security;
 
 import com.iusjc.weschedule.models.Utilisateur;
+import lombok.AllArgsConstructor;
+import lombok.Data;
 import org.springframework.security.core.GrantedAuthority;
 import org.springframework.security.core.authority.SimpleGrantedAuthority;
 import org.springframework.security.core.userdetails.UserDetails;
@@ -8,13 +10,11 @@ import org.springframework.security.core.userdetails.UserDetails;
 import java.util.Collection;
 import java.util.List;
 
+@Data
+@AllArgsConstructor
 public class UserPrincipal implements UserDetails {
 
     private Utilisateur utilisateur;
-
-    public UserPrincipal(Utilisateur utilisateur) {
-        this.utilisateur = utilisateur;
-    }
 
     @Override
     public Collection<? extends GrantedAuthority> getAuthorities() {
@@ -49,5 +49,14 @@ public class UserPrincipal implements UserDetails {
 
     public Utilisateur getUtilisateur() {
         return utilisateur;
+    }
+    
+    @Override
+    public String toString() {
+        return "UserPrincipal{" +
+                "username='" + getUsername() + '\'' +
+                ", role=" + utilisateur.getRole() +
+                ", nomComplet='" + getNomComplet() + '\'' +
+                '}';
     }
 }
