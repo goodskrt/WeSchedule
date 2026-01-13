@@ -1,0 +1,59 @@
+tes les pages <!-- Layout Principal Fixe - Sans Scroll Global -->
+<div class="app-layout h-screen-fixed overflow-hidden-fixed">
+  <!-- Sidebar Fixe -->
+  <app-sidebar 
+    class="sidebar-container"
+    [class.open]="!sidebarCollapsed() && sidebarMode() === 'overlay'"
+  ></app-sidebar>
+
+  <!-- Overlay Mobile pour Sidebar -->
+  @if (!sidebarCollapsed() && sidebarMode() === 'overlay') {
+    <div 
+      class="sidebar-overlay lg:hidden"
+      (click)="closeSidebar()"
+    ></div>
+  }
+
+  <!-- Zone Principale -->
+  <div 
+    class="main-area flex-col-fixed"
+    [class.sidebar-collapsed]="sidebarCollapsed()"
+  >
+    <!-- Navbar Fixe -->
+    <app-navbar class="navbar-container"></app-navbar>
+
+    <!-- Contenu Principal Scrollable -->
+    <main class="page-content flex-1-scroll custom-scrollbar">
+      <div class="max-w-7xl mx-auto">
+        <!-- Breadcrumb Optionnel -->
+        <nav class="flex mb-6 bg-white/80 backdrop-blur-sm rounded-xl p-4 shadow-sm border border-gray-200/50" aria-label="Breadcrumb">
+          <ol class="inline-flex items-center space-x-1 md:space-x-3">
+            <li class="inline-flex items-center">
+              <a href="#" class="inline-flex items-center text-sm font-medium text-gray-700 hover:text-blue-600 transition-colors duration-300 group">
+                <app-svg-icon 
+                  icon="info" 
+                  classes="w-4 h-4 mr-2 text-gray-500 group-hover:text-blue-600 transition-colors duration-300"
+                ></app-svg-icon>
+                Accueil
+              </a>
+            </li>
+            <li>
+              <div class="flex items-center">
+                <app-svg-icon 
+                  icon="info" 
+                  classes="w-4 h-4 mx-2 text-gray-400"
+                ></app-svg-icon>
+                <span class="text-sm font-medium text-gray-500">{{ getCurrentPageTitle() }}</span>
+              </div>
+            </li>
+          </ol>
+        </nav>
+
+        <!-- Contenu de la Page -->
+        <div class="animate-fade-in">
+          <router-outlet></router-outlet>
+        </div>
+      </div>
+    </main>
+  </div>
+</div>

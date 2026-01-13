@@ -1,0 +1,118 @@
+// Styles pour l'emploi du temps
+
+.schedule-grid {
+  .time-slot {
+    transition: all 0.2s ease;
+    
+    &:hover {
+      background-color: rgba(59, 130, 246, 0.05);
+    }
+  }
+
+  .course-card {
+    transition: all 0.3s ease;
+    cursor: pointer;
+    
+    &:hover {
+      transform: translateY(-2px);
+      box-shadow: 0 8px 25px rgba(0, 0, 0, 0.15);
+    }
+
+    .course-actions {
+      opacity: 0;
+      transition: opacity 0.2s ease;
+    }
+
+    &:hover .course-actions {
+      opacity: 1;
+    }
+  }
+
+  .empty-slot {
+    transition: all 0.2s ease;
+    
+    &:hover {
+      border-color: #3b82f6;
+      color: #3b82f6;
+      background-color: rgba(59, 130, 246, 0.05);
+    }
+  }
+
+  .conflict-indicator {
+    animation: pulse 2s infinite;
+  }
+}
+
+.lunch-break {
+  background: linear-gradient(135deg, #fef3c7 0%, #fde68a 100%);
+  border: 2px dashed #f59e0b;
+}
+
+.statistics-card {
+  .stat-item {
+    transition: all 0.2s ease;
+    
+    &:hover {
+      transform: scale(1.05);
+    }
+  }
+}
+
+.filter-section {
+  .filter-input {
+    transition: all 0.2s ease;
+    
+    &:focus {
+      transform: scale(1.02);
+    }
+  }
+}
+
+// Animations
+@keyframes pulse {
+  0%, 100% {
+    opacity: 1;
+  }
+  50% {
+    opacity: 0.5;
+  }
+}
+
+@keyframes slideIn {
+  from {
+    opacity: 0;
+    transform: translateY(-10px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+.modal-enter {
+  animation: slideIn 0.3s ease-out;
+}
+
+// Responsive design
+@media (max-width: 768px) {
+  .schedule-grid {
+    font-size: 0.75rem;
+    
+    .course-card {
+      padding: 0.5rem;
+    }
+  }
+}
+
+// Print styles
+@media print {
+  .no-print {
+    display: none !important;
+  }
+  
+  .schedule-grid {
+    .course-actions {
+      display: none !important;
+    }
+  }
+}

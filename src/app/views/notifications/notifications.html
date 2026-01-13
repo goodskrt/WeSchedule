@@ -1,0 +1,324 @@
+<!-- Notifications Header -->
+<div class="mb-8">
+  <div class="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
+    <div>
+      <h1 class="text-3xl font-bold text-gray-900 mb-2">Notifications</h1>
+      <p class="text-gray-600">
+        Restez informé des dernières mises à jour
+        @if (getUnreadCount() > 0) {
+          <span class="ml-2 inline-flex items-center px-2 py-1 bg-red-100 text-red-800 text-xs font-medium rounded-full">
+            {{ getUnreadCount() }} non lue{{ getUnreadCount() > 1 ? 's' : '' }}
+          </span>
+        }
+      </p>
+    </div>
+    <div class="flex gap-2">
+      <button
+        (click)="exportNotifications()"
+        class="btn-secondary flex items-center gap-2"
+        title="Exporter les notifications"
+      >
+        <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 10v6m0 0l-3-3m3 3l3-3m2 8H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"></path>
+        </svg>
+        Exporter
+      </button>
+      <button
+        (click)="openSettings()"
+        class="btn-secondary flex items-center gap-2"
+        title="Paramètres de notification"
+      >
+        <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10.325 4.317c.426-1.756 2.924-1.756 3.35 0a1.724 1.724 0 002.573 1.066c1.543-.94 3.31.826 2.37 2.37a1.724 1.724 0 001.065 2.572c1.756.426 1.756 2.924 0 3.35a1.724 1.724 0 00-1.066 2.573c.94 1.543-.826 3.31-2.37 2.37a1.724 1.724 0 00-2.572 1.065c-.426 1.756-2.924 1.756-3.35 0a1.724 1.724 0 00-2.573-1.066c-1.543.94-3.31-.826-2.37-2.37a1.724 1.724 0 00-1.065-2.572c-1.756-.426-1.756-2.924 0-3.35a1.724 1.724 0 001.066-2.573c-.94-1.543.826-3.31 2.37-2.37.996.608 2.296.07 2.572-1.065z"></path>
+          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"></path>
+        </svg>
+        Paramètres
+      </button>
+      <button
+        (click)="markAllAsRead()"
+        class="btn-secondary flex items-center gap-2"
+        [disabled]="getUnreadCount() === 0"
+        title="Marquer toutes les notifications comme lues"
+      >
+        <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"></path>
+        </svg>
+        Tout marquer comme lu
+      </button>
+      <button
+        (click)="clearAll()"
+        class="btn-secondary flex items-center gap-2"
+        title="Supprimer toutes les notifications"
+      >
+        <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"></path>
+        </svg>
+        Tout supprimer
+      </button>
+    </div>
+  </div>
+</div>
+
+<!-- Filters -->
+<div class="bg-white rounded-xl shadow-sm border border-gray-200 p-6 mb-8">
+  <!-- Search Bar -->
+  <div class="mb-4">
+    <div class="relative">
+      <input
+        type="text"
+        placeholder="Rechercher dans les notifications..."
+        [value]="searchQuery()"
+        (input)="setSearchQuery($any($event.target).value)"
+        class="w-full pl-10 pr-10 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary-500 focus:border-primary-500"
+      >
+      <div class="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
+        <svg class="w-5 h-5 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"></path>
+        </svg>
+      </div>
+      @if (searchQuery()) {
+        <button
+          (click)="clearSearch()"
+          class="absolute inset-y-0 right-0 pr-3 flex items-center"
+          title="Effacer la recherche"
+        >
+          <svg class="w-5 h-5 text-gray-400 hover:text-gray-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"></path>
+          </svg>
+        </button>
+      }
+    </div>
+  </div>
+
+  <div class="flex flex-col sm:flex-row gap-4">
+    <!-- Category Filters -->
+    <div class="flex gap-2 flex-wrap">
+      <button
+        (click)="setFilter('all')"
+        class="px-4 py-2 rounded-lg font-medium transition-colors"
+        [class.bg-primary-600]="selectedFilter() === 'all'"
+        [class.text-white]="selectedFilter() === 'all'"
+        [class.bg-gray-100]="selectedFilter() !== 'all'"
+        [class.text-gray-700]="selectedFilter() !== 'all'"
+      >
+        Toutes
+      </button>
+      <button
+        (click)="setFilter('course')"
+        class="px-4 py-2 rounded-lg font-medium transition-colors flex items-center gap-2"
+        [class.bg-primary-600]="selectedFilter() === 'course'"
+        [class.text-white]="selectedFilter() === 'course'"
+        [class.bg-gray-100]="selectedFilter() !== 'course'"
+        [class.text-gray-700]="selectedFilter() !== 'course'"
+        title="Notifications liées aux cours"
+      >
+        <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 6.253v13m0-13C10.832 5.477 9.246 5 7.5 5S4.168 5.477 3 6.253v13C4.168 18.477 5.754 18 7.5 18s3.332.477 4.5 1.253m0-13C13.168 5.477 14.754 5 16.5 5c1.746 0 3.332.477 4.5 1.253v13C19.832 18.477 18.246 18 16.5 18c-1.746 0-3.332.477-4.5 1.253"></path>
+        </svg>
+        Cours
+      </button>
+      <button
+        (click)="setFilter('room')"
+        class="px-4 py-2 rounded-lg font-medium transition-colors flex items-center gap-2"
+        [class.bg-primary-600]="selectedFilter() === 'room'"
+        [class.text-white]="selectedFilter() === 'room'"
+        [class.bg-gray-100]="selectedFilter() !== 'room'"
+        [class.text-gray-700]="selectedFilter() !== 'room'"
+        title="Notifications liées aux salles"
+      >
+        <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 21V5a2 2 0 00-2-2H7a2 2 0 00-2 2v16m14 0h2m-2 0h-5m-9 0H3m2 0h5M9 7h1m-1 4h1m4-4h1m-1 4h1m-5 10v-5a1 1 0 011-1h2a1 1 0 011 1v5m-4 0h4"></path>
+        </svg>
+        Salles
+      </button>
+      <button
+        (click)="setFilter('schedule')"
+        class="px-4 py-2 rounded-lg font-medium transition-colors flex items-center gap-2"
+        [class.bg-primary-600]="selectedFilter() === 'schedule'"
+        [class.text-white]="selectedFilter() === 'schedule'"
+        [class.bg-gray-100]="selectedFilter() !== 'schedule'"
+        [class.text-gray-700]="selectedFilter() !== 'schedule'"
+        title="Notifications liées aux horaires"
+      >
+        <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z"></path>
+        </svg>
+        Horaires
+      </button>
+      <button
+        (click)="setFilter('system')"
+        class="px-4 py-2 rounded-lg font-medium transition-colors flex items-center gap-2"
+        [class.bg-primary-600]="selectedFilter() === 'system'"
+        [class.text-white]="selectedFilter() === 'system'"
+        [class.bg-gray-100]="selectedFilter() !== 'system'"
+        [class.text-gray-700]="selectedFilter() !== 'system'"
+        title="Notifications système"
+      >
+        <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10.325 4.317c.426-1.756 2.924-1.756 3.35 0a1.724 1.724 0 002.573 1.066c1.543-.94 3.31.826 2.37 2.37a1.724 1.724 0 001.065 2.572c1.756.426 1.756 2.924 0 3.35a1.724 1.724 0 00-1.066 2.573c.94 1.543-.826 3.31-2.37 2.37a1.724 1.724 0 00-2.572 1.065c-.426 1.756-2.924 1.756-3.35 0a1.724 1.724 0 00-2.573-1.066c-1.543.94-3.31-.826-2.37-2.37a1.724 1.724 0 00-1.065-2.572c-1.756-.426-1.756-2.924 0-3.35a1.724 1.724 0 001.066-2.573c-.94-1.543.826-3.31 2.37-2.37.996.608 2.296.07 2.572-1.065z"></path>
+          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"></path>
+        </svg>
+        Système
+      </button>
+    </div>
+
+    <!-- Unread Filter -->
+    <div class="flex items-center gap-2">
+      <label class="flex items-center cursor-pointer">
+        <input
+          type="checkbox"
+          [checked]="showOnlyUnread()"
+          (change)="toggleUnreadFilter()"
+          class="w-4 h-4 text-primary-600 border-gray-300 rounded focus:ring-primary-500"
+        >
+        <span class="ml-2 text-sm text-gray-700">Non lues uniquement</span>
+      </label>
+    </div>
+  </div>
+</div>
+
+<!-- Notifications List -->
+<div class="grid grid-cols-1 lg:grid-cols-4 gap-8 mb-8">
+  <!-- Statistics Cards -->
+  <div class="lg:col-span-1">
+    <div class="bg-white rounded-xl shadow-sm border border-gray-200 p-6">
+      <h3 class="text-lg font-semibold text-gray-900 mb-4">Statistiques</h3>
+      
+      <div class="space-y-4">
+        <div class="flex items-center justify-between">
+          <span class="text-sm text-gray-600">Total</span>
+          <span class="text-lg font-semibold text-gray-900">{{ getNotificationStats().total }}</span>
+        </div>
+        <div class="flex items-center justify-between">
+          <span class="text-sm text-gray-600">Non lues</span>
+          <span class="text-lg font-semibold text-red-600">{{ getNotificationStats().unread }}</span>
+        </div>
+        <div class="flex items-center justify-between">
+          <span class="text-sm text-gray-600">Aujourd'hui</span>
+          <span class="text-lg font-semibold text-blue-600">{{ getNotificationStats().todayCount }}</span>
+        </div>
+      </div>
+
+      <hr class="my-4">
+
+      <div class="space-y-3">
+        <h4 class="text-sm font-medium text-gray-900">Par type</h4>
+        @for (typeStats of getNotificationStats().byType; track typeStats.type) {
+          <div class="flex items-center justify-between">
+            <div class="flex items-center gap-2">
+              <app-svg-icon [icon]="typeStats.info.icon" classes="w-4 h-4"></app-svg-icon>
+              <span class="text-sm text-gray-600 capitalize">{{ typeStats.type }}</span>
+            </div>
+            <span class="text-sm font-medium">{{ typeStats.count }}</span>
+          </div>
+        }
+      </div>
+    </div>
+  </div>
+
+  <!-- Notifications List -->
+  <div class="lg:col-span-3 space-y-4">
+  @for (notification of filteredNotifications(); track notification.id) {
+    <div 
+      class="bg-white rounded-xl shadow-sm border transition-all duration-200 hover:shadow-md"
+      [class.border-gray-200]="notification.read"
+      [class.border-primary-200]="!notification.read"
+      [class.bg-primary-25]="!notification.read"
+    >
+      <div class="p-6">
+        <div class="flex items-start gap-4">
+          <!-- Notification Icon -->
+          <div class="flex-shrink-0">
+            <div class="w-10 h-10 rounded-lg flex items-center justify-center" [ngClass]="getTypeInfo(notification.type).color">
+              <app-svg-icon [icon]="getTypeInfo(notification.type).icon" classes="w-5 h-5"></app-svg-icon>
+            </div>
+          </div>
+
+          <!-- Notification Content -->
+          <div class="flex-1 min-w-0">
+            <div class="flex items-start justify-between gap-4">
+              <div class="flex-1">
+                <div class="flex items-center gap-2 mb-1">
+                  <h3 class="font-semibold text-gray-900">{{ notification.title }}</h3>
+                  @if (!notification.read) {
+                    <span class="w-2 h-2 bg-primary-600 rounded-full"></span>
+                  }
+                </div>
+                
+                <p class="text-gray-600 text-sm mb-3">{{ notification.message }}</p>
+                
+                <div class="flex items-center gap-3 text-xs text-gray-500">
+                  <span class="inline-flex items-center gap-1 px-2 py-1 rounded-full" [ngClass]="getCategoryInfo(notification.category).color">
+                    <app-svg-icon [icon]="getCategoryInfo(notification.category).icon" classes="w-4 h-4"></app-svg-icon>
+                    <span>{{ getCategoryInfo(notification.category).name }}</span>
+                  </span>
+                  <span>{{ formatTimestamp(notification.timestamp) }}</span>
+                </div>
+              </div>
+
+              <!-- Actions -->
+              <div class="flex items-center gap-2">
+                @if (!notification.read) {
+                  <button
+                    (click)="markAsRead(notification.id)"
+                    class="p-2 text-gray-400 hover:text-primary-600 hover:bg-primary-50 rounded-lg transition-colors"
+                    title="Marquer comme lu"
+                  >
+                    <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"></path>
+                    </svg>
+                  </button>
+                }
+                <button
+                  (click)="deleteNotification(notification.id)"
+                  class="p-2 text-gray-400 hover:text-red-600 hover:bg-red-50 rounded-lg transition-colors"
+                  title="Supprimer"
+                >
+                  <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"></path>
+                  </svg>
+                </button>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  }
+</div>
+
+<!-- Empty State -->
+@if (filteredNotifications().length === 0) {
+  <div class="lg:col-span-3">
+    <div class="bg-white rounded-xl shadow-sm border border-gray-200 p-12 text-center">
+      <div class="w-24 h-24 mx-auto mb-6 bg-gray-100 rounded-full flex items-center justify-center">
+        <svg class="w-12 h-12 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 17h5l-5 5v-5zM4.868 19.718A8.966 8.966 0 003 15a9 9 0 0118 0 8.966 8.966 0 00-1.868 4.718M12 9v2m0 4h.01"></path>
+        </svg>
+      </div>
+      <h3 class="text-xl font-semibold text-gray-900 mb-2">
+        @if (showOnlyUnread()) {
+          Aucune notification non lue
+        } @else {
+          Aucune notification
+        }
+      </h3>
+      <p class="text-gray-600">
+        @if (showOnlyUnread()) {
+          Toutes vos notifications ont été lues.
+        } @else {
+          Vous n'avez aucune notification pour le moment.
+        }
+      </p>
+    </div>
+  </div>
+}
+</div>
+
+<!-- Settings Modal -->
+<app-settings-modal
+  [show]="showSettings()"
+  [settings]="notificationSettings()"
+  (close)="closeSettings()"
+  (save)="onSettingsSave($event)"
+></app-settings-modal>

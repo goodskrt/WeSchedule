@@ -1,0 +1,629 @@
+<!-- Schedule Management Header -->
+<div class="mb-8">
+  <div class="flex flex-col lg:flex-row lg:items-center lg:justify-between gap-4">
+    <div>
+      <h1 class="text-3xl font-bold text-gray-900 mb-2">Emploi du Temps</h1>
+      <p class="text-gray-600">{{ getWeekRange() }}</p>
+    </div>
+    <div class="flex flex-wrap gap-2">
+      <button
+        (click)="addEvent()"
+        class="btn-secondary flex items-center gap-2"
+        title="Ajouter un événement"
+      >
+        <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 6v6m0 0v6m0-6h6m-6 0H6"></path>
+        </svg>
+        Ajouter
+      </button>
+      <button
+        (click)="importSchedule()"
+        class="btn-secondary flex items-center gap-2"
+        title="Importer un emploi du temps"
+      >
+        <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M7 16a4 4 0 01-.88-7.903A5 5 0 1115.9 6L16 6a5 5 0 011 9.9M9 19l3 3m0 0l3-3m-3 3V10"></path>
+        </svg>
+        Importer
+      </button>
+      <button
+        (click)="exportSchedule()"
+        class="btn-secondary flex items-center gap-2"
+        title="Exporter l'emploi du temps"
+      >
+        <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 10v6m0 0l-3-3m3 3l3-3m2 8H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"></path>
+        </svg>
+        Exporter
+      </button>
+      <button
+        (click)="printSchedule()"
+        class="btn-secondary flex items-center gap-2"
+        title="Imprimer l'emploi du temps"
+      >
+        <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 17h2a2 2 0 002-2v-4a2 2 0 00-2-2H5a2 2 0 00-2 2v4a2 2 0 002 2h2m2 4h6a2 2 0 002-2v-4a2 2 0 00-2-2H9a2 2 0 00-2 2v4a2 2 0 002 2zm8-12V5a2 2 0 00-2-2H9a2 2 0 00-2 2v4h10z"></path>
+        </svg>
+        Imprimer
+      </button>
+      <button
+        (click)="detectConflicts()"
+        class="btn-secondary flex items-center gap-2"
+        title="Détecter les conflits"
+      >
+        <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-2.5L13.732 4c-.77-.833-1.964-.833-2.732 0L3.34 16.5c-.77.833.192 2.5 1.732 2.5z"></path>
+        </svg>
+        Conflits
+      </button>
+      <button
+        (click)="showValidationReport()"
+        class="btn-secondary flex items-center gap-2"
+        title="Rapport de validation"
+      >
+        <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"></path>
+        </svg>
+        Valider
+      </button>
+      <button
+        (click)="generateAutoSchedule()"
+        class="btn-secondary flex items-center gap-2"
+        title="Génération automatique"
+      >
+        <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15"></path>
+        </svg>
+        Auto-générer
+      </button>
+      <button
+        (click)="saveScheduleToFile()"
+        class="btn-secondary flex items-center gap-2"
+        title="Sauvegarder l'emploi du temps"
+      >
+        <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 7H5a2 2 0 00-2 2v9a2 2 0 002 2h14a2 2 0 002-2V9a2 2 0 00-2-2h-3m-1 4l-3-3m0 0l-3 3m3-3v12"></path>
+        </svg>
+        Sauvegarder
+      </button>
+      <button
+        (click)="loadScheduleFromFile()"
+        class="btn-secondary flex items-center gap-2"
+        title="Charger un emploi du temps"
+      >
+        <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M7 16a4 4 0 01-.88-7.903A5 5 0 1115.9 6L16 6a5 5 0 011 9.9M15 13l-3-3m0 0l-3 3m3-3v12"></path>
+        </svg>
+        Charger
+      </button>
+    </div>
+  </div>
+</div>
+
+<!-- Controls and Filters -->
+<div class="bg-white rounded-xl shadow-sm border border-gray-200 p-6 mb-8">
+  <!-- Search Bar -->
+  <div class="mb-4">
+    <div class="relative">
+      <input
+        type="text"
+        placeholder="Rechercher un cours, enseignant ou salle..."
+        [value]="searchQuery()"
+        (input)="setSearchQuery($any($event.target).value)"
+        class="w-full pl-10 pr-10 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary-500 focus:border-primary-500"
+      >
+      <div class="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
+        <svg class="w-5 h-5 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"></path>
+        </svg>
+      </div>
+      @if (searchQuery()) {
+        <button
+          (click)="clearSearch()"
+          class="absolute inset-y-0 right-0 pr-3 flex items-center"
+          title="Effacer la recherche"
+        >
+          <svg class="w-5 h-5 text-gray-400 hover:text-gray-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"></path>
+          </svg>
+        </button>
+      }
+    </div>
+  </div>
+
+  <div class="flex flex-col lg:flex-row gap-4">
+    <!-- Navigation -->
+    <div class="flex items-center gap-2">
+      <button
+        (click)="previousWeek()"
+        class="p-2 hover:bg-gray-100 rounded-lg transition-colors"
+        title="Semaine précédente"
+      >
+        <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 19l-7-7 7-7"></path>
+        </svg>
+      </button>
+      <button
+        (click)="goToToday()"
+        class="px-4 py-2 bg-primary-100 text-primary-700 rounded-lg hover:bg-primary-200 transition-colors font-medium"
+      >
+        Aujourd'hui
+      </button>
+      <button
+        (click)="nextWeek()"
+        class="p-2 hover:bg-gray-100 rounded-lg transition-colors"
+        title="Semaine suivante"
+      >
+        <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7"></path>
+        </svg>
+      </button>
+    </div>
+
+    <!-- View Toggle -->
+    <div class="flex bg-gray-100 rounded-lg p-1">
+      <button
+        (click)="setView('day')"
+        class="px-3 py-2 rounded-md transition-colors text-sm font-medium"
+        [class.bg-white]="currentView() === 'day'"
+        [class.shadow-sm]="currentView() === 'day'"
+        [class.text-gray-900]="currentView() === 'day'"
+        [class.text-gray-600]="currentView() !== 'day'"
+      >
+        Jour
+      </button>
+      <button
+        (click)="setView('week')"
+        class="px-3 py-2 rounded-md transition-colors text-sm font-medium"
+        [class.bg-white]="currentView() === 'week'"
+        [class.shadow-sm]="currentView() === 'week'"
+        [class.text-gray-900]="currentView() === 'week'"
+        [class.text-gray-600]="currentView() !== 'week'"
+      >
+        Semaine
+      </button>
+      <button
+        (click)="setView('month')"
+        class="px-3 py-2 rounded-md transition-colors text-sm font-medium"
+        [class.bg-white]="currentView() === 'month'"
+        [class.shadow-sm]="currentView() === 'month'"
+        [class.text-gray-900]="currentView() === 'month'"
+        [class.text-gray-600]="currentView() !== 'month'"
+      >
+        Mois
+      </button>
+    </div>
+
+    <!-- Filters -->
+    <div class="flex flex-wrap gap-2 flex-1">
+      <!-- School Filter -->
+      <select
+        [value]="selectedSchool()"
+        (change)="onSchoolFilterChange($event)"
+        class="px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary-500 focus:border-primary-500 text-sm"
+      >
+        <option value="all">Toutes les écoles</option>
+        @for (school of schools; track school.id) {
+          <option [value]="school.id">{{ school.name }}</option>
+        }
+      </select>
+
+      <!-- Teacher Filter -->
+      <select
+        [value]="selectedTeacher()"
+        (change)="setTeacherFilter($any($event.target).value)"
+        class="px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary-500 focus:border-primary-500 text-sm"
+      >
+        <option value="all">Tous les enseignants</option>
+        @for (teacher of getUniqueTeachers(); track teacher) {
+          <option [value]="teacher">{{ teacher }}</option>
+        }
+      </select>
+
+      <!-- Room Filter -->
+      <select
+        [value]="selectedRoom()"
+        (change)="setRoomFilter($any($event.target).value)"
+        class="px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary-500 focus:border-primary-500 text-sm"
+      >
+        <option value="all">Toutes les salles</option>
+        @for (room of getUniqueRooms(); track room) {
+          <option [value]="room">{{ room }}</option>
+        }
+      </select>
+
+      <!-- Conflicts Toggle -->
+      <label class="flex items-center gap-2 cursor-pointer">
+        <input
+          type="checkbox"
+          [checked]="showConflicts()"
+          (change)="toggleConflicts()"
+          class="w-4 h-4 text-primary-600 border-gray-300 rounded focus:ring-primary-500"
+        >
+        <span class="text-sm text-gray-700">Afficher les conflits</span>
+      </label>
+
+      <!-- Reset Filters -->
+      <button
+        (click)="resetAllFilters()"
+        class="px-3 py-2 text-gray-600 hover:text-gray-800 hover:bg-gray-100 rounded-lg transition-colors text-sm"
+        title="Réinitialiser tous les filtres"
+      >
+        <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15"></path>
+        </svg>
+      </button>
+    </div>
+  </div>
+</div>
+
+<!-- Schedule Grid -->
+@if (currentView() === 'week') {
+  <div class="bg-white rounded-xl shadow-sm border border-gray-200 overflow-hidden">
+    <!-- Header -->
+    <div class="grid grid-cols-7 border-b border-gray-200">
+      <div class="p-4 bg-gray-50 border-r border-gray-200">
+        <span class="text-sm font-semibold text-gray-600">Horaires</span>
+      </div>
+      @for (day of days; track day.key) {
+        <div class="p-4 bg-gray-50 text-center border-r border-gray-200 last:border-r-0">
+          <div class="text-sm font-semibold text-gray-900">{{ day.name }}</div>
+          <div class="text-xs text-gray-500 mt-1">{{ day.short }}</div>
+        </div>
+      }
+    </div>
+
+    <!-- Time Slots -->
+    @for (timeSlot of timeSlots; track timeSlot) {
+      <!-- Lunch Break Indicator -->
+      @if (timeSlot === '13:00-14:00') {
+        <div class="grid grid-cols-7 bg-yellow-50 border-b border-yellow-200">
+          <div class="p-2 bg-yellow-100 border-r border-yellow-200 flex items-center justify-center">
+            <div class="text-xs font-medium text-yellow-800">12:00-13:00</div>
+          </div>
+          @for (day of days; track day.key) {
+            <div class="p-4 border-r border-yellow-200 last:border-r-0 flex items-center justify-center">
+              <div class="flex items-center gap-2 text-yellow-700">
+                <app-svg-icon icon="clock" classes="w-4 h-4"></app-svg-icon>
+                <span class="text-sm font-medium">Pause Déjeuner</span>
+              </div>
+            </div>
+          }
+        </div>
+      }
+      
+      <div class="grid grid-cols-7 border-b border-gray-200 last:border-b-0 min-h-[100px]">
+        <!-- Time Column -->
+        <div class="p-4 bg-gray-50 border-r border-gray-200 flex items-center">
+          <div class="text-sm font-medium text-gray-700">{{ timeSlot }}</div>
+        </div>
+
+        @for (day of days; track day.key) {
+          <div 
+            class="p-2 border-r border-gray-200 last:border-r-0 relative hover:bg-gray-50 transition-colors"
+          >
+            @if (getFilteredSchedule()[day.key][timeSlot]; as slot) {
+              <div 
+                class="h-full rounded-lg border-2 p-3 relative group cursor-pointer"
+                [ngClass]="slot.color"
+                [class.ring-2]="showConflicts() && hasConflict(day.key, timeSlot)"
+                [class.ring-red-500]="showConflicts() && hasConflict(day.key, timeSlot)"
+                (click)="editTimeSlot(day.key, timeSlot)"
+              >
+                <!-- Conflict Indicator -->
+                @if (showConflicts() && hasConflict(day.key, timeSlot)) {
+                  <div class="absolute -top-1 -right-1 w-4 h-4 bg-red-500 rounded-full flex items-center justify-center">
+                    <svg class="w-3 h-3 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-2.5L13.732 4c-.77-.833-1.964-.833-2.732 0L3.34 16.5c-.77.833.192 2.5 1.732 2.5z"></path>
+                    </svg>
+                  </div>
+                }
+
+                <!-- Course Info -->
+                <div class="flex items-start justify-between mb-2">
+                  <div class="flex items-center gap-1">
+                    <app-svg-icon [icon]="slot.type" classes="w-4 h-4"></app-svg-icon>
+                    <span class="text-xs font-semibold px-2 py-1 bg-white bg-opacity-50 rounded">
+                      {{ slot.type }}
+                    </span>
+                  </div>
+                  <div class="w-3 h-3 rounded-full" [ngClass]="getSchoolColor(slot.school)"></div>
+                </div>
+
+                <h4 class="font-semibold text-sm mb-1 line-clamp-2">{{ slot.subject }}</h4>
+                
+                <div class="space-y-1 text-xs">
+                  <div class="flex items-center gap-1">
+                    <app-svg-icon icon="user" classes="w-3 h-3 text-gray-600"></app-svg-icon>
+                    <span class="truncate">{{ slot.teacher }}</span>
+                  </div>
+                  <div class="flex items-center gap-1">
+                    <app-svg-icon icon="building" classes="w-3 h-3 text-gray-600"></app-svg-icon>
+                    <span class="truncate">{{ slot.room }}</span>
+                  </div>
+                  <div class="flex items-center gap-1">
+                    <app-svg-icon icon="users" classes="w-3 h-3 text-gray-600"></app-svg-icon>
+                    <span>{{ slot.students }} étudiants</span>
+                  </div>
+                </div>
+
+                <!-- Actions (visible on hover) -->
+                <div class="absolute top-2 right-2 opacity-0 group-hover:opacity-100 transition-opacity">
+                  <div class="flex gap-1">
+                    <button
+                      (click)="editTimeSlot(day.key, timeSlot); $event.stopPropagation()"
+                      class="w-6 h-6 bg-white bg-opacity-80 hover:bg-opacity-100 rounded text-xs flex items-center justify-center"
+                      title="Modifier"
+                    >
+                      <svg class="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z"></path>
+                      </svg>
+                    </button>
+                    <button
+                      (click)="duplicateCourse(day.key, timeSlot); $event.stopPropagation()"
+                      class="w-6 h-6 bg-white bg-opacity-80 hover:bg-opacity-100 rounded text-xs flex items-center justify-center"
+                      title="Dupliquer"
+                    >
+                      <svg class="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 16H6a2 2 0 01-2-2V6a2 2 0 012-2h8a2 2 0 012 2v2m-6 12h8a2 2 0 002-2v-8a2 2 0 00-2-2h-8a2 2 0 00-2 2v8a2 2 0 002 2z"></path>
+                      </svg>
+                    </button>
+                    <button
+                      (click)="scheduleReminder(day.key, timeSlot); $event.stopPropagation()"
+                      class="w-6 h-6 bg-white bg-opacity-80 hover:bg-opacity-100 rounded text-xs flex items-center justify-center"
+                      title="Programmer un rappel"
+                    >
+                      <svg class="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 17h5l-5 5v-5zM4.868 19.718A8.966 8.966 0 003 15a9 9 0 0118 0 8.966 8.966 0 00-1.868 4.718M12 9v2m0 4h.01"></path>
+                      </svg>
+                    </button>
+                    <button
+                      (click)="deleteTimeSlot(day.key, timeSlot); $event.stopPropagation()"
+                      class="w-6 h-6 bg-white bg-opacity-80 hover:bg-opacity-100 rounded text-xs flex items-center justify-center"
+                      title="Supprimer"
+                    >
+                      <svg class="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"></path>
+                      </svg>
+                    </button>
+                  </div>
+                </div>
+              </div>
+            } @else {
+              <!-- Empty Slot -->
+              <div 
+                class="h-full flex items-center justify-center text-gray-400 border-2 border-dashed border-gray-200 rounded-lg hover:border-primary-300 hover:text-primary-500 transition-colors cursor-pointer"
+                (click)="addEventToSlot(day.key, timeSlot)"
+                title="Cliquer pour ajouter un cours"
+              >
+                <div class="text-center">
+                  <app-svg-icon icon="info" classes="w-6 h-6 mx-auto mb-1"></app-svg-icon>
+                  <span class="text-xs">Ajouter</span>
+                </div>
+              </div>
+            }
+          </div>
+        }
+      </div>
+    }
+  </div>
+}
+
+<!-- Day View -->
+@if (currentView() === 'day') {
+  <div class="bg-white rounded-xl shadow-sm border border-gray-200 p-6">
+    <div class="text-center mb-6">
+      <h2 class="text-2xl font-bold text-gray-900">Vue Journalière</h2>
+      <p class="text-gray-600">Fonctionnalité à implémenter</p>
+    </div>
+    <div class="text-center">
+      <button
+        (click)="setView('week')"
+        class="btn-primary"
+      >
+        Retour à la vue semaine
+      </button>
+    </div>
+  </div>
+}
+
+<!-- Month View -->
+@if (currentView() === 'month') {
+  <div class="bg-white rounded-xl shadow-sm border border-gray-200 p-6">
+    <div class="text-center mb-6">
+      <h2 class="text-2xl font-bold text-gray-900">Vue Mensuelle</h2>
+      <p class="text-gray-600">Fonctionnalité à implémenter</p>
+    </div>
+    <div class="text-center">
+      <button
+        (click)="setView('week')"
+        class="btn-primary"
+      >
+        Retour à la vue semaine
+      </button>
+    </div>
+  </div>
+}
+
+<!-- Upcoming Events Sidebar -->
+<div class="mt-8 grid grid-cols-1 lg:grid-cols-3 gap-8">
+  <!-- Statistics -->
+  <div class="lg:col-span-2">
+    <div class="bg-white rounded-xl shadow-sm border border-gray-200 p-6">
+      <h3 class="text-lg font-semibold text-gray-900 mb-4">Statistiques de la Semaine</h3>
+      
+      <div class="grid grid-cols-2 md:grid-cols-4 gap-4 mb-6">
+        <div class="text-center p-4 bg-blue-50 rounded-lg">
+          <div class="text-2xl font-bold text-blue-600">{{ getAdvancedStatistics().totalCourses }}</div>
+          <div class="text-sm text-blue-700">Cours Total</div>
+        </div>
+        <div class="text-center p-4 bg-green-50 rounded-lg">
+          <div class="text-2xl font-bold text-green-600">{{ getAdvancedStatistics().occupancyRate }}%</div>
+          <div class="text-sm text-green-700">Taux d'occupation</div>
+        </div>
+        <div class="text-center p-4 bg-purple-50 rounded-lg">
+          <div class="text-2xl font-bold text-purple-600">{{ getAdvancedStatistics().averageStudentsPerCourse }}</div>
+          <div class="text-sm text-purple-700">Moy. Étudiants</div>
+        </div>
+        <div class="text-center p-4 bg-orange-50 rounded-lg">
+          <div class="text-2xl font-bold text-orange-600">{{ getAdvancedStatistics().totalStudents }}</div>
+          <div class="text-sm text-orange-700">Total Étudiants</div>
+        </div>
+      </div>
+
+      <!-- Répartition par type de cours -->
+      <div class="mb-6">
+        <h4 class="text-md font-medium text-gray-900 mb-3">Répartition par Type</h4>
+        <div class="grid grid-cols-2 gap-3">
+          <div class="flex items-center justify-between p-3 bg-gray-50 rounded-lg">
+            <div class="flex items-center gap-2">
+              <app-svg-icon icon="CM" classes="w-4 h-4 text-blue-600"></app-svg-icon>
+              <span class="text-sm font-medium">CM</span>
+            </div>
+            <span class="text-sm font-bold">{{ getAdvancedStatistics().coursesByType.CM }}</span>
+          </div>
+          <div class="flex items-center justify-between p-3 bg-gray-50 rounded-lg">
+            <div class="flex items-center gap-2">
+              <app-svg-icon icon="TD" classes="w-4 h-4 text-green-600"></app-svg-icon>
+              <span class="text-sm font-medium">TD</span>
+            </div>
+            <span class="text-sm font-bold">{{ getAdvancedStatistics().coursesByType.TD }}</span>
+          </div>
+          <div class="flex items-center justify-between p-3 bg-gray-50 rounded-lg">
+            <div class="flex items-center gap-2">
+              <app-svg-icon icon="TP" classes="w-4 h-4 text-purple-600"></app-svg-icon>
+              <span class="text-sm font-medium">TP</span>
+            </div>
+            <span class="text-sm font-bold">{{ getAdvancedStatistics().coursesByType.TP }}</span>
+          </div>
+          <div class="flex items-center justify-between p-3 bg-gray-50 rounded-lg">
+            <div class="flex items-center gap-2">
+              <app-svg-icon icon="Exam" classes="w-4 h-4 text-red-600"></app-svg-icon>
+              <span class="text-sm font-medium">Examens</span>
+            </div>
+            <span class="text-sm font-bold">{{ getAdvancedStatistics().coursesByType.Exam }}</span>
+          </div>
+        </div>
+      </div>
+
+      <!-- Actions rapides -->
+      <div class="space-y-2">
+        <button
+          (click)="exportDetailedSchedule()"
+          class="w-full px-4 py-2 bg-blue-100 text-blue-700 hover:bg-blue-200 rounded-lg transition-colors text-sm font-medium"
+        >
+          📊 Export Détaillé
+        </button>
+        <button
+          (click)="showValidationReport()"
+          class="w-full px-4 py-2 bg-green-100 text-green-700 hover:bg-green-200 rounded-lg transition-colors text-sm font-medium"
+        >
+          ✅ Rapport de Validation
+        </button>
+        <button
+          (click)="createTemplate()"
+          class="w-full px-4 py-2 bg-purple-100 text-purple-700 hover:bg-purple-200 rounded-lg transition-colors text-sm font-medium"
+        >
+          💾 Créer Template
+        </button>
+        <button
+          (click)="loadTemplate()"
+          class="w-full px-4 py-2 bg-orange-100 text-orange-700 hover:bg-orange-200 rounded-lg transition-colors text-sm font-medium"
+        >
+          📂 Charger Template
+        </button>
+      </div>
+    </div>
+  </div>
+
+  <!-- Upcoming Events -->
+  <div>
+    <div class="bg-white rounded-xl shadow-sm border border-gray-200 p-6">
+      <h3 class="text-lg font-semibold text-gray-900 mb-4">Événements à Venir</h3>
+      
+      @if (upcomingEvents().length > 0) {
+        <div class="space-y-4">
+          @for (event of upcomingEvents(); track event.id) {
+            <div class="border border-gray-200 rounded-lg p-4">
+              <div class="flex items-start gap-3">
+                <div class="w-3 h-3 rounded-full mt-2" [ngClass]="event.color"></div>
+                <div class="flex-1">
+                  <h4 class="font-medium text-gray-900 text-sm">{{ event.title }}</h4>
+                  <p class="text-xs text-gray-600 mt-1">{{ event.location }}</p>
+                  <div class="flex items-center gap-2 mt-2 text-xs text-gray-500">
+                    <span>📅</span>
+                    <span>{{ event.start.toLocaleDateString('fr-FR') }}</span>
+                    <span>🕒</span>
+                    <span>{{ event.start.toLocaleTimeString('fr-FR', {hour: '2-digit', minute: '2-digit'}) }}</span>
+                  </div>
+                </div>
+              </div>
+            </div>
+          }
+        </div>
+      } @else {
+        <div class="text-center py-8">
+          <span class="text-4xl mb-4 block">📅</span>
+          <p class="text-gray-500 text-sm">Aucun événement prévu</p>
+        </div>
+      }
+    </div>
+
+    <!-- Legend -->
+    <div class="bg-white rounded-xl shadow-sm border border-gray-200 p-6 mt-6">
+      <h3 class="text-lg font-semibold text-gray-900 mb-4">Légende</h3>
+      
+      <div class="space-y-3">
+        <div class="flex items-center gap-3">
+          <span class="text-lg">📚</span>
+          <span class="text-sm text-gray-700">Cours Magistral (CM)</span>
+        </div>
+        <div class="flex items-center gap-3">
+          <span class="text-lg">✏️</span>
+          <span class="text-sm text-gray-700">Travaux Dirigés (TD)</span>
+        </div>
+        <div class="flex items-center gap-3">
+          <span class="text-lg">🔬</span>
+          <span class="text-sm text-gray-700">Travaux Pratiques (TP)</span>
+        </div>
+        <div class="flex items-center gap-3">
+          <span class="text-lg">📝</span>
+          <span class="text-sm text-gray-700">Examen</span>
+        </div>
+      </div>
+
+      <hr class="my-4">
+
+      <div class="space-y-2">
+        @for (school of schools; track school.id) {
+          <div class="flex items-center gap-3">
+            <div class="w-3 h-3 rounded-full" [ngClass]="school.color"></div>
+            <span class="text-sm text-gray-700">{{ school.name }}</span>
+          </div>
+        }
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- Add Event Modal -->
+<app-add-event-modal
+  [show]="showAddEventModal()"
+  [selectedSlot]="selectedTimeSlot()"
+  [availableSubjects]="availableSubjects()"
+  [availableTeachers]="availableTeachers()"
+  [availableRooms]="availableRooms()"
+  (close)="closeAddEventModal()"
+  (save)="onEventAdded($event)"
+  (suggestSlot)="onSuggestSlot($event)"
+></app-add-event-modal>
+
+<!-- Edit Event Modal -->
+<app-edit-event-modal
+  [show]="showEditModal()"
+  [selectedSlot]="selectedTimeSlot()"
+  [eventData]="getCurrentEditingEvent()"
+  (close)="closeEditModal()"
+  (save)="onEventEdited($event)"
+  (delete)="onEventDeleted()"
+></app-edit-event-modal>

@@ -1,0 +1,358 @@
+// Sidebar Fixe avec Scroll Indépendant - Nouvelle Structure
+
+.sidebar-container {
+  position: fixed !important;
+  top: 0;
+  left: 0;
+  height: 100vh !important;
+  width: 280px;
+  backdrop-filter: blur(20px);
+  border-right: 1px solid rgba(229, 231, 235, 0.3);
+  transition: width 0.3s cubic-bezier(0.4, 0, 0.2, 1), transform 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+  z-index: 40;
+  
+  &.sidebar-collapsed {
+    width: 80px;
+    
+    .institution-info {
+      opacity: 0;
+      transform: translateX(-100%);
+    }
+  }
+  
+  &.sidebar-expanded {
+    width: 280px;
+    
+    .institution-info {
+      opacity: 1;
+      transform: translateX(0);
+    }
+  }
+  
+  &.sidebar-hovered {
+    width: 320px;
+    box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.15);
+    
+    .menu-item {
+      transform: translateX(4px);
+    }
+  }
+}
+
+// Contenu de la sidebar avec scroll indépendant
+.sidebar-content {
+  height: 100vh;
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+}
+
+// Navigation avec scroll indépendant et optimisé
+.sidebar-nav {
+  flex: 1;
+  overflow-y: auto;
+  overflow-x: hidden;
+  scroll-behavior: smooth;
+  -webkit-overflow-scrolling: touch;
+  
+  // Isolation du scroll
+  contain: layout style paint;
+  transform: translateZ(0);
+  
+  // Optimisation des performances
+  will-change: scroll-position;
+  
+  // Scrollbar personnalisée
+  scrollbar-width: thin;
+  scrollbar-color: rgba(156, 163, 175, 0.3) transparent;
+  
+  &::-webkit-scrollbar {
+    width: 6px;
+  }
+  
+  &::-webkit-scrollbar-track {
+    background: transparent;
+    border-radius: 3px;
+  }
+  
+  &::-webkit-scrollbar-thumb {
+    background: rgba(156, 163, 175, 0.3);
+    border-radius: 3px;
+    transition: background 0.2s ease;
+    
+    &:hover {
+      background: rgba(156, 163, 175, 0.5);
+    }
+  }
+}
+
+// Animated Background Pattern - Light Version
+.animated-bg-light {
+  background: linear-gradient(45deg, 
+    rgba(59, 130, 246, 0.05) 0%, 
+    rgba(147, 51, 234, 0.05) 25%, 
+    rgba(236, 72, 153, 0.05) 50%, 
+    rgba(59, 130, 246, 0.05) 75%, 
+    rgba(147, 51, 234, 0.05) 100%);
+  background-size: 400% 400%;
+  animation: gradientShift 15s ease infinite;
+  width: 100%;
+  height: 100%;
+}
+
+@keyframes gradientShift {
+  0% { background-position: 0% 50%; }
+  50% { background-position: 100% 50%; }
+  100% { background-position: 0% 50%; }
+}
+
+// Logo Container avec Pulse Effect
+.logo-container {
+  &:hover {
+    .w-10 {
+      box-shadow: 0 0 30px rgba(59, 130, 246, 0.6);
+    }
+  }
+}
+
+// Institution Info Slide Animation
+.institution-info {
+  transition: all 0.5s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+// Collapse Button - Light Theme
+.collapse-btn {
+  backdrop-filter: blur(10px);
+  border: 1px solid rgba(229, 231, 235, 0.5);
+  
+  &:hover {
+    box-shadow: 0 0 20px rgba(59, 130, 246, 0.2);
+  }
+}
+
+// Time Display - Light Theme
+.time-display {
+  .text-2xl {
+    text-shadow: 0 0 10px rgba(59, 130, 246, 0.3);
+  }
+}
+
+// Quick Actions Button avec Floating Effect
+.quick-actions-btn {
+  box-shadow: 0 8px 25px rgba(59, 130, 246, 0.4);
+  animation: float 3s ease-in-out infinite;
+  
+  &:hover {
+    box-shadow: 0 12px 35px rgba(59, 130, 246, 0.6);
+  }
+}
+
+@keyframes float {
+  0%, 100% { transform: translateY(0px); }
+  50% { transform: translateY(-5px); }
+}
+
+// Quick Actions Menu avec Scale Animation
+.quick-actions-menu {
+  animation: scaleIn 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+@keyframes scaleIn {
+  0% {
+    opacity: 0;
+    transform: scale(0.8) translateY(-10px);
+  }
+  100% {
+    opacity: 1;
+    transform: scale(1) translateY(0);
+  }
+}
+
+// Menu Categories avec animations optimisées
+.menu-category {
+  animation: slideInLeft 0.4s ease-out;
+  
+  &:nth-child(1) { animation-delay: 0.05s; }
+  &:nth-child(2) { animation-delay: 0.1s; }
+  &:nth-child(3) { animation-delay: 0.15s; }
+  &:nth-child(4) { animation-delay: 0.2s; }
+}
+
+@keyframes slideInLeft {
+  0% {
+    opacity: 0;
+    transform: translateX(-20px);
+  }
+  100% {
+    opacity: 1;
+    transform: translateX(0);
+  }
+}
+
+// Category Header avec effet optimisé
+.category-header {
+  position: relative;
+  
+  &::after {
+    content: '';
+    position: absolute;
+    bottom: -4px;
+    left: 0;
+    right: 0;
+    height: 1px;
+    background: linear-gradient(90deg, 
+      rgba(59, 130, 246, 0.5) 0%, 
+      rgba(147, 51, 234, 0.5) 50%, 
+      rgba(236, 72, 153, 0.5) 100%);
+    opacity: 0.3;
+  }
+}
+
+// Menu Items avec transitions optimisées
+.menu-item {
+  position: relative;
+  transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
+  
+  &:hover {
+    transform: translateX(6px);
+    background: rgba(59, 130, 246, 0.1);
+    
+    .icon-container {
+      transform: scale(1.05);
+    }
+  }
+  
+  &.menu-item-active {
+    background: linear-gradient(135deg, 
+      rgba(59, 130, 246, 0.15) 0%, 
+      rgba(147, 51, 234, 0.15) 100%);
+    border-left: 3px solid #3b82f6;
+    color: #1f2937;
+    box-shadow: 0 4px 15px rgba(59, 130, 246, 0.15);
+    
+    &::before {
+      content: '';
+      position: absolute;
+      top: 0;
+      left: 0;
+      right: 0;
+      bottom: 0;
+      background: linear-gradient(135deg, 
+        rgba(59, 130, 246, 0.05) 0%, 
+        rgba(147, 51, 234, 0.05) 100%);
+      border-radius: 12px;
+      z-index: -1;
+    }
+  }
+}
+
+// Icon Container avec transition optimisée
+.icon-container {
+  transition: transform 0.2s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+// Sub-items avec animations optimisées
+.sub-items {
+  animation: accordionOpen 0.3s ease-out;
+  
+  .sub-item {
+    opacity: 0;
+    animation: fadeInUp 0.2s ease-out forwards;
+    
+    &:nth-child(1) { animation-delay: 0.05s; }
+    &:nth-child(2) { animation-delay: 0.1s; }
+    &:nth-child(3) { animation-delay: 0.15s; }
+    
+    &.sub-item-active {
+      background: rgba(59, 130, 246, 0.1);
+      color: #1f2937;
+      border-left: 2px solid #3b82f6;
+    }
+  }
+}
+
+@keyframes accordionOpen {
+  0% {
+    max-height: 0;
+    opacity: 0;
+  }
+  100% {
+    max-height: 200px;
+    opacity: 1;
+  }
+}
+
+@keyframes fadeInUp {
+  0% {
+    opacity: 0;
+    transform: translateY(8px);
+  }
+  100% {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+// Tooltip optimisé
+.tooltip {
+  backdrop-filter: blur(10px);
+  border: 1px solid rgba(229, 231, 235, 0.3);
+  
+  &::before {
+    content: '';
+    position: absolute;
+    left: -6px;
+    top: 50%;
+    transform: translateY(-50%);
+    border: 6px solid transparent;
+    border-right-color: rgba(31, 41, 55, 0.9);
+  }
+}
+
+// Responsive Design optimisé
+@media (max-width: 1024px) {
+  .sidebar-container {
+    transform: translateX(-100%);
+    
+    &.open {
+      transform: translateX(0);
+    }
+  }
+}
+
+// Optimisations de performance
+.sidebar-container {
+  // Optimisation GPU pour la sidebar
+  transform: translateZ(0);
+  will-change: width, transform;
+  backface-visibility: hidden;
+}
+
+.menu-item,
+.sub-item {
+  // Optimisation GPU pour les éléments de menu
+  transform: translateZ(0);
+  backface-visibility: hidden;
+}
+
+.icon-container {
+  // Optimisation pour les icônes
+  transform: translateZ(0);
+}
+
+// Accessibilité améliorée
+@media (prefers-reduced-motion: reduce) {
+  .sidebar-container,
+  .sidebar-container * {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+  }
+}
+
+// Print Styles
+@media print {
+  .sidebar-container {
+    display: none;
+  }
+}

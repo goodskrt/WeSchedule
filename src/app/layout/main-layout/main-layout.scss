@@ -1,0 +1,205 @@
+/* Main Layout - Structure Fixe Sans Scroll Global */
+
+:host {
+  display: block;
+  height: 100vh;
+  overflow: hidden;
+}
+
+/* Layout principal */
+.app-layout {
+  height: 100vh;
+  display: flex;
+  overflow: hidden;
+  background: #f8fafc;
+}
+
+/* Zone principale ajustée à la sidebar */
+.main-area {
+  height: 100vh;
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+  transition: margin-left 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+  margin-left: 280px; /* Largeur sidebar étendue */
+  flex: 1;
+}
+
+.main-area.sidebar-collapsed {
+  margin-left: 80px; /* Largeur sidebar réduite */
+}
+
+/* Navbar fixe */
+.navbar-container {
+  flex-shrink: 0;
+  z-index: 30;
+}
+
+/* Contenu principal scrollable */
+.page-content {
+  flex: 1;
+  overflow-y: auto;
+  overflow-x: hidden;
+  padding: 1.5rem;
+  scroll-behavior: smooth;
+  background: linear-gradient(135deg, 
+    rgba(249, 250, 251, 1) 0%,
+    rgba(239, 246, 255, 0.6) 25%,
+    rgba(245, 243, 255, 0.4) 50%,
+    rgba(253, 242, 248, 0.3) 75%,
+    rgba(249, 250, 251, 1) 100%);
+  background-size: 400% 400%;
+  animation: backgroundShift 20s ease infinite;
+}
+
+@keyframes backgroundShift {
+  0%, 100% { background-position: 0% 50%; }
+  50% { background-position: 100% 50%; }
+}
+
+/* Breadcrumb amélioré */
+nav[aria-label="Breadcrumb"] {
+  backdrop-filter: blur(20px);
+  -webkit-backdrop-filter: blur(20px);
+  border: 1px solid rgba(229, 231, 235, 0.3);
+  box-shadow: 
+    0 8px 32px rgba(0, 0, 0, 0.06),
+    inset 0 1px 0 rgba(255, 255, 255, 0.5);
+  
+  &::before {
+    content: '';
+    position: absolute;
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    background: linear-gradient(135deg, 
+      rgba(255, 255, 255, 0.8) 0%, 
+      rgba(255, 255, 255, 0.6) 100%);
+    border-radius: 0.75rem;
+    z-index: -1;
+  }
+  
+  a {
+    transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+    
+    &:hover {
+      transform: translateY(-1px);
+      text-shadow: 0 2px 8px rgba(59, 130, 246, 0.2);
+    }
+  }
+}
+
+/* Animations d'entrée */
+.animate-fade-in {
+  animation: fadeIn 0.5s ease-out;
+}
+
+@keyframes fadeIn {
+  0% {
+    opacity: 0;
+    transform: translateY(20px);
+  }
+  100% {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+/* Overlay mobile pour sidebar */
+.sidebar-overlay {
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background-color: rgba(0, 0, 0, 0.5);
+  z-index: 35;
+  backdrop-filter: blur(4px);
+  -webkit-backdrop-filter: blur(4px);
+}
+
+/* Responsive design */
+@media (max-width: 1024px) {
+  .main-area {
+    margin-left: 0 !important;
+  }
+}
+
+@media (max-width: 768px) {
+  .page-content {
+    padding: 1rem;
+  }
+  
+  nav[aria-label="Breadcrumb"] {
+    margin-bottom: 1rem;
+    padding: 0.75rem;
+  }
+}
+
+/* Optimisations de performance */
+.main-area,
+.page-content {
+  transform: translateZ(0);
+  backface-visibility: hidden;
+  perspective: 1000px;
+}
+
+/* Scrollbar personnalisée pour le contenu principal */
+.page-content {
+  scrollbar-width: thin;
+  scrollbar-color: rgba(156, 163, 175, 0.5) transparent;
+}
+
+.page-content::-webkit-scrollbar {
+  width: 6px;
+}
+
+.page-content::-webkit-scrollbar-track {
+  background: transparent;
+}
+
+.page-content::-webkit-scrollbar-thumb {
+  background-color: rgba(156, 163, 175, 0.5);
+  border-radius: 3px;
+  transition: background-color 0.2s ease;
+}
+
+.page-content::-webkit-scrollbar-thumb:hover {
+  background-color: rgba(156, 163, 175, 0.8);
+}
+
+/* Accessibilité */
+@media (prefers-reduced-motion: reduce) {
+  .main-area,
+  .page-content,
+  nav[aria-label="Breadcrumb"] a {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+  }
+  
+  .page-content {
+    animation: none;
+  }
+}
+
+/* Print styles */
+@media print {
+  .main-area {
+    margin-left: 0 !important;
+  }
+  
+  .page-content {
+    overflow: visible !important;
+    height: auto !important;
+    background: white !important;
+    animation: none !important;
+  }
+  
+  nav[aria-label="Breadcrumb"] {
+    background: white !important;
+    box-shadow: none !important;
+    border: 1px solid #e5e7eb !important;
+  }
+}

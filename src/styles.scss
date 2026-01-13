@@ -1,1 +1,272 @@
-/* You can add global styles to this file, and also import other style files */
+/* Utilitaires personnalisés */
+@use "./tailwind-utilities.scss";
+
+/* Tailwind CSS directives */
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+/* CORRECTION MAJEURE DU SCROLL - Layout fixe 100vh */
+
+/* Reset et base pour layout fixe */
+* {
+  box-sizing: border-box;
+  margin: 0;
+  padding: 0;
+}
+
+html, body {
+  height: 100%;
+  font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', 'Roboto', 'Oxygen',
+    'Ubuntu', 'Cantarell', 'Fira Sans', 'Droid Sans', 'Helvetica Neue',
+    sans-serif;
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+}
+
+/* App root - Conteneur principal */
+app-root {
+  display: block;
+  min-height: 100vh;
+}
+
+/* Layout principal - Seulement pour les pages avec MainLayout */
+.app-layout {
+  height: 100vh;
+  display: flex;
+  overflow: hidden;
+}
+
+/* Empêche le scroll global seulement dans le layout principal */
+.app-layout html,
+.app-layout body {
+  overflow: hidden;
+}
+
+/* Layout principal - Flex horizontal sans scroll */
+.app-layout {
+  height: 100vh;
+  display: flex;
+  overflow: hidden;
+}
+
+/* Sidebar - Fixe avec scroll interne */
+.sidebar-container {
+  position: fixed !important;
+  top: 0;
+  left: 0;
+  height: 100vh !important;
+  z-index: 40;
+  overflow: hidden;
+  display: flex;
+  flex-direction: column;
+  background: white;
+  border-right: 1px solid #e5e7eb;
+  transition: width 0.3s ease, transform 0.3s ease;
+}
+
+/* Contenu de la sidebar avec scroll indépendant */
+.sidebar-content {
+  flex: 1;
+  overflow-y: auto;
+  overflow-x: hidden;
+  padding: 1rem;
+  scroll-behavior: smooth;
+}
+
+/* Zone principale - Ajustée à la sidebar */
+.main-area {
+  height: 100vh;
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+  transition: margin-left 0.3s ease;
+  margin-left: 280px; /* Largeur sidebar étendue */
+}
+
+.main-area.sidebar-collapsed {
+  margin-left: 80px; /* Largeur sidebar réduite */
+}
+
+/* Navbar - Fixe en haut */
+.navbar-container {
+  position: sticky;
+  top: 0;
+  z-index: 30;
+  flex-shrink: 0;
+  background: white;
+  border-bottom: 1px solid #e5e7eb;
+}
+
+/* Contenu principal - Scrollable indépendamment */
+.page-content {
+  flex: 1;
+  overflow-y: auto;
+  overflow-x: hidden;
+  padding: 1.5rem;
+  scroll-behavior: smooth;
+  background: #f8fafc;
+}
+
+/* Modales - Positionnement fixe au centre de l'écran */
+.modal-overlay {
+  position: fixed !important;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background-color: rgba(0, 0, 0, 0.5);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 50;
+  padding: 1rem;
+  overflow-y: auto;
+}
+
+.modal-content {
+  background: white;
+  border-radius: 0.75rem;
+  box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.25);
+  max-width: 90vw;
+  max-height: 90vh;
+  overflow-y: auto;
+  position: relative;
+  margin: auto;
+}
+
+/* Scrollbar personnalisée pour tous les éléments scrollables */
+.sidebar-content,
+.page-content,
+.modal-content {
+  scrollbar-width: thin;
+  scrollbar-color: rgba(156, 163, 175, 0.5) transparent;
+}
+
+.sidebar-content::-webkit-scrollbar,
+.page-content::-webkit-scrollbar,
+.modal-content::-webkit-scrollbar {
+  width: 6px;
+}
+
+.sidebar-content::-webkit-scrollbar-track,
+.page-content::-webkit-scrollbar-track,
+.modal-content::-webkit-scrollbar-track {
+  background: transparent;
+}
+
+.sidebar-content::-webkit-scrollbar-thumb,
+.page-content::-webkit-scrollbar-thumb,
+.modal-content::-webkit-scrollbar-thumb {
+  background-color: rgba(156, 163, 175, 0.5);
+  border-radius: 3px;
+  transition: background-color 0.2s ease;
+}
+
+.sidebar-content::-webkit-scrollbar-thumb:hover,
+.page-content::-webkit-scrollbar-thumb:hover,
+.modal-content::-webkit-scrollbar-thumb:hover {
+  background-color: rgba(156, 163, 175, 0.8);
+}
+
+/* Responsive - Mobile */
+@media (max-width: 1024px) {
+  .sidebar-container {
+    transform: translateX(-100%);
+  }
+  
+  .sidebar-container.open {
+    transform: translateX(0);
+  }
+  
+  .main-area {
+    margin-left: 0 !important;
+  }
+  
+  /* Overlay pour fermer la sidebar sur mobile */
+  .sidebar-overlay {
+    position: fixed;
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    background-color: rgba(0, 0, 0, 0.5);
+    z-index: 35;
+  }
+}
+
+/* Classes utilitaires pour le layout */
+.h-screen-fixed {
+  height: 100vh;
+}
+
+.overflow-hidden-fixed {
+  overflow: hidden;
+}
+
+.flex-col-fixed {
+  display: flex;
+  flex-direction: column;
+}
+
+.flex-1-scroll {
+  flex: 1;
+  overflow-y: auto;
+  overflow-x: hidden;
+}
+
+/* Optimisations de performance */
+.gpu-accelerated {
+  transform: translateZ(0);
+  will-change: transform;
+  backface-visibility: hidden;
+}
+
+/* Prévention du scroll sur le body quand une modale est ouverte */
+body.modal-open {
+  overflow: hidden !important;
+}
+
+/* Classe pour forcer l'ouverture d'une modale (pour test) */
+.force-modal-open {
+  overflow: hidden !important;
+}
+
+/* Classes pour les animations fluides */
+.transition-smooth {
+  transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+/* Amélioration des performances de scroll */
+.scroll-smooth {
+  scroll-behavior: smooth;
+}
+
+/* Réduction des animations pour l'accessibilité */
+@media (prefers-reduced-motion: reduce) {
+  .transition-smooth,
+  .sidebar-container,
+  .main-area {
+    transition: none !important;
+  }
+  
+  .scroll-smooth {
+    scroll-behavior: auto;
+  }
+}
+
+/* Print styles */
+@media print {
+  .sidebar-container {
+    display: none !important;
+  }
+  
+  .main-area {
+    margin-left: 0 !important;
+  }
+  
+  .page-content {
+    overflow: visible !important;
+    height: auto !important;
+  }
+}

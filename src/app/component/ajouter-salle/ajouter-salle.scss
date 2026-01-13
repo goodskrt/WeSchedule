@@ -1,0 +1,135 @@
+// Add Room Component Styles - Optimized
+
+.modal-overlay {
+  animation: fadeIn 0.2s ease-out;
+}
+
+.modal-content {
+  animation: slideUp 0.3s ease-out;
+}
+
+.equipment-category {
+  @apply border border-gray-200 rounded-lg p-4;
+  
+  .category-header {
+    @apply font-semibold text-gray-900 mb-3 flex items-center gap-2;
+    
+    .category-count {
+      @apply w-6 h-6 bg-primary-100 text-primary-600 rounded-full flex items-center justify-center text-sm;
+    }
+  }
+  
+  .equipment-grid {
+    @apply grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-3;
+  }
+}
+
+.equipment-item {
+  @apply flex items-center p-3 border border-gray-200 rounded-lg cursor-pointer;
+  @apply hover:bg-gray-50 transition-colors;
+  
+  &.selected {
+    @apply bg-primary-50 border-primary-300;
+  }
+  
+  input[type="checkbox"] {
+    @apply w-4 h-4 text-primary-600 border-gray-300 rounded focus:ring-primary-500;
+  }
+  
+  .equipment-info {
+    @apply ml-3 flex items-center gap-2;
+    
+    .equipment-icon {
+      @apply text-lg;
+    }
+    
+    .equipment-name {
+      @apply font-medium text-gray-900;
+    }
+  }
+}
+
+.info-box {
+  @apply border rounded-lg p-4;
+  
+  &.info {
+    @apply bg-blue-50 border-blue-200;
+    
+    .info-icon {
+      @apply text-blue-600;
+    }
+    
+    .info-title {
+      @apply font-medium text-blue-900;
+    }
+    
+    .info-text {
+      @apply text-sm text-blue-700;
+    }
+  }
+  
+  &.success {
+    @apply bg-green-50 border-green-200;
+    
+    .success-title {
+      @apply font-medium text-green-900;
+    }
+  }
+}
+
+.equipment-summary {
+  .equipment-tags {
+    @apply flex flex-wrap gap-2;
+    
+    .equipment-tag {
+      @apply inline-flex items-center gap-1 px-2 py-1;
+      @apply bg-green-100 text-green-800 rounded-full text-sm;
+    }
+  }
+}
+
+.capacity-recommendation {
+  @apply text-blue-600 text-sm mt-1;
+}
+
+.loading-spinner {
+  @apply w-5 h-5 border-2 border-white border-t-transparent rounded-full animate-spin;
+}
+
+// Custom select styles
+select.field-input {
+  @apply appearance-none bg-white;
+  background-image: url("data:image/svg+xml,%3csvg xmlns='http://www.w3.org/2000/svg' fill='none' viewBox='0 0 20 20'%3e%3cpath stroke='%236b7280' stroke-linecap='round' stroke-linejoin='round' stroke-width='1.5' d='m6 8 4 4 4-4'/%3e%3c/svg%3e");
+  background-position: right 0.5rem center;
+  background-repeat: no-repeat;
+  background-size: 1.5em 1.5em;
+  padding-right: 2.5rem;
+}
+
+// Animation keyframes
+@keyframes fadeIn {
+  from { opacity: 0; }
+  to { opacity: 1; }
+}
+
+@keyframes slideUp {
+  from {
+    opacity: 0;
+    transform: translateY(20px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+// Responsive adjustments
+@media (max-width: 768px) {
+  .modal-content {
+    @apply max-w-full m-2;
+  }
+  
+  .equipment-grid {
+    @apply grid-cols-1 gap-2;
+  }
+}

@@ -1,0 +1,155 @@
+<!-- Sidebar Fixe avec Scroll Indépendant -->
+<aside 
+  class="sidebar-container bg-white/95 backdrop-blur-xl border-r border-gray-200/50 shadow-xl transition-all duration-300 ease-in-out z-40 flex flex-col"
+  [class.sidebar-collapsed]="isCollapsed()"
+  [class.sidebar-expanded]="!isCollapsed()"
+  [class.sidebar-hovered]="isHovered()"
+  (mouseenter)="onMouseEnter()"
+  (mouseleave)="onMouseLeave()"
+>
+  <!-- Background animé -->
+  <div class="animated-bg-light absolute inset-0"></div>
+
+  <!-- Contenu de la sidebar avec scroll indépendant -->
+  <div class="sidebar-content relative z-10 flex flex-col h-full">
+    <!-- En-tête avec logo et bouton de réduction -->
+    <div class="flex items-center justify-between p-4 border-b border-gray-200/50 flex-shrink-0">
+      <div class="logo-container flex items-center gap-3">
+        <div class="w-10 h-10 bg-gradient-to-br from-primary-500 to-primary-700 rounded-xl flex items-center justify-center shadow-lg">
+          <app-svg-icon icon="academic-cap" classes="w-6 h-6 text-white"></app-svg-icon>
+        </div>
+        <div class="institution-info transition-all duration-300" [class.opacity-0]="isCollapsed() && !isHovered()">
+          <h1 class="text-lg font-bold text-gray-900">IUSJC</h1>
+          <p class="text-xs text-gray-600">Campus d'Eyang</p>
+        </div>
+      </div>
+      
+      <button 
+        (click)="toggleSidebar()"
+        class="collapse-btn p-2 rounded-lg bg-white/50 hover:bg-white/80 transition-all duration-300"
+        [class.rotate-180]="isCollapsed()"
+      >
+        <app-svg-icon icon="arrow-right" classes="w-4 h-4 text-gray-600"></app-svg-icon>
+      </button>
+    </div>
+
+    <!-- Informations de temps et utilisateur -->
+    <div class="p-4 border-b border-gray-200/50 flex-shrink-0" [class.hidden]="isCollapsed() && !isHovered()">
+      <div class="time-display text-center mb-4">
+        <div class="text-2xl font-bold text-primary-600 mb-1">{{ getFormattedTime() }}</div>
+        <div class="text-sm text-gray-600">{{ getFormattedDate() }}</div>
+        <div class="text-xs text-gray-500 mt-1">{{ getTimeGreeting() }}</div>
+      </div>
+    </div>
+
+    <!-- Navigation principale avec scroll indépendant -->
+    <nav class="sidebar-nav flex-1 overflow-y-auto overflow-x-hidden custom-scrollbar p-2">
+      <div class="space-y-2">
+        @for (category of getCategories(); track category) {
+          <div class="menu-category">
+            <!-- En-tête de catégorie -->
+            <div class="category-header px-3 py-2 mb-2" [class.hidden]="isCollapsed() && !isHovered()">
+              <div class="flex items-center gap-2">
+                <app-svg-icon [icon]="getCategoryIcon(category)" classes="w-4 h-4 text-gray-500"></app-svg-icon>
+                <span class="text-xs font-semibold text-gray-500 uppercase tracking-wide">{{ getCategoryLabel(category) }}</span>
+              </div>
+            </div>
+
+            <!-- Éléments de menu -->
+            @for (item of getMenuItemsByCategory(category); track item.path) {
+              <div class="relative">
+                <!-- Élément principal -->
+                <a 
+                  [routerLink]="item.path"
+                  routerLinkActive="menu-item-active"
+                  class="menu-item flex items-center gap-3 px-3 py-3 rounded-xl text-gray-700 hover:bg-white/60 transition-all duration-200 group relative"
+                  [title]="isCollapsed() && !isHovered() ? item.label : ''"
+                  (click)="item.subItems ? toggleExpanded(item.path) : null"
+                >
+                  <div class="icon-container w-6 h-6 flex items-center justify-center">
+                    <app-svg-icon [icon]="item.icon" classes="w-5 h-5"></app-svg-icon>
+                  </div>
+                  
+                  <span class="flex-1 font-medium transition-all duration-300" [class.opacity-0]="isCollapsed() && !isHovered()">
+                    {{ item.label }}
+                  </span>
+                  
+                  @if (item.badge) {
+                    <span class="bg-red-500 text-white text-xs px-2 py-1 rounded-full font-medium transition-all duration-300" [class.opacity-0]="isCollapsed() && !isHovered()">
+                      {{ item.badge }}
+                    </span>
+                  }
+                  
+                  @if (item.subItems) {
+                    <app-svg-icon 
+                      icon="arrow-right" 
+                      classes="w-4 h-4 transition-transform duration-200"
+                      [class.rotate-90]="isExpanded(item.path)"
+                      [class.opacity-0]="isCollapsed() && !isHovered()"
+                    ></app-svg-icon>
+                  }
+                </a>
+
+                <!-- Tooltip pour sidebar réduite -->
+                @if (isCollapsed() && !isHovered()) {
+                  <div class="tooltip absolute left-full top-1/2 transform -translate-y-1/2 ml-2 px-3 py-2 bg-gray-900 text-white text-sm rounded-lg opacity-0 group-hover:opacity-100 transition-opacity duration-200 pointer-events-none z-50 whitespace-nowrap">
+                    {{ item.label }}
+                  </div>
+                }
+
+                <!-- Sous-éléments -->
+                @if (item.subItems && isExpanded(item.path) && (!isCollapsed() || isHovered())) {
+                  <div class="sub-items ml-6 mt-2 space-y-1">
+                    @for (subItem of item.subItems; track subItem.path) {
+                      <a 
+                        [routerLink]="subItem.path"
+                        routerLinkActive="sub-item-active"
+                        class="sub-item flex items-center gap-3 px-3 py-2 rounded-lg text-gray-600 hover:bg-white/40 transition-all duration-200 text-sm"
+                      >
+                        <app-svg-icon [icon]="subItem.icon" classes="w-4 h-4"></app-svg-icon>
+                        <span>{{ subItem.label }}</span>
+                      </a>
+                    }
+                  </div>
+                }
+              </div>
+            }
+          </div>
+        }
+      </div>
+    </nav>
+
+    <!-- Actions rapides -->
+    <div class="p-4 border-t border-gray-200/50 flex-shrink-0">
+      <div class="relative">
+        <button 
+          (click)="toggleQuickActions()"
+          class="quick-actions-btn w-full bg-gradient-to-r from-primary-500 to-primary-600 text-white px-4 py-3 rounded-xl font-medium transition-all duration-300 hover:shadow-lg"
+          [class.hidden]="isCollapsed() && !isHovered()"
+        >
+          <div class="flex items-center justify-center gap-2">
+            <app-svg-icon icon="info" classes="w-5 h-5"></app-svg-icon>
+            <span>Actions rapides</span>
+          </div>
+        </button>
+
+        <!-- Menu des actions rapides -->
+        @if (showQuickActions() && (!isCollapsed() || isHovered())) {
+          <div class="quick-actions-menu absolute bottom-full left-0 right-0 mb-2 bg-white rounded-xl shadow-xl border border-gray-200 p-2">
+            @for (action of quickActions; track action.id) {
+              <button 
+                (click)="executeQuickAction(action)"
+                class="w-full flex items-center gap-3 px-3 py-2 text-gray-700 hover:bg-gray-50 rounded-lg transition-colors duration-200 text-sm"
+              >
+                <div class="w-8 h-8 rounded-lg flex items-center justify-center" [ngClass]="action.color">
+                  <app-svg-icon [icon]="action.icon" classes="w-4 h-4 text-white"></app-svg-icon>
+                </div>
+                <span>{{ action.label }}</span>
+              </button>
+            }
+          </div>
+        }
+      </div>
+    </div>
+  </div>
+</aside>
