@@ -2,8 +2,8 @@ import { Component, signal } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { SvgIconComponent } from '../../shared/svg-icon/svg-icon.component';
-import { AddEventModalComponent } from './add-event-modal.component';
-import { EditEventModalComponent } from './edit-event-modal.component';
+import { ModalSchedule } from '../../component/modal-schedule/modal-schedule';
+import { ModalAddSubject } from '../../component/modal-add-subject/modal-add-subject';
 
 interface TimeSlot {
   id: string;
@@ -37,7 +37,7 @@ interface CalendarEvent {
 
 @Component({
   selector: 'app-emploi-de-temps',
-  imports: [CommonModule, FormsModule, SvgIconComponent, AddEventModalComponent, EditEventModalComponent],
+  imports: [CommonModule, FormsModule, SvgIconComponent, ModalSchedule, ModalAddSubject],
   templateUrl: './emploi-de-temps.html',
   styleUrl: './emploi-de-temps.scss',
 })
@@ -48,9 +48,11 @@ export class EmploiDeTemps {
   protected readonly selectedTeacher = signal<string>('all');
   protected readonly selectedRoom = signal<string>('all');
   protected readonly showConflicts = signal(false);
-  protected readonly showAddEventModal = signal(false);
-  protected readonly showEditModal = signal(false);
+  protected readonly showScheduleModal = signal(false);
+  protected readonly showAddSubjectModal = signal(false);
+  protected readonly isEditMode = signal(false);
   protected readonly selectedTimeSlot = signal<{day: string, time: string} | null>(null);
+  protected readonly currentEditingCourse = signal<any>(null);
   protected readonly searchQuery = signal<string>('');
   protected readonly showAdvancedFilters = signal(false);
 
@@ -458,41 +460,93 @@ export class EmploiDeTemps {
   }
 
   addEvent() {
-    this.showAddEventModal.set(true);
+    this.isEditMode.set(false);
+    this.currentEditingCourse.set(null);
+    this.selectedTimeSlot.set(null);
+    this.showScheduleModal.set(true);
   }
 
-  closeAddEventModal() {
-    this.showAddEventModal.set(false);
+  closeScheduleModal() {
+    this.showScheduleModal.set(false);
+    this.isEditMode.set(false);
+    this.currentEditingCourse.set(null);
     this.selectedTimeSlot.set(null);
   }
 
-  closeEditModal() {
-    this.showEditModal.set(false);
-    this.selectedTimeSlot.set(null);
+  addEventToSlot(day: string, timeSlot: string) {
+    this.isEditMode.set(false);
+    this.currentEditingCourse.set(null);
+    this.selectedTimeSlot.set({day, time: timeSlot});
+    this.showScheduleModal.set(true);
   }
 
-  onEventEdited(updatedEvent: TimeSlot) {
-    if (this.selectedTimeSlot()) {
-      const {day, time} = this.selectedTimeSlot()!;
-      this.schedule.update(schedule => {
-        const newSchedule = { ...schedule };
-        newSchedule[day] = { ...newSchedule[day] };
-        newSchedule[day][time] = {
-          ...updatedEvent,
-          color: this.getColorForSchool(updatedEvent.school)
+  onScheduleSave(courseData: any) {
+    if (this.isEditMode()) {
+      // Mode édition
+      if (this.selectedTimeSlot()) {
+        const {day, time} = this.selectedTimeSlot()!;
+        this.schedule.update(schedule => {
+          const newSchedule = { ...schedule };
+          newSchedule[day] = { ...newSchedule[day] };
+          newSchedule[day][time] = {
+            id: courseData.id || Date.now().toString(),
+            startTime: time.split('-')[0],
+            endTime: time.split('-')[1],
+            subject: courseData.subject,
+            teacher: courseData.teacher,
+            room: courseData.room,
+            type: courseData.type,
+            school: courseData.school,
+            students: courseData.students || 30,
+            color: courseData.color || this.getColorForSchool(courseData.school)
+          };
+          return newSchedule;
+        });
+      }
+    } else {
+      // Mode ajout
+      if (this.selectedTimeSlot()) {
+        const {day, time} = this.selectedTimeSlot()!;
+        
+        // Vérifier les conflits avant d'ajouter
+        const conflicts = this.checkConflictsForNewEvent(day, time, courseData);
+        if (conflicts.length > 0) {
+          const conflictMessage = conflicts.join('\n');
+          if (!confirm(`Attention! Des conflits ont été détectés:\n\n${conflictMessage}\n\nVoulez-vous continuer quand même?`)) {
+            return;
+          }
+        }
+        
+        const newEvent = {
+          id: Date.now().toString(),
+          startTime: time.split('-')[0],
+          endTime: time.split('-')[1],
+          subject: courseData.subject,
+          teacher: courseData.teacher,
+          room: courseData.room,
+          type: courseData.type,
+          school: courseData.school,
+          students: courseData.students || 30,
+          color: courseData.color || this.getColorForSchool(courseData.school)
         };
-        return newSchedule;
-      });
+        
+        this.schedule.update(schedule => {
+          const newSchedule = { ...schedule };
+          newSchedule[day] = { ...newSchedule[day] };
+          newSchedule[day][time] = newEvent;
+          return newSchedule;
+        });
+      }
     }
-    this.closeEditModal();
+    this.closeScheduleModal();
   }
 
-  onEventDeleted() {
+  onScheduleDelete() {
     if (this.selectedTimeSlot()) {
       const {day, time} = this.selectedTimeSlot()!;
       this.deleteTimeSlot(day, time);
     }
-    this.closeEditModal();
+    this.closeScheduleModal();
   }
 
   onSuggestSlot(criteria: {type: string, teacher: string, room: string}) {
@@ -500,9 +554,10 @@ export class EmploiDeTemps {
     if (suggestion) {
       const message = `Créneau suggéré: ${suggestion.dayName} ${suggestion.time}\n\nVoulez-vous utiliser ce créneau?`;
       if (confirm(message)) {
-        this.closeAddEventModal();
+        this.closeScheduleModal();
         this.selectedTimeSlot.set({day: suggestion.day, time: suggestion.time});
-        this.showAddEventModal.set(true);
+        this.isEditMode.set(false);
+        this.showScheduleModal.set(true);
       }
     } else {
       alert('Aucun créneau libre trouvé pour cet enseignant et cette salle.');
@@ -568,47 +623,6 @@ export class EmploiDeTemps {
       return this.schedule()[day][time] || null;
     }
     return null;
-  }
-
-  addEventToSlot(day: string, timeSlot: string) {
-    this.selectedTimeSlot.set({day, time: timeSlot});
-    this.showAddEventModal.set(true);
-  }
-
-  onEventAdded(eventData: any) {
-    if (this.selectedTimeSlot()) {
-      const {day, time} = this.selectedTimeSlot()!;
-      
-      // Vérifier les conflits avant d'ajouter
-      const conflicts = this.checkConflictsForNewEvent(day, time, eventData);
-      if (conflicts.length > 0) {
-        const conflictMessage = conflicts.join('\n');
-        if (!confirm(`Attention! Des conflits ont été détectés:\n\n${conflictMessage}\n\nVoulez-vous continuer quand même?`)) {
-          return;
-        }
-      }
-      
-      const newEvent: TimeSlot = {
-        id: Date.now().toString(),
-        startTime: time.split('-')[0],
-        endTime: time.split('-')[1],
-        subject: eventData.subject,
-        teacher: eventData.teacher,
-        room: eventData.room,
-        type: eventData.type,
-        school: eventData.school,
-        students: eventData.students || 30,
-        color: this.getColorForSchool(eventData.school)
-      };
-      
-      this.schedule.update(schedule => {
-        const newSchedule = { ...schedule };
-        newSchedule[day] = { ...newSchedule[day] };
-        newSchedule[day][time] = newEvent;
-        return newSchedule;
-      });
-    }
-    this.closeAddEventModal();
   }
 
   checkConflictsForNewEvent(day: string, timeSlot: string, eventData: any): string[] {
@@ -678,8 +692,10 @@ export class EmploiDeTemps {
     const slot = this.schedule()[day][timeSlot];
     if (slot) {
       // Éditer un créneau existant
+      this.isEditMode.set(true);
+      this.currentEditingCourse.set(slot);
       this.selectedTimeSlot.set({day, time: timeSlot});
-      this.showEditModal.set(true);
+      this.showScheduleModal.set(true);
     } else {
       // Ajouter un nouveau créneau
       this.addEventToSlot(day, timeSlot);
@@ -1330,5 +1346,51 @@ export class EmploiDeTemps {
     }, minutes * 60 * 1000);
 
     alert(`Rappel programmé dans ${minutes} minutes pour le cours "${slot.subject}".`);
+  }
+
+  // Méthodes pour la gestion de la modale d'ajout de matière
+  openAddSubjectModal() {
+    this.showAddSubjectModal.set(true);
+  }
+
+  closeAddSubjectModal() {
+    this.showAddSubjectModal.set(false);
+  }
+
+  onSubjectAdded(subjectData: any) {
+    // Ajouter la nouvelle matière à la liste des matières disponibles
+    this.availableSubjects.update(subjects => [
+      ...subjects,
+      {
+        id: subjectData.id,
+        name: subjectData.name,
+        code: subjectData.code,
+        school: subjectData.school,
+        type: subjectData.type
+      }
+    ]);
+
+    // Afficher un message de succès
+    alert(`✅ Matière "${subjectData.name}" ajoutée avec succès !`);
+    
+    // Fermer la modale
+    this.closeAddSubjectModal();
+  }
+
+  onSubjectUpdated(subjectData: any) {
+    // Mettre à jour la matière dans la liste
+    this.availableSubjects.update(subjects => 
+      subjects.map(subject => 
+        subject.id === subjectData.id 
+          ? { ...subject, ...subjectData }
+          : subject
+      )
+    );
+
+    // Afficher un message de succès
+    alert(`✅ Matière "${subjectData.name}" modifiée avec succès !`);
+    
+    // Fermer la modale
+    this.closeAddSubjectModal();
   }
 }

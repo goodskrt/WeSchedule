@@ -1,0 +1,14 @@
+<div class="modal-overlay" (click)="onClose()">
+  <div class="modal-content" (click)="$event.stopPropagation()">
+    <div class="p-4">
+      <h2 class="text-lg font-bold mb-4">Planifier un cours</h2>
+      <p class="text-gray-600 mb-4">Cette fonctionnalité sera bientôt disponible.</p>
+      <button 
+        (click)="onClose()"
+        class="px-4 py-2 bg-primary-600 text-white rounded-lg hover:bg-primary-700"
+      >
+        Fermer
+      </button>
+    </div>
+  </div>
+</div>
