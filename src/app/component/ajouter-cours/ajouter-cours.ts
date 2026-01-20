@@ -1,4 +1,4 @@
-import { Component, signal, Input, Output, EventEmitter, OnInit } from '@angular/core';
+import { Component, signal, Input, Output, EventEmitter, OnInit, OnDestroy } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 
@@ -21,10 +21,12 @@ interface CourseForm {
   templateUrl: './ajouter-cours.html',
   styleUrl: './ajouter-cours.scss',
 })
-export class AjouterCours implements OnInit {
+export class AjouterCours implements OnInit, OnDestroy {
   @Input() course: any = null;
   @Output() close = new EventEmitter<void>();
   @Output() courseAdded = new EventEmitter<any>();
+  
+  protected readonly currentStep = signal<1 | 2>(1);
   protected readonly courseForm = signal<CourseForm>({
     name: '',
     code: '',
@@ -72,6 +74,14 @@ export class AjouterCours implements OnInit {
         prerequisites: this.course.prerequisites || ''
       });
     }
+    
+    // Bloquer le scroll de la page principale
+    document.body.classList.add('modal-open');
+  }
+
+  ngOnDestroy() {
+    // Restaurer le scroll de la page principale
+    document.body.classList.remove('modal-open');
   }
 
   updateForm(field: keyof CourseForm, value: any) {
@@ -79,6 +89,15 @@ export class AjouterCours implements OnInit {
       ...form,
       [field]: value
     }));
+    
+    // Clear error when user starts typing
+    if (this.errors()[field]) {
+      this.errors.update(errors => {
+        const newErrors = { ...errors };
+        delete newErrors[field];
+        return newErrors;
+      });
+    }
   }
 
   onTeacherChange(event: Event) {
@@ -126,7 +145,7 @@ export class AjouterCours implements OnInit {
     this.updateForm('prerequisites', target.value);
   }
 
-  validateForm(): boolean {
+  validateStep1(): boolean {
     const form = this.courseForm();
     const newErrors: {[key: string]: string} = {};
 
@@ -135,6 +154,15 @@ export class AjouterCours implements OnInit {
     if (!form.teacher) newErrors['teacher'] = 'L\'enseignant est requis';
     if (!form.school) newErrors['school'] = 'L\'école est requise';
     if (!form.department.trim()) newErrors['department'] = 'Le département est requis';
+
+    this.errors.set(newErrors);
+    return Object.keys(newErrors).length === 0;
+  }
+
+  validateStep2(): boolean {
+    const form = this.courseForm();
+    const newErrors: {[key: string]: string} = {};
+
     if (form.capacity < 1) newErrors['capacity'] = 'La capacité doit être supérieure à 0';
     if (form.duration < 30) newErrors['duration'] = 'La durée doit être d\'au moins 30 minutes';
 
@@ -142,8 +170,18 @@ export class AjouterCours implements OnInit {
     return Object.keys(newErrors).length === 0;
   }
 
+  nextStep() {
+    if (this.validateStep1()) {
+      this.currentStep.set(2);
+    }
+  }
+
+  previousStep() {
+    this.currentStep.set(1);
+  }
+
   onSubmit() {
-    if (!this.validateForm()) return;
+    if (!this.validateStep2()) return;
 
     this.isLoading.set(true);
     
@@ -158,11 +196,18 @@ export class AjouterCours implements OnInit {
   }
 
   onClose() {
+    // Restaurer le scroll avant de fermer
+    document.body.classList.remove('modal-open');
     this.close.emit();
   }
 
   getModalTitle(): string {
-    return this.course ? 'Modifier le Cours' : 'Ajouter un Nouveau Cours';
+    const baseTitle = this.course ? 'Modifier le Cours' : 'Ajouter un Nouveau Cours';
+    return `${baseTitle} - Étape ${this.currentStep()}/2`;
+  }
+
+  getStepTitle(): string {
+    return this.currentStep() === 1 ? 'Informations de base' : 'Détails et paramètres';
   }
 
   getSubmitButtonText(): string {
@@ -170,6 +215,15 @@ export class AjouterCours implements OnInit {
       return this.course ? 'Modification en cours...' : 'Ajout en cours...';
     }
     return this.course ? 'Modifier le cours' : 'Ajouter le cours';
+  }
+
+  isStep1Valid(): boolean {
+    const form = this.courseForm();
+    return form.name.trim() !== '' && 
+           form.code.trim() !== '' && 
+           form.teacher !== '' && 
+           form.school !== '' && 
+           form.department.trim() !== '';
   }
 
   resetForm() {
@@ -186,5 +240,6 @@ export class AjouterCours implements OnInit {
       prerequisites: ''
     });
     this.errors.set({});
+    this.currentStep.set(1);
   }
 }

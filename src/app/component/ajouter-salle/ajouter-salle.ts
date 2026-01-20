@@ -1,4 +1,4 @@
-import { Component, signal, Input, Output, EventEmitter, OnInit } from '@angular/core';
+import { Component, signal, Input, Output, EventEmitter, OnInit, OnDestroy } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 
@@ -26,7 +26,7 @@ interface Equipment {
   templateUrl: './ajouter-salle.html',
   styleUrl: './ajouter-salle.scss',
 })
-export class AjouterSalle implements OnInit {
+export class AjouterSalle implements OnInit, OnDestroy {
   @Input() room: any = null;
   @Output() close = new EventEmitter<void>();
   @Output() roomAdded = new EventEmitter<any>();
@@ -44,7 +44,7 @@ export class AjouterSalle implements OnInit {
 
   protected readonly isLoading = signal(false);
   protected readonly errors = signal<{[key: string]: string}>({});
-  protected readonly currentStep = signal(1);
+  protected readonly currentStep = signal<1 | 2 | 3>(1);
 
   protected readonly buildings = [
     'Bâtiment A - Administration',
@@ -89,6 +89,14 @@ export class AjouterSalle implements OnInit {
         status: this.room.status || 'available'
       });
     }
+    
+    // Bloquer le scroll de la page principale
+    document.body.classList.add('modal-open');
+  }
+
+  ngOnDestroy() {
+    // Restaurer le scroll de la page principale
+    document.body.classList.remove('modal-open');
   }
 
   updateForm(field: keyof RoomForm, value: any) {
@@ -141,9 +149,14 @@ export class AjouterSalle implements OnInit {
     if (step === 1) {
       if (!form.name.trim()) newErrors['name'] = 'Le nom de la salle est requis';
       if (!form.building) newErrors['building'] = 'Le bâtiment est requis';
+    }
+
+    if (step === 2) {
       if (form.capacity < 1) newErrors['capacity'] = 'La capacité doit être supérieure à 0';
       if (form.floor < 0) newErrors['floor'] = 'L\'étage ne peut pas être négatif';
     }
+
+    // Step 3 has no required validations (equipment is optional)
 
     this.errors.set(newErrors);
     return Object.keys(newErrors).length === 0;
@@ -151,16 +164,16 @@ export class AjouterSalle implements OnInit {
 
   nextStep() {
     if (this.validateStep(this.currentStep())) {
-      this.currentStep.update(step => Math.min(step + 1, 2));
+      this.currentStep.update(step => Math.min(step + 1, 3) as 1 | 2 | 3);
     }
   }
 
   previousStep() {
-    this.currentStep.update(step => Math.max(step - 1, 1));
+    this.currentStep.update(step => Math.max(step - 1, 1) as 1 | 2 | 3);
   }
 
   onSubmit() {
-    if (!this.validateStep(1)) return;
+    if (!this.validateStep(3)) return;
 
     this.isLoading.set(true);
     
@@ -190,11 +203,23 @@ export class AjouterSalle implements OnInit {
   }
 
   onClose() {
+    // Restaurer le scroll avant de fermer
+    document.body.classList.remove('modal-open');
     this.close.emit();
   }
 
   getModalTitle(): string {
-    return this.room ? 'Modifier la Salle' : 'Ajouter une Nouvelle Salle';
+    const baseTitle = this.room ? 'Modifier la Salle' : 'Ajouter une Salle';
+    return `${baseTitle} - Étape ${this.currentStep()}/3`;
+  }
+
+  getStepTitle(): string {
+    switch (this.currentStep()) {
+      case 1: return 'Informations de base';
+      case 2: return 'Configuration';
+      case 3: return 'Équipements';
+      default: return '';
+    }
   }
 
   getSubmitButtonText(): string {
@@ -228,14 +253,13 @@ export class AjouterSalle implements OnInit {
     return this.roomForm().equipment.length;
   }
 
-  getCapacityRecommendation(): string {
-    const type = this.roomForm().type;
-    switch (type) {
-      case 'classroom': return 'Recommandé: 20-40 places';
-      case 'lab': return 'Recommandé: 15-25 places';
-      case 'amphitheater': return 'Recommandé: 100-300 places';
-      case 'conference': return 'Recommandé: 10-50 places';
-      default: return '';
-    }
+  isStep1Valid(): boolean {
+    const form = this.roomForm();
+    return form.name.trim() !== '' && form.building !== '';
+  }
+
+  isStep2Valid(): boolean {
+    const form = this.roomForm();
+    return form.capacity > 0 && form.floor >= 0;
   }
 }

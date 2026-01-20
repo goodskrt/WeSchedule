@@ -386,7 +386,7 @@
 
 <!-- Room Details Modal -->
 @if (showDetailsModal() && selectedRoom()) {
-  <div class="modal-overlay">
+  <div class="modal-overlay modal-top">
     <div class="modal-content max-w-2xl w-full">
       <div class="p-6 border-b border-gray-200">
         <div class="flex items-center justify-between">
@@ -512,7 +512,7 @@
 
 <!-- Reservation Modal (Placeholder) -->
 @if (showReservationModal() && selectedRoom()) {
-  <div class="modal-overlay">
+  <div class="modal-overlay modal-top">
     <div class="modal-content max-w-md w-full">
       <div class="p-6 border-b border-gray-200">
         <h2 class="text-xl font-bold text-gray-900">Réserver {{ selectedRoom()!.name }}</h2>
@@ -539,7 +539,7 @@
 
 <!-- Statistics Modal -->
 @if (showStatisticsModal()) {
-  <div class="modal-overlay">
+  <div class="modal-overlay modal-top">
     <div class="modal-content max-w-6xl w-full">
       <div class="p-6 border-b border-gray-200">
         <div class="flex items-center justify-between">
@@ -678,7 +678,7 @@
 
 <!-- Calendar/Planning Modal -->
 @if (showCalendarModal()) {
-  <div class="modal-overlay">
+  <div class="modal-overlay modal-top">
     <div class="modal-content max-w-5xl w-full">
       <div class="p-6 border-b border-gray-200">
         <div class="flex items-center justify-between">
@@ -796,7 +796,7 @@
 
 <!-- Enhanced Reservation Modal -->
 @if (showReservationModal() && selectedRoom()) {
-  <div class="modal-overlay">
+  <div class="modal-overlay modal-top">
     <div class="modal-content max-w-2xl w-full">
       <div class="p-6 border-b border-gray-200">
         <h2 class="text-xl font-bold text-gray-900">Réserver {{ selectedRoom()!.name }}</h2>

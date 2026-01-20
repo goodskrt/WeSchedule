@@ -108,20 +108,28 @@ app-root {
   background: #f8fafc;
 }
 
-/* Modales - Positionnement fixe au centre de l'écran */
+/* Modales - Positionnement fixe vers le haut de l'écran */
 .modal-overlay {
   position: fixed !important;
   top: 0;
   left: 0;
   right: 0;
   bottom: 0;
-  background-color: rgba(0, 0, 0, 0.5);
+  background-color: rgba(0, 0, 0, 0.6);
   display: flex;
-  align-items: center;
+  align-items: flex-start;
   justify-content: center;
-  z-index: 50;
+  z-index: 9999;
   padding: 1rem;
   overflow-y: auto;
+  /* Assurer le positionnement vers le haut */
+  min-height: 100vh;
+}
+
+/* Variante pour modales très hautes */
+.modal-overlay.modal-top {
+  align-items: flex-start;
+  padding-top: 1rem;
 }
 
 .modal-content {
@@ -129,10 +137,64 @@ app-root {
   border-radius: 0.75rem;
   box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.25);
   max-width: 90vw;
-  max-height: 90vh;
+  max-height: 80vh;
   overflow-y: auto;
   position: relative;
-  margin: auto;
+  /* Positionnement vers le haut */
+  margin-top: 0;
+  margin-bottom: auto;
+  transform: translateY(0);
+  /* Animation d'apparition */
+  animation: modalFadeInTop 0.2s ease-out;
+}
+
+/* Animation d'apparition des modales depuis le haut */
+@keyframes modalFadeInTop {
+  from {
+    opacity: 0;
+    transform: scale(0.95) translateY(-20px);
+  }
+  to {
+    opacity: 1;
+    transform: scale(1) translateY(0);
+  }
+}
+
+/* Ancienne animation pour compatibilité */
+@keyframes modalFadeIn {
+  from {
+    opacity: 0;
+    transform: scale(0.95) translateY(-10px);
+  }
+  to {
+    opacity: 1;
+    transform: scale(1) translateY(0);
+  }
+}
+
+/* Bloquer le scroll de la page principale quand une modale est ouverte */
+body.modal-open {
+  overflow: hidden !important;
+  position: fixed !important;
+  width: 100% !important;
+  height: 100% !important;
+}
+
+/* Empêcher le scroll sur tous les éléments de layout quand modale ouverte */
+body.modal-open .app-layout,
+body.modal-open .main-area,
+body.modal-open .page-content,
+body.modal-open .sidebar-content {
+  overflow: hidden !important;
+}
+
+/* S'assurer que la modale reste scrollable */
+body.modal-open .modal-overlay {
+  overflow-y: auto !important;
+}
+
+body.modal-open .modal-content {
+  overflow-y: auto !important;
 }
 
 /* Scrollbar personnalisée pour tous les éléments scrollables */

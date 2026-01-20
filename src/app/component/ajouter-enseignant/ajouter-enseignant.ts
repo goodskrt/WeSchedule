@@ -1,4 +1,4 @@
-import { Component, signal, Input, Output, EventEmitter, OnInit } from '@angular/core';
+import { Component, signal, Input, Output, EventEmitter, OnInit, OnDestroy } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 
@@ -27,7 +27,7 @@ interface School {
   templateUrl: './ajouter-enseignant.html',
   styleUrl: './ajouter-enseignant.scss',
 })
-export class AjouterEnseignant implements OnInit {
+export class AjouterEnseignant implements OnInit, OnDestroy {
   @Input() teacher: any = null;
   @Output() close = new EventEmitter<void>();
   @Output() teacherAdded = new EventEmitter<any>();
@@ -47,7 +47,7 @@ export class AjouterEnseignant implements OnInit {
 
   protected readonly isLoading = signal(false);
   protected readonly errors = signal<{[key: string]: string}>({});
-  protected readonly currentStep = signal(1);
+  protected readonly currentStep = signal<1 | 2 | 3>(1);
   protected readonly newQualification = signal('');
 
   protected readonly schools: School[] = [
@@ -97,6 +97,14 @@ export class AjouterEnseignant implements OnInit {
         joinDate: this.teacher.joinDate || new Date().toISOString().split('T')[0]
       });
     }
+    
+    // Bloquer le scroll de la page principale
+    document.body.classList.add('modal-open');
+  }
+
+  ngOnDestroy() {
+    // Restaurer le scroll de la page principale
+    document.body.classList.remove('modal-open');
   }
 
   updateForm(field: keyof TeacherForm, value: any) {
@@ -168,6 +176,9 @@ export class AjouterEnseignant implements OnInit {
     if (step === 2) {
       if (!form.specialization) newErrors['specialization'] = 'La spécialisation est requise';
       if (!form.department) newErrors['department'] = 'Le département est requis';
+    }
+
+    if (step === 3) {
       if (form.schools.length === 0) newErrors['schools'] = 'Au moins une école doit être sélectionnée';
       if (!form.joinDate) newErrors['joinDate'] = 'La date d\'embauche est requise';
     }
@@ -178,16 +189,16 @@ export class AjouterEnseignant implements OnInit {
 
   nextStep() {
     if (this.validateStep(this.currentStep())) {
-      this.currentStep.update(step => Math.min(step + 1, 2));
+      this.currentStep.update(step => Math.min(step + 1, 3) as 1 | 2 | 3);
     }
   }
 
   previousStep() {
-    this.currentStep.update(step => Math.max(step - 1, 1));
+    this.currentStep.update(step => Math.max(step - 1, 1) as 1 | 2 | 3);
   }
 
   onSubmit() {
-    if (!this.validateStep(2)) return;
+    if (!this.validateStep(3)) return;
 
     this.isLoading.set(true);
     
@@ -220,18 +231,45 @@ export class AjouterEnseignant implements OnInit {
   }
 
   onClose() {
+    // Restaurer le scroll avant de fermer
+    document.body.classList.remove('modal-open');
     this.close.emit();
   }
 
   getModalTitle(): string {
-    return this.teacher ? 'Modifier l\'Enseignant' : 'Ajouter un Nouvel Enseignant';
+    const baseTitle = this.teacher ? 'Modifier l\'Enseignant' : 'Ajouter un Enseignant';
+    return `${baseTitle} - Étape ${this.currentStep()}/3`;
+  }
+
+  getStepTitle(): string {
+    switch (this.currentStep()) {
+      case 1: return 'Informations personnelles';
+      case 2: return 'Spécialisation';
+      case 3: return 'Affectation & Détails';
+      default: return '';
+    }
   }
 
   getSubmitButtonText(): string {
     if (this.isLoading()) {
-      return this.teacher ? 'Modification en cours...' : 'Ajout en cours...';
+      return this.teacher ? 'Modification...' : 'Ajout...';
     }
-    return this.teacher ? 'Modifier l\'enseignant' : 'Ajouter l\'enseignant';
+    return this.teacher ? 'Modifier' : 'Ajouter';
+  }
+
+  isStep1Valid(): boolean {
+    const form = this.teacherForm();
+    return form.firstName.trim() !== '' && 
+           form.lastName.trim() !== '' && 
+           form.email.trim() !== '' && 
+           /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(form.email) &&
+           form.phone.trim() !== '' && 
+           /^[+]?[0-9\s-()]{8,}$/.test(form.phone);
+  }
+
+  isStep2Valid(): boolean {
+    const form = this.teacherForm();
+    return form.specialization !== '' && form.department !== '';
   }
 
   onSpecializationChange(event: Event) {
