@@ -69,7 +69,7 @@ public class SecurityConfig {
                 .formLogin(form -> form
                         .loginPage("/login")
                         .loginProcessingUrl("/login")
-                        .defaultSuccessUrl("/dashboard", true)
+                        .defaultSuccessUrl("/dashboard", false)
                         .failureUrl("/login?error=true")
                         .permitAll()
                 )

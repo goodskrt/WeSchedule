@@ -16,53 +16,74 @@
         .info-item:last-child { border-bottom: none; }
         .info-label { color: var(--gray-500); font-size: 0.85rem; margin-bottom: 0.25rem; }
         .info-value { color: var(--gray-900); font-weight: 500; }
-        .badge-ue { background: var(--green-100); color: var(--primary-color); padding: 0.5rem 1rem; border-radius: 1.25rem; font-size: 0.85rem; margin: 0.25rem; display: inline-block; }
+        .badge-ue { 
+            background: var(--green-100); 
+            color: var(--primary-color); 
+            padding: 0.75rem 1.25rem; 
+            border-radius: 1.25rem; 
+            font-size: 0.9rem; 
+            margin: 0.5rem 0.25rem; 
+            display: inline-block; 
+            cursor: pointer;
+            transition: all 0.2s ease;
+            border: 2px solid transparent;
+            position: relative;
+        }
+        .badge-ue:hover { 
+            background: var(--primary-color); 
+            color: white; 
+            transform: translateY(-2px);
+            box-shadow: 0 4px 12px rgba(5, 150, 105, 0.3);
+            border-color: var(--green-600);
+        }
+        .ue-tooltip {
+            position: absolute;
+            bottom: 100%;
+            left: 50%;
+            transform: translateX(-50%) translateY(-8px);
+            background: var(--gray-900);
+            color: white;
+            padding: 0.75rem 1rem;
+            border-radius: 0.5rem;
+            font-size: 0.8rem;
+            white-space: nowrap;
+            opacity: 0;
+            pointer-events: none;
+            transition: opacity 0.2s ease;
+            z-index: 1000;
+            box-shadow: 0 4px 12px rgba(0,0,0,0.2);
+        }
+        .ue-tooltip::after {
+            content: '';
+            position: absolute;
+            top: 100%;
+            left: 50%;
+            transform: translateX(-50%);
+            border: 6px solid transparent;
+            border-top-color: var(--gray-900);
+        }
+        .badge-ue:hover .ue-tooltip {
+            opacity: 1;
+        }
+        .ue-info-line {
+            display: block;
+            margin: 0.25rem 0;
+        }
+        .ue-info-line i {
+            width: 16px;
+            margin-right: 0.5rem;
+        }
         .badge-grade { background: var(--gray-100); color: var(--gray-600); padding: 0.375rem 1rem; border-radius: 1.25rem; font-size: 0.9rem; }
         .stat-box { text-align: center; padding: 1.5rem; border-radius: var(--radius-lg); background: var(--gray-50); }
         .action-btn { padding: 0.625rem 1.25rem; border-radius: var(--radius-lg); font-weight: 500; }
     </style>
 </head>
 <body>
-    <nav class="navbar navbar-expand-lg navbar-custom">
-        <div class="container-fluid">
-            <a class="navbar-brand" href="/dashboard/admin"><img th:src="@{/images/logo.jpeg}" alt="Logo">WeSchedule</a>
-            <div class="ms-auto">
-                <div class="dropdown">
-                    <a class="nav-link dropdown-toggle user-info-nav" href="#" data-bs-toggle="dropdown">
-                        <div class="user-avatar-small"><i class="fas fa-user-shield"></i></div>
-                        <div class="user-details">
-                            <div class="user-name-small" th:text="${nomComplet}">Admin</div>
-                            <div class="user-role-small">Administrateur</div>
-                        </div>
-                    </a>
-                    <ul class="dropdown-menu dropdown-menu-end">
-                        <li><a class="dropdown-item" href="/profile"><i class="fas fa-user"></i> Mon profil</a></li>
-                        <li><hr class="dropdown-divider"></li>
-                        <li><a class="dropdown-item" href="/logout"><i class="fas fa-sign-out-alt"></i> Deconnexion</a></li>
-                    </ul>
-                </div>
-            </div>
-        </div>
-    </nav>
+    <div th:replace="~{fragments/header :: admin-header}"></div>
 
     <div class="container-fluid">
         <div class="row">
-            <div class="col-lg-2 col-md-3 p-0">
-                <div class="sidebar">
-                    <div class="sidebar-menu">
-                        <div class="menu-section-title">Tableau de bord</div>
-                        <a href="/dashboard/admin" class="nav-link"><i class="fas fa-tachometer-alt"></i><span>Vue d'ensemble</span></a>
-                        <div class="menu-section-title">Gestion</div>
-                        <a href="/dashboard/admin/enseignants" class="nav-link active"><i class="fas fa-chalkboard-teacher"></i><span>Enseignants</span></a>
-                        <a href="/dashboard/admin/salles" class="nav-link"><i class="fas fa-door-open"></i><span>Salles</span></a>
-                        <a href="/dashboard/admin/cours" class="nav-link"><i class="fas fa-book"></i><span>Cours</span></a>
-                        <a href="/dashboard/admin/emplois" class="nav-link"><i class="fas fa-calendar-alt"></i><span>Emplois du temps</span></a>
-                        <div class="menu-section-title">Systeme</div>
-                        <a href="/dashboard/admin/rapports" class="nav-link"><i class="fas fa-chart-bar"></i><span>Rapports</span></a>
-                        <a href="/dashboard/admin/parametres" class="nav-link"><i class="fas fa-cog"></i><span>Parametres</span></a>
-                    </div>
-                </div>
-            </div>
+            <div th:replace="~{fragments/sidebar :: admin-sidebar('enseignants')}"></div>
 
             <div class="col-lg-10 col-md-9">
                 <div class="main-content">
@@ -128,24 +149,6 @@
                             <div class="card-custom p-4 mb-4">
                                 <h5 class="mb-3"><i class="fas fa-book me-2"></i>Unites d'enseignement</h5>
                                 <div id="uesList"><p class="text-muted">Chargement...</p></div>
-                            </div>
-
-                            <div class="card-custom p-4">
-                                <h5 class="mb-3"><i class="fas fa-info-circle me-2"></i>Informations</h5>
-                                <div class="row">
-                                    <div class="col-md-6">
-                                        <div class="info-item">
-                                            <div class="info-label">Identifiant</div>
-                                            <div class="info-value" id="userId" style="font-family: monospace; font-size: 0.85rem;">-</div>
-                                        </div>
-                                    </div>
-                                    <div class="col-md-6">
-                                        <div class="info-item">
-                                            <div class="info-label">Role</div>
-                                            <div class="info-value"><span class="badge bg-success">Enseignant</span></div>
-                                        </div>
-                                    </div>
-                                </div>
                             </div>
                         </div>
                     </div>
@@ -222,16 +225,52 @@
             document.getElementById('phone').textContent = enseignant.phone || 'Non renseigne';
             document.getElementById('grade').textContent = enseignant.grade || 'Non defini';
             document.getElementById('grade').style.display = enseignant.grade ? 'inline-block' : 'none';
-            document.getElementById('userId').textContent = enseignant.idUser;
             document.getElementById('nbUes').textContent = enseignant.ues ? enseignant.ues.length : 0;
             document.getElementById('nbDispos').textContent = enseignant.nbDisponibilites || 0;
             
             const uesList = document.getElementById('uesList');
             if (enseignant.ues && enseignant.ues.length > 0) {
-                uesList.innerHTML = enseignant.ues.map(ue => `<span class="badge-ue"><i class="fas fa-book me-1"></i>${ue.code ? ue.code + ' - ' : ''}${ue.intitule}</span>`).join('');
+                uesList.innerHTML = enseignant.ues.map(ue => {
+                    const tooltipContent = `
+                        <span class="ue-info-line"><i class="fas fa-code"></i><strong>Code:</strong> ${ue.code || 'N/A'}</span>
+                        <span class="ue-info-line"><i class="fas fa-book"></i><strong>Intitulé:</strong> ${ue.intitule}</span>
+                        <span class="ue-info-line"><i class="fas fa-clock"></i><strong>Durée:</strong> ${ue.duree ? ue.duree + ' min' : 'N/A'}</span>
+                    `;
+                    return `
+                        <span class="badge-ue" onclick="showUEDetails('${ue.idUE}')">
+                            <i class="fas fa-book me-2"></i>${ue.code ? ue.code + ' - ' : ''}${ue.intitule}
+                            <div class="ue-tooltip">${tooltipContent}</div>
+                        </span>
+                    `;
+                }).join('');
             } else {
                 uesList.innerHTML = '<p class="text-muted"><i class="fas fa-info-circle me-2"></i>Aucune UE assignee</p>';
             }
+        }
+
+        function showUEDetails(ueId) {
+            const ue = enseignant.ues.find(u => u.idUE === ueId);
+            if (!ue) return;
+            
+            const detailsHtml = `
+                <div class="mb-3">
+                    <h6 class="text-primary mb-3"><i class="fas fa-book me-2"></i>${ue.intitule}</h6>
+                    <div class="row">
+                        <div class="col-6">
+                            <p class="mb-2"><strong><i class="fas fa-code me-2"></i>Code:</strong> ${ue.code || 'Non défini'}</p>
+                            <p class="mb-2"><strong><i class="fas fa-clock me-2"></i>Durée:</strong> ${ue.duree ? ue.duree + ' minutes' : 'Non définie'}</p>
+                        </div>
+                        <div class="col-6">
+                            <p class="mb-2"><strong><i class="fas fa-hashtag me-2"></i>ID:</strong> <small style="font-family: monospace;">${ue.idUE}</small></p>
+                        </div>
+                    </div>
+                </div>
+            `;
+            
+            document.getElementById('resultTitle').innerHTML = '<i class="fas fa-info-circle text-primary me-2"></i>Détails de l\'UE';
+            document.getElementById('resultBody').innerHTML = detailsHtml;
+            document.getElementById('resultBtn').onclick = () => resultModal.hide();
+            resultModal.show();
         }
 
         function showDeleteModal() { deleteModal.show(); }

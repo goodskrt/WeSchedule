@@ -1,0 +1,170 @@
+<!DOCTYPE html>
+<html lang="fr" xmlns:th="http://www.thymeleaf.org">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title th:text="${mode == 'creation' ? 'Nouveau Cours' : 'Modifier Cours'} + ' - WeSchedule'">Cours - WeSchedule</title>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <link rel="stylesheet" href="/css/dashboard-professional.css">
+    <link rel="stylesheet" href="/css/modern-dashboard.css">
+</head>
+<body>
+    <div th:replace="~{fragments/header :: admin-header}"></div>
+
+    <div class="container-fluid">
+        <div class="row">
+            <div th:replace="~{fragments/sidebar :: admin-sidebar('cours')}"></div>
+
+            <div class="col-lg-10 col-md-9">
+                <div class="main-content">
+                    <!-- Breadcrumb -->
+                    <nav aria-label="breadcrumb" class="mb-4">
+                        <ol class="breadcrumb">
+                            <li class="breadcrumb-item"><a th:href="@{/admin/cours}">Cours</a></li>
+                            <li class="breadcrumb-item active" th:text="${mode == 'creation' ? 'Nouveau' : 'Modifier'}">Nouveau</li>
+                        </ol>
+                    </nav>
+
+                    <!-- Header -->
+                    <div class="mb-4">
+                        <h2 class="page-title" th:text="${mode == 'creation' ? 'Nouveau Cours' : 'Modifier le Cours'}">Nouveau Cours</h2>
+                        <p class="page-subtitle" th:text="${mode == 'creation' ? 'Créez un nouveau cours pour une UE' : 'Modifiez les informations du cours'}"></p>
+                    </div>
+
+                    <!-- Alerts -->
+                    <div th:if="${success}" class="alert alert-success alert-dismissible fade show">
+                        <i class="fas fa-check-circle me-2"></i>
+                        <span th:text="${success}"></span>
+                        <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+                    </div>
+                    <div th:if="${error}" class="alert alert-danger alert-dismissible fade show">
+                        <i class="fas fa-exclamation-circle me-2"></i>
+                        <span th:text="${error}"></span>
+                        <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+                    </div>
+
+                    <!-- Info Note -->
+                    <div th:if="${mode == 'modification' && heuresEffectuees != null}" class="info-note mb-4">
+                        <i class="fas fa-info-circle"></i>
+                        <div class="info-note-content">
+                            <div class="info-note-title">Progression actuelle</div>
+                            <p class="info-note-text">
+                                <span th:text="${heuresEffectuees}">0</span>h effectuées sur 
+                                <span th:text="${cours.ue.duree}">0</span>h 
+                                (<span th:text="${#numbers.formatDecimal(pourcentage, 1, 1)}">0</span>%)
+                            </p>
+                        </div>
+                    </div>
+
+                    <!-- Form -->
+                    <div class="section-card">
+                        <form th:action="${mode == 'creation' ? '/admin/cours/creer' : '/admin/cours/modifier/' + cours.idCours}" 
+                              method="post">
+                            <div class="row">
+                                <div class="col-md-6 mb-3">
+                                    <label for="intitule" class="form-label">
+                                        <i class="fas fa-book me-1"></i> Intitulé du cours *
+                                    </label>
+                                    <input type="text" class="form-control" id="intitule" name="intitule" 
+                                           th:value="${cours.intitule}" required>
+                                </div>
+
+                                <div class="col-md-6 mb-3">
+                                    <label for="typeCours" class="form-label">
+                                        <i class="fas fa-tag me-1"></i> Type de cours *
+                                    </label>
+                                    <select class="form-select" id="typeCours" name="typeCours" required>
+                                        <option value="">-- Sélectionner --</option>
+                                        <option value="CM" th:selected="${cours.typeCours?.name() == 'CM'}">CM - Cours Magistral</option>
+                                        <option value="TD" th:selected="${cours.typeCours?.name() == 'TD'}">TD - Travaux Dirigés</option>
+                                        <option value="TP" th:selected="${cours.typeCours?.name() == 'TP'}">TP - Travaux Pratiques</option>
+                                    </select>
+                                </div>
+
+                                <div class="col-md-6 mb-3">
+                                    <label for="ueId" class="form-label">
+                                        <i class="fas fa-graduation-cap me-1"></i> Unité d'Enseignement *
+                                    </label>
+                                    <select class="form-select" id="ueId" name="ueId" required onchange="updateDureeInfo()">
+                                        <option value="">-- Sélectionner une UE --</option>
+                                        <option th:each="ue : ${ues}" 
+                                                th:value="${ue.idUE}" 
+                                                th:text="${ue.intitule + ' (' + ue.duree + 'h) - Semestre ' + ue.semestre + ' - ' + ue.statut}"
+                                                th:selected="${cours.ue?.idUE == ue.idUE}"
+                                                th:data-duree="${ue.duree}">
+                                        </option>
+                                    </select>
+                                    <small class="text-muted">Seules les UE actives sont affichées</small>
+                                </div>
+
+                                <div class="col-md-6 mb-3">
+                                    <label for="duree" class="form-label">
+                                        <i class="fas fa-clock me-1"></i> Heures restantes
+                                    </label>
+                                    <input type="number" class="form-control" id="duree" name="duree" 
+                                           th:value="${cours.duree}" min="0">
+                                    <small class="text-muted" id="dureeInfo">
+                                        Laissez vide pour utiliser la durée totale de l'UE
+                                    </small>
+                                </div>
+                            </div>
+
+                            <div class="info-note">
+                                <i class="fas fa-lightbulb"></i>
+                                <div class="info-note-content">
+                                    <div class="info-note-title">À propos de la durée</div>
+                                    <p class="info-note-text mb-0">
+                                        La durée représente le nombre d'heures <strong>restantes</strong> pour ce cours. 
+                                        Elle sera décrémentée automatiquement lors de la planification des séances.
+                                    </p>
+                                </div>
+                            </div>
+
+                            <div class="mt-4 d-flex gap-2">
+                                <button type="submit" class="btn btn-primary">
+                                    <i class="fas fa-save me-1"></i>
+                                    <span th:text="${mode == 'creation' ? 'Créer le cours' : 'Enregistrer les modifications'}">Créer</span>
+                                </button>
+                                <a th:href="@{/admin/cours}" class="btn btn-secondary">
+                                    <i class="fas fa-times me-1"></i> Annuler
+                                </a>
+                            </div>
+                        </form>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js"></script>
+    <script>
+        function updateDureeInfo() {
+            const ueSelect = document.getElementById('ueId');
+            const dureeInput = document.getElementById('duree');
+            const dureeInfo = document.getElementById('dureeInfo');
+            
+            if (ueSelect.value) {
+                const selectedOption = ueSelect.options[ueSelect.selectedIndex];
+                const dureeTotale = selectedOption.getAttribute('data-duree');
+                
+                if (dureeTotale) {
+                    dureeInfo.textContent = `Durée totale de l'UE: ${dureeTotale}h. Laissez vide pour utiliser cette valeur.`;
+                    
+                    // Si le champ est vide, suggérer la durée totale
+                    if (!dureeInput.value) {
+                        dureeInput.placeholder = dureeTotale + 'h';
+                    }
+                }
+            } else {
+                dureeInfo.textContent = 'Laissez vide pour utiliser la durée totale de l\'UE';
+                dureeInput.placeholder = '';
+            }
+        }
+
+        // Initialiser au chargement
+        document.addEventListener('DOMContentLoaded', updateDureeInfo);
+    </script>
+</body>
+</html>

@@ -19,11 +19,15 @@ public class Cours {
     @GeneratedValue
     private UUID idCours;
 
-    private String intitule;
+    private String intitule; //A supprimer car la concatenation du type de cours et de l'ue d'enseignant est suffisant
 
     @Enumerated(EnumType.STRING)
     private TypeCours typeCours;
 
-    private Integer duree; // en minutes
+    private Integer duree; // Nombre d'heures RESTANTES pour cette UE (ex: 45h restantes sur 60h total)
+
+    @ManyToOne(fetch = FetchType.LAZY)
+    @JoinColumn(name = "ue_id")
+    private UE ue;
 
 }

@@ -9,45 +9,11 @@
     <link rel="stylesheet" href="/css/dashboard-professional.css">
 </head>
 <body>
-    <nav class="navbar navbar-expand-lg navbar-custom">
-        <div class="container-fluid">
-            <a class="navbar-brand" href="/dashboard/enseignant"><img src="/images/logo.jpeg" alt="Logo">WeSchedule</a>
-            <div class="collapse navbar-collapse">
-                <ul class="navbar-nav ms-auto">
-                    <li class="nav-item dropdown">
-                        <a class="nav-link p-0" href="#" data-bs-toggle="dropdown">
-                            <div class="user-info-nav">
-                                <div class="user-avatar-small"><i class="fas fa-chalkboard-teacher"></i></div>
-                                <div class="user-details"><div class="user-name-small" th:text="${nomComplet}">Enseignant</div><div class="user-role-small">Enseignant</div></div>
-                            </div>
-                        </a>
-                        <ul class="dropdown-menu dropdown-menu-end">
-                            <li><a class="dropdown-item" href="/dashboard/enseignant/profil"><i class="fas fa-user"></i> Mon profil</a></li>
-                            <li><hr class="dropdown-divider"></li>
-                            <li><form th:action="@{/logout}" method="post" style="margin: 0;"><button type="submit" class="dropdown-item"><i class="fas fa-sign-out-alt"></i> Deconnexion</button></form></li>
-                        </ul>
-                    </li>
-                </ul>
-            </div>
-        </div>
-    </nav>
+    <div th:replace="~{fragments/header :: enseignant-header}"></div>
 
     <div class="container-fluid">
         <div class="row">
-            <div class="col-lg-2 col-md-3 p-0">
-                <div class="sidebar">
-                    <div class="sidebar-menu">
-                        <div class="menu-section-title">Tableau de bord</div>
-                        <a href="/dashboard/enseignant" class="nav-link"><i class="fas fa-tachometer-alt"></i><span>Vue d'ensemble</span></a>
-                        <div class="menu-section-title">Mon activite</div>
-                        <a href="/dashboard/enseignant/cours" class="nav-link"><i class="fas fa-book"></i><span>Mes Cours</span></a>
-                        <a href="/dashboard/enseignant/emploi-temps" class="nav-link active"><i class="fas fa-calendar-alt"></i><span>Mon Emploi du temps</span></a>
-                        <a href="/dashboard/enseignant/disponibilites" class="nav-link"><i class="fas fa-clock"></i><span>Mes Disponibilites</span></a>
-                        <div class="menu-section-title">Compte</div>
-                        <a href="/dashboard/enseignant/profil" class="nav-link"><i class="fas fa-user-cog"></i><span>Mon Profil</span></a>
-                    </div>
-                </div>
-            </div>
+            <div th:replace="~{fragments/sidebar :: enseignant-sidebar('emploi-temps')}"></div>
 
             <div class="col-lg-10 col-md-9">
                 <div class="main-content">

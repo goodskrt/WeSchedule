@@ -1,5 +1,6 @@
 package com.iusjc.weschedule.models;
 
+import com.iusjc.weschedule.enums.StatutUE;
 import jakarta.persistence.*;
 import lombok.*;
 
@@ -20,7 +21,14 @@ public class UE {
     
     private String intitule;
     private String code;
-    private Integer duree;
+    private Integer duree; // Nombre d'heures TOTAL pour cette UE (ex: 60h)
+    
+    @Column(nullable = false)
+    private Integer semestre; // 1 ou 2
+    
+    @Enumerated(EnumType.STRING)
+    @Column(nullable = false)
+    private StatutUE statut; // ACTIF ou INACTIF
     
     @ManyToMany(fetch = FetchType.LAZY)
     @JoinTable(

@@ -1,0 +1,389 @@
+<!DOCTYPE html>
+<html lang="fr" xmlns:th="http://www.thymeleaf.org">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Gestion des Salles - WeSchedule</title>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <link rel="stylesheet" href="/css/dashboard-professional.css">
+    <link rel="stylesheet" href="/css/modern-dashboard.css">
+    <link rel="stylesheet" href="/css/modern-modals.css">
+    <style>
+        .page-header {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            padding: 2rem;
+            border-radius: 1rem;
+            margin-bottom: 2rem;
+        }
+        
+        .salles-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(300px, 1fr));
+            gap: 1.5rem;
+            margin-top: 2rem;
+        }
+        
+        .salle-card {
+            background: white;
+            border-radius: 1rem;
+            padding: 1.5rem;
+            box-shadow: 0 2px 8px rgba(0,0,0,0.1);
+            transition: all 0.3s ease;
+            border: 2px solid transparent;
+        }
+        
+        .salle-card:hover {
+            transform: translateY(-5px);
+            box-shadow: 0 8px 16px rgba(0,0,0,0.15);
+            border-color: #667eea;
+        }
+        
+        .salle-icon {
+            width: 60px;
+            height: 60px;
+            border-radius: 12px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 1.8rem;
+            color: white;
+            margin-bottom: 1rem;
+        }
+        
+        .salle-name {
+            font-size: 1.2rem;
+            font-weight: 600;
+            color: #1e293b;
+            margin-bottom: 0.5rem;
+        }
+        
+        .salle-type {
+            display: inline-block;
+            padding: 0.25rem 0.75rem;
+            border-radius: 1rem;
+            font-size: 0.85rem;
+            font-weight: 500;
+            margin-bottom: 1rem;
+        }
+        
+        .type-cours {
+            background: #dbeafe;
+            color: #1e40af;
+        }
+        
+        .type-td {
+            background: #fef3c7;
+            color: #92400e;
+        }
+        
+        .type-info {
+            background: #d1fae5;
+            color: #065f46;
+        }
+        
+        .type-labo {
+            background: #e0e7ff;
+            color: #4338ca;
+        }
+        
+        .capacite-badge {
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+            padding: 0.75rem;
+            background: #f8fafc;
+            border-radius: 0.5rem;
+            margin-bottom: 1rem;
+        }
+        
+        .capacite-number {
+            font-size: 1.5rem;
+            font-weight: 700;
+            color: #667eea;
+        }
+        
+        .action-buttons {
+            display: flex;
+            gap: 0.5rem;
+            margin-top: 1rem;
+        }
+        
+        .btn-action {
+            flex: 1;
+            padding: 0.5rem;
+            border: none;
+            border-radius: 0.5rem;
+            font-size: 0.9rem;
+            cursor: pointer;
+            transition: all 0.2s;
+        }
+        
+        .btn-view {
+            background: #e0e7ff;
+            color: #4338ca;
+        }
+        
+        .btn-view:hover {
+            background: #c7d2fe;
+        }
+        
+        .btn-edit {
+            background: #dbeafe;
+            color: #1e40af;
+        }
+        
+        .btn-edit:hover {
+            background: #bfdbfe;
+        }
+        
+        .btn-delete {
+            background: #fee2e2;
+            color: #991b1b;
+        }
+        
+        .btn-delete:hover {
+            background: #fecaca;
+        }
+        
+        .search-filter-section {
+            background: white;
+            padding: 1.5rem;
+            border-radius: 1rem;
+            box-shadow: 0 2px 8px rgba(0,0,0,0.1);
+            margin-bottom: 2rem;
+        }
+        
+        .filter-group {
+            display: grid;
+            grid-template-columns: 1fr 1fr auto;
+            gap: 1rem;
+            align-items: end;
+        }
+        
+        .empty-state {
+            text-align: center;
+            padding: 4rem 2rem;
+            background: white;
+            border-radius: 1rem;
+            box-shadow: 0 2px 8px rgba(0,0,0,0.1);
+        }
+        
+        .empty-state i {
+            font-size: 4rem;
+            color: #cbd5e1;
+            margin-bottom: 1rem;
+        }
+        
+        @media (max-width: 768px) {
+            .salles-grid {
+                grid-template-columns: 1fr;
+            }
+            
+            .filter-group {
+                grid-template-columns: 1fr;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div th:replace="~{fragments/header :: admin-header}"></div>
+
+    <div class="container-fluid">
+        <div class="row">
+            <div th:replace="~{fragments/sidebar :: admin-sidebar('salles')}"></div>
+
+            <div class="col-lg-10 col-md-9">
+                <div class="main-content">
+                    <!-- Page Header -->
+                    <div class="page-header">
+                        <div class="d-flex justify-content-between align-items-center">
+                            <div>
+                                <h2 class="mb-2">
+                                    <i class="fas fa-door-open me-2"></i>
+                                    Gestion des Salles
+                                </h2>
+                                <p class="mb-0 opacity-90">Gérez toutes les salles de votre établissement</p>
+                            </div>
+                            <a th:href="@{/admin/salles/nouvelle}" class="btn btn-light btn-lg">
+                                <i class="fas fa-plus me-2"></i>
+                                Nouvelle Salle
+                            </a>
+                        </div>
+                    </div>
+
+                    <!-- Search and Filter -->
+                    <div class="search-filter-section">
+                        <div class="filter-group">
+                            <div>
+                                <label class="form-label">
+                                    <i class="fas fa-search me-1"></i>
+                                    Rechercher
+                                </label>
+                                <input type="text" 
+                                       id="searchInput" 
+                                       class="form-control" 
+                                       placeholder="Nom de la salle..."
+                                       onkeyup="filterSalles()">
+                            </div>
+                            <div>
+                                <label class="form-label">
+                                    <i class="fas fa-filter me-1"></i>
+                                    Type de salle
+                                </label>
+                                <select id="typeFilter" class="form-select" onchange="filterSalles()">
+                                    <option value="">Tous les types</option>
+                                    <option th:each="type : ${typesSalle}" 
+                                            th:value="${type.name()}" 
+                                            th:text="${type}">
+                                    </option>
+                                </select>
+                            </div>
+                            <div>
+                                <button class="btn btn-secondary" onclick="resetFilters()">
+                                    <i class="fas fa-redo me-1"></i>
+                                    Réinitialiser
+                                </button>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Salles Grid -->
+                    <div th:if="${salles.isEmpty()}" class="empty-state">
+                        <i class="fas fa-door-closed"></i>
+                        <h4>Aucune salle disponible</h4>
+                        <p class="text-muted">Commencez par ajouter votre première salle</p>
+                        <a th:href="@{/admin/salles/nouvelle}" class="btn btn-primary mt-3">
+                            <i class="fas fa-plus me-2"></i>
+                            Ajouter une salle
+                        </a>
+                    </div>
+
+                    <div class="salles-grid" id="sallesGrid">
+                        <div th:each="salle : ${salles}" 
+                             class="salle-card"
+                             th:data-nom="${salle.nomSalle}"
+                             th:data-type="${salle.typeSalle.name()}">
+                            
+                            <!-- Icon -->
+                            <div class="salle-icon"
+                                 th:style="'background: linear-gradient(135deg, ' + 
+                                          (${salle.typeSalle.name() == 'SALLE_DE_COURS'} ? '#3b82f6, #2563eb' : 
+                                           (${salle.typeSalle.name() == 'SALLE_DE_TD'} ? '#f59e0b, #d97706' : 
+                                            (${salle.typeSalle.name() == 'SALLE_INFORMATIQUE'} ? '#10b981, #059669' : '#8b5cf6, #7c3aed'))) + ');'">
+                                <i class="fas" 
+                                   th:classappend="${salle.typeSalle.name() == 'SALLE_DE_COURS'} ? 'fa-chalkboard-teacher' : 
+                                                  (${salle.typeSalle.name() == 'SALLE_DE_TD'} ? 'fa-users' : 
+                                                   (${salle.typeSalle.name() == 'SALLE_INFORMATIQUE'} ? 'fa-laptop' : 'fa-flask'))">
+                                </i>
+                            </div>
+                            
+                            <!-- Name -->
+                            <div class="salle-name" th:text="${salle.nomSalle}">Nom de la salle</div>
+                            
+                            <!-- Type Badge -->
+                            <span class="salle-type"
+                                  th:classappend="${salle.typeSalle.name() == 'SALLE_DE_COURS'} ? 'type-cours' : 
+                                                 (${salle.typeSalle.name() == 'SALLE_DE_TD'} ? 'type-td' : 
+                                                  (${salle.typeSalle.name() == 'SALLE_INFORMATIQUE'} ? 'type-info' : 'type-labo'))"
+                                  th:text="${salle.typeSalle}">
+                                Type
+                            </span>
+                            
+                            <!-- Capacity -->
+                            <div class="capacite-badge">
+                                <i class="fas fa-users text-muted"></i>
+                                <div>
+                                    <div class="capacite-number" th:text="${salle.capacite}">0</div>
+                                    <small class="text-muted">places</small>
+                                </div>
+                            </div>
+                            
+                            <!-- Actions -->
+                            <div class="action-buttons">
+                                <a th:href="@{/admin/salles/details/{id}(id=${salle.idSalle})}" 
+                                   class="btn-action btn-view"
+                                   title="Voir les détails">
+                                    <i class="fas fa-eye"></i>
+                                </a>
+                                <a th:href="@{/admin/salles/modifier/{id}(id=${salle.idSalle})}" 
+                                   class="btn-action btn-edit"
+                                   title="Modifier">
+                                    <i class="fas fa-edit"></i>
+                                </a>
+                                <button type="button" 
+                                        class="btn-action btn-delete"
+                                        th:attr="data-salle-id=${salle.idSalle}"
+                                        onclick="confirmDelete(this)"
+                                        title="Supprimer">
+                                    <i class="fas fa-trash"></i>
+                                </button>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js"></script>
+    <script src="/js/modern-modals.js"></script>
+    <script th:inline="javascript">
+        // Messages flash
+        /*[# th:if="${success}"]*/
+        ModernModal.success('Succès', /*[[${success}]]*/ '');
+        /*[/]*/
+        
+        /*[# th:if="${error}"]*/
+        ModernModal.error('Erreur', /*[[${error}]]*/ '');
+        /*[/]*/
+        
+        // Filtrage des salles
+        function filterSalles() {
+            const searchValue = document.getElementById('searchInput').value.toLowerCase();
+            const typeValue = document.getElementById('typeFilter').value;
+            const cards = document.querySelectorAll('.salle-card');
+            
+            cards.forEach(card => {
+                const nom = card.getAttribute('data-nom').toLowerCase();
+                const type = card.getAttribute('data-type');
+                
+                const matchSearch = nom.includes(searchValue);
+                const matchType = !typeValue || type === typeValue;
+                
+                if (matchSearch && matchType) {
+                    card.style.display = '';
+                } else {
+                    card.style.display = 'none';
+                }
+            });
+        }
+        
+        // Réinitialiser les filtres
+        function resetFilters() {
+            document.getElementById('searchInput').value = '';
+            document.getElementById('typeFilter').value = '';
+            filterSalles();
+        }
+        
+        // Confirmer suppression
+        function confirmDelete(button) {
+            const salleId = button.getAttribute('data-salle-id');
+            
+            ModernModal.confirm(
+                'Supprimer la salle',
+                'Êtes-vous sûr de vouloir supprimer cette salle ? Cette action est irréversible.',
+                function() {
+                    const form = document.createElement('form');
+                    form.method = 'POST';
+                    form.action = '/admin/salles/supprimer/' + salleId;
+                    document.body.appendChild(form);
+                    form.submit();
+                }
+            );
+        }
+    </script>
+</body>
+</html>

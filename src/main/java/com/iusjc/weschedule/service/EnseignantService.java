@@ -45,6 +45,10 @@ public class EnseignantService {
         log.info("Nombre d'enseignants trouvés: {}", enseignants.size());
         return enseignants;
     }
+    
+    public long countEnseignants() {
+        return enseignantRepository.count();
+    }
 
     public Optional<Enseignant> getEnseignantById(UUID id) {
         return enseignantRepository.findById(id);
@@ -143,6 +147,48 @@ public class EnseignantService {
         }
 
         return enseignantRepository.save(enseignant);
+    }
+
+    /**
+     * Mettre à jour le profil de l'enseignant (sans les UEs)
+     */
+    public Enseignant updateProfilEnseignant(UUID id, String nom, String prenom, String email, String phone, String grade) {
+        Enseignant enseignant = enseignantRepository.findById(id)
+            .orElseThrow(() -> new IllegalArgumentException("Enseignant non trouvé"));
+
+        // Vérifier si le nouvel email n'est pas déjà utilisé par un autre utilisateur
+        if (!enseignant.getEmail().equalsIgnoreCase(email)) {
+            Optional<Utilisateur> existingUser = utilisateurRepository.findByEmail(email.toLowerCase());
+            if (existingUser.isPresent() && !existingUser.get().getIdUser().equals(id)) {
+                throw new IllegalArgumentException("Cet email est déjà utilisé par un autre utilisateur");
+            }
+        }
+
+        enseignant.setNom(nom.trim());
+        enseignant.setPrenom(prenom.trim());
+        enseignant.setEmail(email.trim().toLowerCase());
+        enseignant.setPhone(phone != null ? phone.trim() : null);
+        enseignant.setGrade(grade != null ? grade.trim() : null);
+
+        return enseignantRepository.save(enseignant);
+    }
+
+    /**
+     * Changer le mot de passe de l'enseignant
+     */
+    public void changerMotDePasse(UUID id, String ancienMotDePasse, String nouveauMotDePasse) {
+        Enseignant enseignant = enseignantRepository.findById(id)
+            .orElseThrow(() -> new IllegalArgumentException("Enseignant non trouvé"));
+
+        // Vérifier l'ancien mot de passe
+        if (!passwordEncoder.matches(ancienMotDePasse, enseignant.getMotDePasse())) {
+            throw new IllegalArgumentException("L'ancien mot de passe est incorrect");
+        }
+
+        // Mettre à jour le mot de passe
+        enseignant.setMotDePasse(passwordEncoder.encode(nouveauMotDePasse));
+        enseignantRepository.save(enseignant);
+        log.info("Mot de passe changé pour l'enseignant {}", enseignant.getEmail());
     }
 
     /**

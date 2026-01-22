@@ -1,6 +1,9 @@
 package com.iusjc.weschedule.config;
 
 import com.iusjc.weschedule.enums.Role;
+import com.iusjc.weschedule.enums.StatutUE;
+import com.iusjc.weschedule.enums.TypeCours;
+import com.iusjc.weschedule.enums.TypeSalle;
 import com.iusjc.weschedule.models.*;
 import com.iusjc.weschedule.repositories.*;
 import lombok.extern.slf4j.Slf4j;
@@ -33,78 +36,73 @@ public class DataInitializer {
             FiliereRepository filiereRepo,
             ClasseRepository classeRepo,
             UERepository ueRepo,
+            CoursRepository coursRepo,
+            SalleRepository salleRepo,
             GroupeRepository groupeRepo,
             EtudiantRepository etudiantRepo,
             DisponibiliteEnseignantRepository disponibiliteRepo,
             CreneauDisponibiliteRepository creneauDispoRepo,
-            PlageHoraireRepository plageHoraireRepo) {
+            PlageHoraireRepository plageHoraireRepo,
+            PasswordResetTokenRepository passwordResetTokenRepo,
+            SeanceClasseRepository seanceClasseRepo,
+            EmploiDuTempsClasseRepository emploiDuTempsClasseRepo) {
         return args -> {
-            log.info("Initialisation complete de la base de donnees...");
-
-            // Vérifier si les données existent déjà
-            if (adminRepo.count() > 0) {
-                log.info("Base de donnees deja initialisee, verification des disponibilites...");
-                
-                // Vérifier si l'enseignant a des disponibilités
-                Optional<Utilisateur> utilisateurOpt = utilisateurRepo.findByEmail("goodskrt2.0@gmail.com");
-                if (utilisateurOpt.isPresent() && utilisateurOpt.get() instanceof Enseignant enseignant) {
-                    List<DisponibiliteEnseignant> disponibilites = disponibiliteRepo.findByEnseignant(enseignant);
-                    
-                    if (disponibilites.isEmpty()) {
-                        log.info("Aucune disponibilite trouvee, creation d'une disponibilite de test...");
-                        
-                        // Créer une disponibilité pour cette semaine
-                        LocalDate debutSemaine = LocalDate.now().with(java.time.DayOfWeek.MONDAY);
-                        LocalDate finSemaine = debutSemaine.plusDays(6);
-
-                        DisponibiliteEnseignant disponibilite = new DisponibiliteEnseignant();
-                        disponibilite.setEnseignant(enseignant);
-                        disponibilite.setDateDebut(debutSemaine);
-                        disponibilite.setDateFin(finSemaine);
-                        disponibiliteRepo.save(disponibilite);
-
-                        // Créer quelques créneaux pour lundi et mardi
-                        for (int i = 0; i < 2; i++) {
-                            LocalDate jour = debutSemaine.plusDays(i);
-                            
-                            CreneauDisponibilite creneau = new CreneauDisponibilite();
-                            creneau.setDisponibilite(disponibilite);
-                            creneau.setDate(jour);
-                            creneauDispoRepo.save(creneau);
-
-                            // Matin : 8h-10h
-                            PlageHoraire plageMatin = new PlageHoraire();
-                            plageMatin.setCreneauDisponibilite(creneau);
-                            plageMatin.setHeureDebut(LocalTime.of(8, 0));
-                            plageMatin.setHeureFin(LocalTime.of(10, 0));
-                            plageHoraireRepo.save(plageMatin);
-
-                            // Après-midi : 14h-16h
-                            PlageHoraire plageApresMidi = new PlageHoraire();
-                            plageApresMidi.setCreneauDisponibilite(creneau);
-                            plageApresMidi.setHeureDebut(LocalTime.of(14, 0));
-                            plageApresMidi.setHeureFin(LocalTime.of(16, 0));
-                            plageHoraireRepo.save(plageApresMidi);
-                        }
-                        
-                        log.info("Disponibilite de test creee pour la semaine du {} au {}", debutSemaine, finSemaine);
-                    } else {
-                        log.info("L'enseignant a deja {} disponibilite(s)", disponibilites.size());
-                    }
-                }
-                return;
-            }
+            log.info("=== INITIALISATION COMPLETE DE LA BASE DE DONNEES ===");
+            
+            // VIDER COMPLETEMENT LA BASE DE DONNEES
+            log.info("Suppression de toutes les donnees existantes...");
+            
+            // Supprimer dans l'ordre inverse des dépendances
+            log.info("Suppression des disponibilites...");
+            plageHoraireRepo.deleteAll();
+            creneauDispoRepo.deleteAll();
+            disponibiliteRepo.deleteAll();
+            
+            log.info("Suppression des tokens de reset de mot de passe...");
+            passwordResetTokenRepo.deleteAll();
+            
+            log.info("Suppression des utilisateurs...");
+            etudiantRepo.deleteAll();
+            enseignantRepo.deleteAll();
+            adminRepo.deleteAll();
+            utilisateurRepo.deleteAll();
+            
+            log.info("Suppression des cours et salles...");
+            coursRepo.deleteAll();
+            salleRepo.deleteAll();
+            
+            log.info("Suppression des UE...");
+            ueRepo.deleteAll();
+            
+            log.info("Suppression des emplois du temps et seances...");
+            seanceClasseRepo.deleteAll();
+            emploiDuTempsClasseRepo.deleteAll();
+            
+            log.info("Suppression des classes...");
+            classeRepo.deleteAll();
+            
+            log.info("Suppression des groupes...");
+            groupeRepo.deleteAll();
+            
+            log.info("Suppression des filieres...");
+            filiereRepo.deleteAll();
+            
+            log.info("Suppression des ecoles...");
+            ecoleRepo.deleteAll();
+            
+            log.info("Base de donnees videe avec succes !");
+            log.info("");
 
             // 1. Creer les ecoles
             Ecole ecole1 = new Ecole();
-            ecole1.setNomEcole("Institut Universitaire Saint Jean de Cronstadt");
+            ecole1.setNomEcole("Saint Jean Ingenieur");
             ecole1.setAdresse("Douala, Cameroun");
             ecole1.setTelephone("+237 233 42 15 67");
             ecole1.setEmail("contact@iusjc.edu.cm");
             ecoleRepo.save(ecole1);
 
             Ecole ecole2 = new Ecole();
-            ecole2.setNomEcole("Ecole Superieure de Technologie");
+            ecole2.setNomEcole("Saint Jean Management");
             ecole2.setAdresse("Yaounde, Cameroun");
             ecole2.setTelephone("+237 222 31 45 89");
             ecole2.setEmail("info@est.edu.cm");
@@ -170,47 +168,198 @@ public class DataInitializer {
 
             log.info("Classes creees");
 
-            // 5. Creer les UE
+            // 5. Créer les salles
+            Salle salleCours1 = new Salle();
+            salleCours1.setNomSalle("Salle de Cours A");
+            salleCours1.setTypeSalle(TypeSalle.SALLE_DE_COURS);
+            salleCours1.setCapacite(60);
+            salleRepo.save(salleCours1);
+
+            Salle salleCours2 = new Salle();
+            salleCours2.setNomSalle("Salle de Cours B");
+            salleCours2.setTypeSalle(TypeSalle.SALLE_DE_COURS);
+            salleCours2.setCapacite(55);
+            salleRepo.save(salleCours2);
+
+            Salle salleTD1 = new Salle();
+            salleTD1.setNomSalle("Salle TD 101");
+            salleTD1.setTypeSalle(TypeSalle.SALLE_DE_TD);
+            salleTD1.setCapacite(40);
+            salleRepo.save(salleTD1);
+
+            Salle salleTD2 = new Salle();
+            salleTD2.setNomSalle("Salle TD 102");
+            salleTD2.setTypeSalle(TypeSalle.SALLE_DE_TD);
+            salleTD2.setCapacite(35);
+            salleRepo.save(salleTD2);
+
+            Salle salleInfo1 = new Salle();
+            salleInfo1.setNomSalle("Salle Informatique 1");
+            salleInfo1.setTypeSalle(TypeSalle.SALLE_INFORMATIQUE);
+            salleInfo1.setCapacite(30);
+            salleRepo.save(salleInfo1);
+
+            Salle salleInfo2 = new Salle();
+            salleInfo2.setNomSalle("Salle Informatique 2");
+            salleInfo2.setTypeSalle(TypeSalle.SALLE_INFORMATIQUE);
+            salleInfo2.setCapacite(25);
+            salleRepo.save(salleInfo2);
+
+            Salle labo1 = new Salle();
+            labo1.setNomSalle("Laboratoire Chimie");
+            labo1.setTypeSalle(TypeSalle.LABORATOIRE);
+            labo1.setCapacite(20);
+            salleRepo.save(labo1);
+
+            log.info("Salles creees : 7 salles");
+
+            // 6. Supprimer les anciennes UE et en créer de nouvelles avec semestre et statut
+            log.info("Suppression des anciennes UE...");
+            ueRepo.deleteAll();
+            
+            // UE pour L1 Informatique
             UE ueAlgo = new UE();
             ueAlgo.setIntitule("Algorithmique et Programmation");
             ueAlgo.setCode("INF101");
             ueAlgo.setDuree(60);
+            ueAlgo.setSemestre(1);
+            ueAlgo.setStatut(StatutUE.ACTIF);
             Set<Classe> classesAlgo = new HashSet<>();
             classesAlgo.add(classeL1Info);
             ueAlgo.setClasses(classesAlgo);
             ueRepo.save(ueAlgo);
 
-            UE ueBDD = new UE();
-            ueBDD.setIntitule("Base de Donnees");
-            ueBDD.setCode("INF201");
-            ueBDD.setDuree(45);
-            Set<Classe> classesBDD = new HashSet<>();
-            classesBDD.add(classeL2Info);
-            ueBDD.setClasses(classesBDD);
-            ueRepo.save(ueBDD);
-
-            UE ueCompta = new UE();
-            ueCompta.setIntitule("Comptabilite Generale");
-            ueCompta.setCode("GES101");
-            ueCompta.setDuree(40);
-            Set<Classe> classesCompta = new HashSet<>();
-            classesCompta.add(classeL1Gestion);
-            ueCompta.setClasses(classesCompta);
-            ueRepo.save(ueCompta);
-
             UE ueMaths = new UE();
             ueMaths.setIntitule("Mathematiques pour l'Informatique");
             ueMaths.setCode("MAT101");
             ueMaths.setDuree(50);
+            ueMaths.setSemestre(1);
+            ueMaths.setStatut(StatutUE.ACTIF);
             Set<Classe> classesMaths = new HashSet<>();
             classesMaths.add(classeL1Info);
-            classesMaths.add(classeL2Info);
             ueMaths.setClasses(classesMaths);
             ueRepo.save(ueMaths);
+            
+            UE ueArchitecture = new UE();
+            ueArchitecture.setIntitule("Architecture des Ordinateurs");
+            ueArchitecture.setCode("INF102");
+            ueArchitecture.setDuree(45);
+            ueArchitecture.setSemestre(1);
+            ueArchitecture.setStatut(StatutUE.ACTIF);
+            Set<Classe> classesArchi = new HashSet<>();
+            classesArchi.add(classeL1Info);
+            ueArchitecture.setClasses(classesArchi);
+            ueRepo.save(ueArchitecture);
 
-            log.info("UE creees");
+            // UE pour L2 Informatique
+            UE ueBDD = new UE();
+            ueBDD.setIntitule("Base de Donnees");
+            ueBDD.setCode("INF201");
+            ueBDD.setDuree(60);
+            ueBDD.setSemestre(1);
+            ueBDD.setStatut(StatutUE.ACTIF);
+            Set<Classe> classesBDD = new HashSet<>();
+            classesBDD.add(classeL2Info);
+            ueBDD.setClasses(classesBDD);
+            ueRepo.save(ueBDD);
+            
+            UE uePOO = new UE();
+            uePOO.setIntitule("Programmation Orientee Objet");
+            uePOO.setCode("INF202");
+            uePOO.setDuree(60);
+            uePOO.setSemestre(1);
+            uePOO.setStatut(StatutUE.ACTIF);
+            Set<Classe> classesPOO = new HashSet<>();
+            classesPOO.add(classeL2Info);
+            uePOO.setClasses(classesPOO);
+            ueRepo.save(uePOO);
+            
+            UE ueReseaux = new UE();
+            ueReseaux.setIntitule("Reseaux et Telecommunications");
+            ueReseaux.setCode("INF203");
+            ueReseaux.setDuree(45);
+            ueReseaux.setSemestre(2);
+            ueReseaux.setStatut(StatutUE.ACTIF);
+            Set<Classe> classesReseaux = new HashSet<>();
+            classesReseaux.add(classeL2Info);
+            ueReseaux.setClasses(classesReseaux);
+            ueRepo.save(ueReseaux);
 
-            // 6. Creer l'administrateur
+            // UE pour L1 Gestion
+            UE ueCompta = new UE();
+            ueCompta.setIntitule("Comptabilite Generale");
+            ueCompta.setCode("GES101");
+            ueCompta.setDuree(45);
+            ueCompta.setSemestre(1);
+            ueCompta.setStatut(StatutUE.ACTIF);
+            Set<Classe> classesCompta = new HashSet<>();
+            classesCompta.add(classeL1Gestion);
+            ueCompta.setClasses(classesCompta);
+            ueRepo.save(ueCompta);
+            
+            UE ueEconomie = new UE();
+            ueEconomie.setIntitule("Economie d'Entreprise");
+            ueEconomie.setCode("GES102");
+            ueEconomie.setDuree(40);
+            ueEconomie.setSemestre(1);
+            ueEconomie.setStatut(StatutUE.ACTIF);
+            Set<Classe> classesEco = new HashSet<>();
+            classesEco.add(classeL1Gestion);
+            ueEconomie.setClasses(classesEco);
+            ueRepo.save(ueEconomie);
+            
+            UE ueManagement = new UE();
+            ueManagement.setIntitule("Management des Organisations");
+            ueManagement.setCode("GES103");
+            ueManagement.setDuree(45);
+            ueManagement.setSemestre(2);
+            ueManagement.setStatut(StatutUE.ACTIF);
+            Set<Classe> classesMgt = new HashSet<>();
+            classesMgt.add(classeL1Gestion);
+            ueManagement.setClasses(classesMgt);
+            ueRepo.save(ueManagement);
+
+            log.info("UE creees : 9 unites d'enseignement avec semestre et statut");
+
+            // 7. Créer les cours
+            Cours coursAlgoCM = new Cours();
+            coursAlgoCM.setIntitule("Cours Magistral - Algorithmique");
+            coursAlgoCM.setTypeCours(TypeCours.CM);
+            coursAlgoCM.setUe(ueAlgo);
+            coursAlgoCM.setDuree(45); // 45h restantes sur 60h total
+            coursRepo.save(coursAlgoCM);
+
+            Cours coursAlgoTD = new Cours();
+            coursAlgoTD.setIntitule("TD - Algorithmique");
+            coursAlgoTD.setTypeCours(TypeCours.TD);
+            coursAlgoTD.setUe(ueAlgo);
+            coursAlgoTD.setDuree(15); // 15h restantes
+            coursRepo.save(coursAlgoTD);
+
+            Cours coursMathsCM = new Cours();
+            coursMathsCM.setIntitule("Cours Magistral - Mathematiques");
+            coursMathsCM.setTypeCours(TypeCours.CM);
+            coursMathsCM.setUe(ueMaths);
+            coursMathsCM.setDuree(50); // Toutes les heures restantes
+            coursRepo.save(coursMathsCM);
+
+            Cours coursBDDCM = new Cours();
+            coursBDDCM.setIntitule("Cours Magistral - Base de Donnees");
+            coursBDDCM.setTypeCours(TypeCours.CM);
+            coursBDDCM.setUe(ueBDD);
+            coursBDDCM.setDuree(40); // 40h restantes sur 60h
+            coursRepo.save(coursBDDCM);
+
+            Cours coursBDDTP = new Cours();
+            coursBDDTP.setIntitule("TP - Base de Donnees");
+            coursBDDTP.setTypeCours(TypeCours.TP);
+            coursBDDTP.setUe(ueBDD);
+            coursBDDTP.setDuree(20); // 20h restantes
+            coursRepo.save(coursBDDTP);
+
+            log.info("Cours crees : 5 cours avec heures restantes");
+
+            // 8. Creer l'administrateur
             Administrateur admin = new Administrateur();
             admin.setNom("Admin");
             admin.setPrenom("Test");
@@ -222,8 +371,8 @@ public class DataInitializer {
 
             // 7. Creer l'enseignant avec l'email specifie
             Enseignant enseignant = new Enseignant();
-            enseignant.setNom("MOUPS");
-            enseignant.setPrenom("Moups");
+            enseignant.setNom("PESSA");
+            enseignant.setPrenom("Arthur");
             enseignant.setEmail("goodskrt2.0@gmail.com");
             enseignant.setPhone("673807864");
             enseignant.setMotDePasse(passwordEncoder.encode("password123"));
@@ -318,7 +467,7 @@ public class DataInitializer {
             log.info("Enseignant: goodskrt2.0@gmail.com / password123");
             log.info("Etudiant 1: jean.dupont@student.com / password123");
             log.info("Etudiant 2: marie.martin@student.com / password123");
-            log.info("Ecoles: 2 | Filieres: 3 | Classes: 3 | UE: 4");
+            log.info("Ecoles: 2 | Filieres: 3 | Classes: 3 | UE: 9 | Cours: 5 | Salles: 7");
             log.info("Disponibilites: Semaine complete avec creneaux detailles");
         };
     }

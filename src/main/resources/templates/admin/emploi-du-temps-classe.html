@@ -1,0 +1,404 @@
+<!DOCTYPE html>
+<html lang="fr" xmlns:th="http://www.thymeleaf.org">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title th:text="'Emploi du Temps - ' + ${classe.nom}">Emploi du Temps</title>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <link rel="stylesheet" href="/css/dashboard-professional.css">
+    <link rel="stylesheet" href="/css/modern-dashboard.css">
+    <style>
+        .week-navigation { background: white; padding: 1.5rem; border-radius: var(--radius-xl); box-shadow: var(--shadow-sm); margin-bottom: 2rem; }
+        .schedule-grid { background: white; border-radius: var(--radius-xl); box-shadow: var(--shadow-sm); overflow: hidden; }
+        .schedule-header { background: linear-gradient(135deg, var(--primary-color), var(--green-600)); color: white; padding: 1rem; font-weight: 600; }
+        .schedule-day { border-bottom: 2px solid var(--gray-100); padding: 1.5rem; }
+        .schedule-day:last-child { border-bottom: none; }
+        .day-header { font-weight: 700; color: var(--gray-900); margin-bottom: 1rem; display: flex; align-items: center; gap: 0.5rem; }
+        .seance-card { background: linear-gradient(135deg, #f0fdf4, #dcfce7); border-left: 4px solid var(--primary-color); padding: 1rem; border-radius: var(--radius-lg); margin-bottom: 0.75rem; transition: all var(--transition-normal); }
+        .seance-card:hover { transform: translateX(4px); box-shadow: var(--shadow-md); }
+        .seance-time { font-weight: 700; color: var(--primary-color); font-size: 0.95rem; }
+        .seance-title { font-weight: 600; color: var(--gray-900); margin: 0.25rem 0; }
+        .seance-info { font-size: 0.85rem; color: var(--gray-600); display: flex; align-items: center; gap: 0.5rem; margin-top: 0.5rem; }
+        .empty-day { text-align: center; padding: 2rem; color: var(--gray-400); }
+        .mode-card { flex: 1; background: white; border: 2px solid var(--gray-200); border-radius: var(--radius-xl); padding: 2rem; cursor: pointer; transition: all var(--transition-normal); text-align: center; }
+        .mode-card:hover { border-color: var(--primary-color); transform: translateY(-4px); box-shadow: var(--shadow-md); }
+        .mode-icon { width: 64px; height: 64px; background: linear-gradient(135deg, var(--primary-color), var(--green-600)); border-radius: 50%; display: flex; align-items: center; justify-content: center; font-size: 2rem; color: white; margin: 0 auto 1rem; }
+        .badge-type-cours { padding: 0.25rem 0.75rem; border-radius: 1rem; font-size: 0.75rem; font-weight: 600; }
+        .badge-cm { background: #dbeafe; color: #1e40af; }
+        .badge-td { background: #fef3c7; color: #92400e; }
+        .badge-tp { background: #d1fae5; color: #065f46; }
+    </style>
+</head>
+<body>
+    <div th:replace="~{fragments/header :: admin-header}"></div>
+
+    <div class="container-fluid">
+        <div class="row">
+            <div th:replace="~{fragments/sidebar :: admin-sidebar('emplois')}"></div>
+
+            <div class="col-lg-10 col-md-9">
+                <div class="main-content">
+                    <!-- Breadcrumb -->
+                    <nav aria-label="breadcrumb" class="mb-4">
+                        <ol class="breadcrumb">
+                            <li class="breadcrumb-item"><a th:href="@{/admin/emplois-du-temps}">Emplois du Temps</a></li>
+                            <li class="breadcrumb-item active" th:text="${classe.nom}">Classe</li>
+                        </ol>
+                    </nav>
+
+                    <!-- Header -->
+                    <div class="d-flex justify-content-between align-items-center mb-4">
+                        <div>
+                            <h2 class="page-title" th:text="'Emploi du Temps - ' + ${classe.nom}">Emploi du Temps</h2>
+                            <p class="page-subtitle">
+                                <i class="fas fa-calendar-week me-2"></i>
+                                Semaine <span th:text="${semaine}">1</span> / <span th:text="${annee}">2024</span>
+                                <span class="mx-2">•</span>
+                                <strong>Du <span th:text="${#temporals.format(lundi, 'dd/MM/yyyy')}">01/01/2024</span> 
+                                au <span th:text="${#temporals.format(dimanche, 'dd/MM/yyyy')}">07/01/2024</span></strong>
+                            </p>
+                        </div>
+                        <a th:href="@{/admin/emplois-du-temps}" class="btn btn-secondary">
+                            <i class="fas fa-arrow-left"></i> Retour
+                        </a>
+                    </div>
+
+                    <!-- Week Navigation -->
+                    <div class="week-navigation">
+                        <div class="row align-items-center">
+                            <div class="col-md-4">
+                                <a th:href="@{/admin/emplois-du-temps/classe/{id}(id=${classe.idClasse}, semaine=${semaine - 1}, annee=${annee})}" 
+                                   class="btn btn-outline-primary">
+                                    <i class="fas fa-chevron-left"></i> Semaine précédente
+                                </a>
+                            </div>
+                            <div class="col-md-4 text-center">
+                                <h5 class="mb-1">
+                                    <i class="fas fa-calendar-week me-2"></i>
+                                    Semaine <span th:text="${semaine}">1</span> - <span th:text="${annee}">2024</span>
+                                </h5>
+                                <small class="text-muted">
+                                    <span th:text="${#temporals.format(lundi, 'dd/MM/yyyy')}">01/01/2024</span> 
+                                    au 
+                                    <span th:text="${#temporals.format(dimanche, 'dd/MM/yyyy')}">07/01/2024</span>
+                                </small>
+                            </div>
+                            <div class="col-md-4 text-end">
+                                <a th:href="@{/admin/emplois-du-temps/classe/{id}(id=${classe.idClasse}, semaine=${semaine + 1}, annee=${annee})}" 
+                                   class="btn btn-outline-primary">
+                                    Semaine suivante <i class="fas fa-chevron-right"></i>
+                                </a>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Mode Selector (si pas d'emploi du temps) -->
+                    <div th:if="${emploiDuTemps == null}">
+                        <div class="row mb-4">
+                            <div class="col-md-6 mb-3">
+                                <div class="mode-card" onclick="showManualMode()">
+                                    <div class="mode-icon">
+                                        <i class="fas fa-hand-pointer"></i>
+                                    </div>
+                                    <h4>Mode Manuel</h4>
+                                    <p class="text-muted mb-0">Créez l'emploi du temps en ajoutant les séances une par une</p>
+                                </div>
+                            </div>
+                            <div class="col-md-6 mb-3">
+                                <div class="mode-card" onclick="showAutoMode()">
+                                    <div class="mode-icon">
+                                        <i class="fas fa-magic"></i>
+                                    </div>
+                                    <h4>Mode Automatique</h4>
+                                    <p class="text-muted mb-0">Génération automatique basée sur les disponibilités</p>
+                                </div>
+                            </div>
+                        </div>
+                        
+                        <div class="empty-state">
+                            <i class="fas fa-calendar-plus"></i>
+                            <h4>Aucun emploi du temps pour cette semaine</h4>
+                            <p>Choisissez un mode pour créer l'emploi du temps</p>
+                        </div>
+                    </div>
+
+                    <!-- Actions (si emploi du temps existe) -->
+                    <div th:if="${emploiDuTemps != null}" class="d-flex gap-2 mb-4">
+                        <button class="btn btn-primary" onclick="showAddSeanceModal()">
+                            <i class="fas fa-plus"></i> Ajouter une séance
+                        </button>
+                        <button class="btn btn-outline-primary" onclick="showDuplicateModal()">
+                            <i class="fas fa-copy"></i> Dupliquer
+                        </button>
+                        <button class="btn btn-outline-danger" onclick="confirmDeleteEmploi()">
+                            <i class="fas fa-trash"></i> Supprimer
+                        </button>
+                    </div>
+
+                    <!-- Schedule Grid -->
+                    <div th:if="${emploiDuTemps != null}" class="schedule-grid">
+                        <div class="schedule-header">
+                            <i class="fas fa-calendar-alt me-2"></i>
+                            Planning de la semaine
+                        </div>
+
+                        <div th:each="jour : ${#numbers.sequence(0, 6)}" class="schedule-day">
+                            <div class="day-header">
+                                <i class="fas fa-calendar-day"></i>
+                                <span th:text="${#temporals.format(lundi.plusDays(jour), 'EEEE dd MMMM', #locale)}">Lundi 01 Janvier</span>
+                            </div>
+
+                            <div th:with="dateJour=${lundi.plusDays(jour)}">
+                                <div th:if="${seancesParJour.containsKey(dateJour)}">
+                                    <div th:each="seance : ${seancesParJour.get(dateJour)}" class="seance-card">
+                                        <div class="d-flex justify-content-between align-items-start">
+                                            <div class="flex-grow-1">
+                                                <div class="seance-time">
+                                                    <i class="fas fa-clock me-1"></i>
+                                                    <span th:text="${#temporals.format(seance.heureDebut, 'HH:mm')}">08:00</span>
+                                                    -
+                                                    <span th:text="${#temporals.format(seance.heureFin, 'HH:mm')}">10:00</span>
+                                                </div>
+                                                <h6 class="seance-title" th:text="${seance.cours.intitule}">Cours</h6>
+                                                <span class="badge-type-cours"
+                                                      th:classappend="${seance.cours.typeCours.name() == 'CM'} ? 'badge-cm' : (${seance.cours.typeCours.name() == 'TD'} ? 'badge-td' : 'badge-tp')"
+                                                      th:text="${seance.cours.typeCours}">CM</span>
+                                                
+                                                <div class="seance-info">
+                                                    <span th:if="${seance.enseignant != null}">
+                                                        <i class="fas fa-user-tie"></i>
+                                                        <span th:text="${seance.enseignant.prenom + ' ' + seance.enseignant.nom}">Enseignant</span>
+                                                    </span>
+                                                    <span th:if="${seance.salle != null}">
+                                                        <i class="fas fa-door-open"></i>
+                                                        <span th:text="${seance.salle.nomSalle}">Salle</span>
+                                                    </span>
+                                                </div>
+                                                
+                                                <div th:if="${seance.remarques != null}" class="mt-2">
+                                                    <small class="text-muted">
+                                                        <i class="fas fa-comment"></i>
+                                                        <span th:text="${seance.remarques}">Remarques</span>
+                                                    </small>
+                                                </div>
+                                            </div>
+                                            <div>
+                                                <button class="btn btn-sm btn-outline-danger" 
+                                                        th:attr="data-seance-id=${seance.id}"
+                                                        onclick="confirmDeleteSeance(this.getAttribute('data-seance-id'))">
+                                                    <i class="fas fa-trash"></i>
+                                                </button>
+                                            </div>
+                                        </div>
+                                    </div>
+                                </div>
+                                <div th:unless="${seancesParJour.containsKey(dateJour)}" class="empty-day">
+                                    <i class="fas fa-calendar-times"></i>
+                                    <p class="mb-0">Aucune séance prévue</p>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Modals Bootstrap -->
+    <div class="modal fade" id="manualModeModal" tabindex="-1">
+        <div class="modal-dialog">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h5 class="modal-title"><i class="fas fa-hand-pointer me-2"></i>Mode Manuel</h5>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+                </div>
+                <div class="modal-body">
+                    <p>Créer un emploi du temps vide que vous remplirez manuellement ?</p>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Annuler</button>
+                    <button type="button" class="btn btn-primary" onclick="createManualEmploi()">
+                        <i class="fas fa-check"></i> Confirmer
+                    </button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div class="modal fade" id="autoModeModal" tabindex="-1">
+        <div class="modal-dialog">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h5 class="modal-title"><i class="fas fa-magic me-2"></i>Mode Automatique</h5>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+                </div>
+                <div class="modal-body">
+                    <p>La génération automatique sera disponible prochainement.</p>
+                    <p class="text-muted">Elle utilisera les disponibilités des enseignants et les salles disponibles pour créer automatiquement l'emploi du temps.</p>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-primary" data-bs-dismiss="modal">OK</button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div class="modal fade" id="addSeanceModal" tabindex="-1">
+        <div class="modal-dialog modal-lg">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h5 class="modal-title"><i class="fas fa-plus me-2"></i>Ajouter une séance</h5>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+                </div>
+                <form method="POST" action="/admin/emplois-du-temps/seance/ajouter">
+                    <div class="modal-body">
+                        <input type="hidden" name="emploiDuTempsId" th:value="${emploiDuTemps != null ? emploiDuTemps.id : ''}">
+                        
+                        <div class="mb-3">
+                            <label class="form-label">Cours *</label>
+                            <select name="coursId" class="form-select" required>
+                                <option value="">Sélectionner un cours</option>
+                                <option th:each="c : ${cours}" th:value="${c.idCours}" 
+                                        th:text="${c.intitule + ' (' + c.typeCours + ')'}">Cours</option>
+                            </select>
+                        </div>
+                        
+                        <div class="mb-3">
+                            <label class="form-label">Date *</label>
+                            <input type="date" name="date" class="form-control" 
+                                   th:min="${lundi}" th:max="${dimanche}" required>
+                        </div>
+                        
+                        <div class="row">
+                            <div class="col-6">
+                                <div class="mb-3">
+                                    <label class="form-label">Heure début *</label>
+                                    <input type="time" name="heureDebut" class="form-control" required>
+                                </div>
+                            </div>
+                            <div class="col-6">
+                                <div class="mb-3">
+                                    <label class="form-label">Heure fin *</label>
+                                    <input type="time" name="heureFin" class="form-control" required>
+                                </div>
+                            </div>
+                        </div>
+                        
+                        <div class="mb-3">
+                            <label class="form-label">Enseignant</label>
+                            <select name="enseignantId" class="form-select">
+                                <option value="">Aucun</option>
+                                <option th:each="e : ${enseignants}" th:value="${e.idUser}" 
+                                        th:text="${e.prenom + ' ' + e.nom}">Enseignant</option>
+                            </select>
+                        </div>
+                        
+                        <div class="mb-3">
+                            <label class="form-label">Salle</label>
+                            <select name="salleId" class="form-select">
+                                <option value="">Aucune</option>
+                                <option th:each="s : ${salles}" th:value="${s.idSalle}" 
+                                        th:text="${s.nomSalle + ' (' + s.capacite + ' places)'}">Salle</option>
+                            </select>
+                        </div>
+                        
+                        <div class="mb-3">
+                            <label class="form-label">Remarques</label>
+                            <textarea name="remarques" class="form-control" rows="3"></textarea>
+                        </div>
+                    </div>
+                    <div class="modal-footer">
+                        <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Annuler</button>
+                        <button type="submit" class="btn btn-primary">
+                            <i class="fas fa-plus"></i> Ajouter
+                        </button>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js"></script>
+    <script th:inline="javascript">
+        const classeId = /*[[${classe.idClasse}]]*/ '';
+        const semaine = /*[[${semaine}]]*/ 1;
+        const annee = /*[[${annee}]]*/ 2024;
+        const emploiDuTempsId = /*[[${emploiDuTemps != null ? emploiDuTemps.id : null}]]*/ null;
+        
+        let manualModal, autoModal, addSeanceModal;
+        
+        document.addEventListener('DOMContentLoaded', function() {
+            manualModal = new bootstrap.Modal(document.getElementById('manualModeModal'));
+            autoModal = new bootstrap.Modal(document.getElementById('autoModeModal'));
+            addSeanceModal = new bootstrap.Modal(document.getElementById('addSeanceModal'));
+        });
+        
+        function showManualMode() {
+            // Rediriger vers la page de mode manuel
+            window.location.href = '/admin/emplois-du-temps/classe/' + classeId + '/manuel?semaine=' + semaine + '&annee=' + annee;
+        }
+        
+        function showAutoMode() {
+            autoModal.show();
+        }
+        
+        function createManualEmploi() {
+            // Cette fonction n'est plus utilisée
+            window.location.href = '/admin/emplois-du-temps/classe/' + classeId + '/manuel?semaine=' + semaine + '&annee=' + annee;
+        }
+        
+        function showAddSeanceModal() {
+            addSeanceModal.show();
+        }
+        
+        function confirmDeleteSeance(seanceId) {
+            if (confirm('Êtes-vous sûr de vouloir supprimer cette séance ?')) {
+                const form = document.createElement('form');
+                form.method = 'POST';
+                form.action = '/admin/emplois-du-temps/seance/supprimer/' + seanceId;
+                document.body.appendChild(form);
+                form.submit();
+            }
+        }
+        
+        function confirmDeleteEmploi() {
+            if (confirm('Êtes-vous sûr de vouloir supprimer cet emploi du temps complet ? Toutes les séances seront supprimées.')) {
+                const form = document.createElement('form');
+                form.method = 'POST';
+                form.action = '/admin/emplois-du-temps/supprimer/' + emploiDuTempsId;
+                document.body.appendChild(form);
+                form.submit();
+            }
+        }
+        
+        function showDuplicateModal() {
+            const nouvelleSemaine = prompt('Nouvelle semaine (1-53):', semaine + 1);
+            if (nouvelleSemaine) {
+                const nouvelleAnnee = prompt('Année:', annee);
+                if (nouvelleAnnee) {
+                    const form = document.createElement('form');
+                    form.method = 'POST';
+                    form.action = '/admin/emplois-du-temps/dupliquer/' + emploiDuTempsId;
+                    
+                    const semaineInput = document.createElement('input');
+                    semaineInput.type = 'hidden';
+                    semaineInput.name = 'nouvelleSemaine';
+                    semaineInput.value = nouvelleSemaine;
+                    form.appendChild(semaineInput);
+                    
+                    const anneeInput = document.createElement('input');
+                    anneeInput.type = 'hidden';
+                    anneeInput.name = 'nouvelleAnnee';
+                    anneeInput.value = nouvelleAnnee;
+                    form.appendChild(anneeInput);
+                    
+                    document.body.appendChild(form);
+                    form.submit();
+                }
+            }
+        }
+    </script>
+</body>
+</html>

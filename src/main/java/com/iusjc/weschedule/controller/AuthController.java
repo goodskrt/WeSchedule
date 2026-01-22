@@ -6,8 +6,14 @@ import com.iusjc.weschedule.dto.ForgotPasswordRequest;
 import com.iusjc.weschedule.dto.LoginRequest;
 import com.iusjc.weschedule.dto.ResetPasswordWithTokenRequest;
 import com.iusjc.weschedule.enums.Role;
+import com.iusjc.weschedule.models.Enseignant;
+import com.iusjc.weschedule.models.UE;
 import com.iusjc.weschedule.models.Utilisateur;
+import com.iusjc.weschedule.repositories.SalleRepository;
+import com.iusjc.weschedule.repositories.CoursRepository;
+import com.iusjc.weschedule.repositories.ClasseRepository;
 import com.iusjc.weschedule.service.AuthService;
+import com.iusjc.weschedule.service.EnseignantService;
 import com.iusjc.weschedule.service.PasswordResetService;
 import com.iusjc.weschedule.security.UserPrincipal;
 import jakarta.servlet.http.HttpServletRequest;
@@ -25,7 +31,9 @@ import org.springframework.stereotype.Controller;
 import org.springframework.ui.Model;
 import org.springframework.validation.BindingResult;
 import org.springframework.web.bind.annotation.*;
+import org.springframework.web.servlet.mvc.support.RedirectAttributes;
 
+import java.util.List;
 import java.util.Map;
 import java.util.Optional;
 
@@ -41,6 +49,18 @@ public class AuthController {
 
     @Autowired
     private PasswordEncoder passwordEncoder;
+
+    @Autowired
+    private EnseignantService enseignantService;
+    
+    @Autowired
+    private SalleRepository salleRepository;
+    
+    @Autowired
+    private CoursRepository coursRepository;
+    
+    @Autowired
+    private ClasseRepository classeRepository;
 
     /**
      * Page de login
@@ -144,6 +164,18 @@ public class AuthController {
             model.addAttribute("user", userPrincipal.getUtilisateur());
             model.addAttribute("nomComplet", userPrincipal.getNomComplet());
             model.addAttribute("email", userPrincipal.getUtilisateur().getEmail());
+            
+            // Charger les statistiques réelles
+            long totalEnseignants = enseignantService.countEnseignants();
+            long totalSalles = salleRepository.count();
+            long totalCours = coursRepository.count();
+            long totalClasses = classeRepository.count();
+            
+            model.addAttribute("totalEnseignants", totalEnseignants);
+            model.addAttribute("totalSalles", totalSalles);
+            model.addAttribute("totalCours", totalCours);
+            model.addAttribute("totalClasses", totalClasses);
+            
             return "admin/dashboard-admin";
         }
         return "redirect:/login";
@@ -338,12 +370,85 @@ public class AuthController {
     @GetMapping("/dashboard/enseignant/profil")
     public String dashboardEnseignantProfil(Authentication auth, Model model) {
         if (auth != null && auth.getPrincipal() instanceof UserPrincipal userPrincipal) {
-            model.addAttribute("user", userPrincipal.getUtilisateur());
+            Utilisateur user = userPrincipal.getUtilisateur();
+            if (user instanceof Enseignant enseignant) {
+                // Charger les UEs de l'enseignant
+                List<UE> ues = enseignantService.getUEsEnseignant(enseignant.getIdUser());
+                model.addAttribute("enseignant", enseignant);
+                model.addAttribute("ues", ues);
+            }
+            model.addAttribute("user", user);
             model.addAttribute("nomComplet", userPrincipal.getNomComplet());
-            model.addAttribute("email", userPrincipal.getUtilisateur().getEmail());
+            model.addAttribute("email", user.getEmail());
             return "dashboard/profil";
         }
         return "redirect:/login";
+    }
+
+    /**
+     * Mettre à jour le profil de l'enseignant
+     */
+    @PostMapping("/dashboard/enseignant/profil/update")
+    public String updateProfilEnseignant(
+            @RequestParam String nom,
+            @RequestParam String prenom,
+            @RequestParam String email,
+            @RequestParam(required = false) String phone,
+            @RequestParam(required = false) String grade,
+            Authentication auth,
+            RedirectAttributes redirectAttributes) {
+        try {
+            if (auth != null && auth.getPrincipal() instanceof UserPrincipal userPrincipal) {
+                Utilisateur user = userPrincipal.getUtilisateur();
+                if (user instanceof Enseignant) {
+                    enseignantService.updateProfilEnseignant(user.getIdUser(), nom, prenom, email, phone, grade);
+                    redirectAttributes.addFlashAttribute("successMessage", "Profil mis à jour avec succès");
+                }
+            }
+        } catch (IllegalArgumentException e) {
+            redirectAttributes.addFlashAttribute("errorMessage", e.getMessage());
+        } catch (Exception e) {
+            redirectAttributes.addFlashAttribute("errorMessage", "Erreur lors de la mise à jour du profil");
+        }
+        return "redirect:/dashboard/enseignant/profil";
+    }
+
+    /**
+     * Changer le mot de passe de l'enseignant
+     */
+    @PostMapping("/dashboard/enseignant/profil/change-password")
+    public String changePasswordEnseignant(
+            @RequestParam String ancienMotDePasse,
+            @RequestParam String nouveauMotDePasse,
+            @RequestParam String confirmationMotDePasse,
+            Authentication auth,
+            RedirectAttributes redirectAttributes) {
+        try {
+            if (auth != null && auth.getPrincipal() instanceof UserPrincipal userPrincipal) {
+                Utilisateur user = userPrincipal.getUtilisateur();
+                if (user instanceof Enseignant) {
+                    // Vérifier que les mots de passe correspondent
+                    if (!nouveauMotDePasse.equals(confirmationMotDePasse)) {
+                        redirectAttributes.addFlashAttribute("errorMessage", "Les mots de passe ne correspondent pas");
+                        return "redirect:/dashboard/enseignant/profil";
+                    }
+
+                    // Vérifier la longueur du mot de passe
+                    if (nouveauMotDePasse.length() < 6) {
+                        redirectAttributes.addFlashAttribute("errorMessage", "Le mot de passe doit contenir au moins 6 caractères");
+                        return "redirect:/dashboard/enseignant/profil";
+                    }
+
+                    enseignantService.changerMotDePasse(user.getIdUser(), ancienMotDePasse, nouveauMotDePasse);
+                    redirectAttributes.addFlashAttribute("successMessage", "Mot de passe changé avec succès");
+                }
+            }
+        } catch (IllegalArgumentException e) {
+            redirectAttributes.addFlashAttribute("errorMessage", e.getMessage());
+        } catch (Exception e) {
+            redirectAttributes.addFlashAttribute("errorMessage", "Erreur lors du changement de mot de passe");
+        }
+        return "redirect:/dashboard/enseignant/profil";
     }
 
     /**

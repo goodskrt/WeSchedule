@@ -43,10 +43,22 @@ public class AdminController {
                 data.put("phone", ens.getPhone());
                 data.put("grade", ens.getGrade());
                 
-                // Ne pas charger les UEs dans la liste pour éviter les problèmes de lazy loading
-                data.put("nbUes", 0);
-                data.put("ues", new ArrayList<>());
-                data.put("nbDisponibilites", 0);
+                // Charger les UEs via le service pour éviter les problèmes de lazy loading
+                List<UE> ues = enseignantService.getUEsEnseignant(ens.getIdUser());
+                data.put("nbUes", ues.size());
+                
+                List<Map<String, Object>> uesData = ues.stream().map(ue -> {
+                    Map<String, Object> ueMap = new HashMap<>();
+                    ueMap.put("idUE", ue.getIdUE().toString());
+                    ueMap.put("code", ue.getCode());
+                    ueMap.put("intitule", ue.getIntitule());
+                    ueMap.put("duree", ue.getDuree());
+                    return ueMap;
+                }).toList();
+                data.put("ues", uesData);
+                
+                int nbDispos = enseignantService.countDisponibilites(ens.getIdUser());
+                data.put("nbDisponibilites", nbDispos);
                 
                 result.add(data);
             }
@@ -78,9 +90,24 @@ public class AdminController {
             data.put("email", ens.getEmail());
             data.put("phone", ens.getPhone());
             data.put("grade", ens.getGrade());
-            data.put("ues", new ArrayList<>());
-            data.put("ueIds", new ArrayList<>());
-            data.put("nbDisponibilites", 0);
+            
+            // Charger les UEs via le service
+            List<UE> ues = enseignantService.getUEsEnseignant(id);
+            List<Map<String, Object>> uesData = ues.stream().map(ue -> {
+                Map<String, Object> ueMap = new HashMap<>();
+                ueMap.put("idUE", ue.getIdUE().toString());
+                ueMap.put("code", ue.getCode());
+                ueMap.put("intitule", ue.getIntitule());
+                ueMap.put("duree", ue.getDuree());
+                return ueMap;
+            }).toList();
+            data.put("ues", uesData);
+            
+            List<String> ueIds = ues.stream().map(ue -> ue.getIdUE().toString()).toList();
+            data.put("ueIds", ueIds);
+            
+            int nbDispos = enseignantService.countDisponibilites(id);
+            data.put("nbDisponibilites", nbDispos);
             
             return ResponseEntity.ok(data);
         } catch (Exception e) {
@@ -215,6 +242,26 @@ public class AdminController {
                 data.put("code", ue.getCode() != null ? ue.getCode() : "");
                 data.put("intitule", ue.getIntitule());
                 data.put("duree", ue.getDuree());
+                
+                List<Map<String, Object>> classesData = new ArrayList<>();
+                if (ue.getClasses() != null && !ue.getClasses().isEmpty()) {
+                    for (Classe classe : ue.getClasses()) {
+                        Map<String, Object> classeMap = new HashMap<>();
+                        classeMap.put("idClasse", classe.getIdClasse());
+                        classeMap.put("nom", classe.getNom());
+                        classeMap.put("niveau", classe.getNiveau());
+                        classeMap.put("effectif", classe.getEffectif());
+                        if (classe.getFiliere() != null) {
+                            classeMap.put("filiere", classe.getFiliere().getNomFiliere());
+                        }
+                        if (classe.getEcole() != null) {
+                            classeMap.put("ecole", classe.getEcole().getNomEcole());
+                        }
+                        classesData.add(classeMap);
+                    }
+                }
+                data.put("classes", classesData);
+                
                 return data;
             }).toList();
             return ResponseEntity.ok(result);

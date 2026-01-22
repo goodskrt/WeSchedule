@@ -1,11 +1,8 @@
 package com.iusjc.weschedule.enums;
 
 public enum TypeSalle {
-    AMPHITHEATRE,
     SALLE_DE_COURS,
-    LABORATOIRE,
+    SALLE_DE_TD,
     SALLE_INFORMATIQUE,
-    ATELIER,
-    BUREAU,
-    SALLE_DE_REUNION
+    LABORATOIRE
 }

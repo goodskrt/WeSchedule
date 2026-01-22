@@ -18,39 +18,11 @@
     </style>
 </head>
 <body>
-    <nav class="navbar navbar-expand-lg navbar-custom">
-        <div class="container-fluid">
-            <a class="navbar-brand" href="/dashboard/enseignant"><img th:src="@{/images/logo.jpeg}" alt="Logo">WeSchedule</a>
-            <div class="ms-auto">
-                <div class="dropdown">
-                    <a class="nav-link dropdown-toggle user-info-nav" href="#" data-bs-toggle="dropdown">
-                        <div class="user-avatar-small" th:text="${nomComplet != null ? nomComplet.substring(0,1).toUpperCase() : 'U'}">U</div>
-                        <div class="user-details">
-                            <div class="user-name-small" th:text="${nomComplet}">Utilisateur</div>
-                            <div class="user-role-small">Enseignant</div>
-                        </div>
-                    </a>
-                    <ul class="dropdown-menu dropdown-menu-end">
-                        <li><a class="dropdown-item" href="/dashboard/enseignant/profil"><i class="fas fa-user"></i> Mon Profil</a></li>
-                        <li><hr class="dropdown-divider"></li>
-                        <li><a class="dropdown-item" href="/logout"><i class="fas fa-sign-out-alt"></i> Deconnexion</a></li>
-                    </ul>
-                </div>
-            </div>
-        </div>
-    </nav>
+    <div th:replace="~{fragments/header :: enseignant-header}"></div>
 
     <div class="container-fluid">
         <div class="row">
-            <div class="col-md-2 sidebar">
-                <div class="sidebar-menu">
-                    <a href="/dashboard/enseignant" class="nav-link"><i class="fas fa-tachometer-alt"></i> Tableau de bord</a>
-                    <a href="/dashboard/enseignant/cours" class="nav-link"><i class="fas fa-chalkboard-teacher"></i> Mes Cours</a>
-                    <a href="/dashboard/enseignant/emploi-temps" class="nav-link"><i class="fas fa-calendar-alt"></i> Emploi du temps</a>
-                    <a href="/dashboard/enseignant/disponibilites" class="nav-link active"><i class="fas fa-clock"></i> Mes Disponibilites</a>
-                    <a href="/dashboard/enseignant/profil" class="nav-link"><i class="fas fa-user-cog"></i> Mon Profil</a>
-                </div>
-            </div>
+            <div th:replace="~{fragments/sidebar :: enseignant-sidebar('disponibilites')}"></div>
 
             <div class="col-md-10 main-content">
                 <nav aria-label="breadcrumb" class="mb-3">

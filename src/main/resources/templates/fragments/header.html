@@ -1,0 +1,165 @@
+<!DOCTYPE html>
+<html lang="fr" xmlns:th="http://www.thymeleaf.org">
+<head>
+    <meta charset="UTF-8">
+</head>
+<body>
+    <!-- Fragment: Header Admin -->
+    <nav th:fragment="admin-header" class="navbar-modern">
+        <div class="container-fluid">
+            <div class="navbar-content">
+                <!-- Logo et Brand -->
+                <div class="navbar-brand-section">
+                    <a class="brand-link" href="/dashboard/admin">
+                        <div class="brand-logo">
+                            <i class="fas fa-calendar-check"></i>
+                        </div>
+                        <span class="brand-text">WeSchedule</span>
+                    </a>
+                </div>
+
+                <!-- Message de bienvenue -->
+                <div class="welcome-section">
+                    <div class="welcome-message">
+                        <div class="welcome-greeting">
+                            <i class="fas fa-sun greeting-icon"></i>
+                            <span class="greeting-text">Bienvenue,</span>
+                        </div>
+                        <div class="welcome-name" th:text="${nomComplet}">Administrateur</div>
+                    </div>
+                </div>
+
+                <!-- User Menu -->
+                <div class="user-menu-section">
+                    <div class="dropdown">
+                        <button class="user-menu-btn" type="button" data-bs-toggle="dropdown">
+                            <div class="user-avatar">
+                                <i class="fas fa-user-shield"></i>
+                            </div>
+                            <div class="user-info">
+                                <div class="user-name" th:text="${nomComplet}">Admin</div>
+                                <div class="user-role">Administrateur</div>
+                            </div>
+                            <i class="fas fa-chevron-down dropdown-icon"></i>
+                        </button>
+                        <ul class="dropdown-menu dropdown-menu-end user-dropdown">
+                            <li class="dropdown-header">
+                                <div class="dropdown-user-info">
+                                    <div class="dropdown-avatar">
+                                        <i class="fas fa-user-shield"></i>
+                                    </div>
+                                    <div>
+                                        <div class="dropdown-name" th:text="${nomComplet}">Admin</div>
+                                        <div class="dropdown-email" th:text="${email}">admin@weschedule.com</div>
+                                    </div>
+                                </div>
+                            </li>
+                            <li><hr class="dropdown-divider"></li>
+                            <li>
+                                <a class="dropdown-item" href="/profile">
+                                    <i class="fas fa-user"></i>
+                                    <span>Mon profil</span>
+                                </a>
+                            </li>
+                            <li>
+                                <a class="dropdown-item" href="/dashboard/admin/parametres">
+                                    <i class="fas fa-cog"></i>
+                                    <span>Paramètres</span>
+                                </a>
+                            </li>
+                            <li><hr class="dropdown-divider"></li>
+                            <li>
+                                <form th:action="@{/logout}" method="post" style="margin: 0;">
+                                    <button type="submit" class="dropdown-item logout-item">
+                                        <i class="fas fa-sign-out-alt"></i>
+                                        <span>Déconnexion</span>
+                                    </button>
+                                </form>
+                            </li>
+                        </ul>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </nav>
+
+    <!-- Fragment: Header Enseignant -->
+    <nav th:fragment="enseignant-header" class="navbar-modern">
+        <div class="container-fluid">
+            <div class="navbar-content">
+                <!-- Logo et Brand -->
+                <div class="navbar-brand-section">
+                    <a class="brand-link" href="/dashboard/enseignant">
+                        <div class="brand-logo">
+                            <i class="fas fa-calendar-check"></i>
+                        </div>
+                        <span class="brand-text">WeSchedule</span>
+                    </a>
+                </div>
+
+                <!-- Message de bienvenue -->
+                <div class="welcome-section">
+                    <div class="welcome-message">
+                        <div class="welcome-greeting">
+                            <i class="fas fa-sun greeting-icon"></i>
+                            <span class="greeting-text">Bienvenue,</span>
+                        </div>
+                        <div class="welcome-name" th:text="${nomComplet}">Enseignant</div>
+                    </div>
+                </div>
+
+                <!-- User Menu -->
+                <div class="user-menu-section">
+                    <div class="dropdown">
+                        <button class="user-menu-btn" type="button" data-bs-toggle="dropdown">
+                            <div class="user-avatar">
+                                <i class="fas fa-chalkboard-teacher"></i>
+                            </div>
+                            <div class="user-info">
+                                <div class="user-name" th:text="${nomComplet}">Enseignant</div>
+                                <div class="user-role">Enseignant</div>
+                            </div>
+                            <i class="fas fa-chevron-down dropdown-icon"></i>
+                        </button>
+                        <ul class="dropdown-menu dropdown-menu-end user-dropdown">
+                            <li class="dropdown-header">
+                                <div class="dropdown-user-info">
+                                    <div class="dropdown-avatar">
+                                        <i class="fas fa-chalkboard-teacher"></i>
+                                    </div>
+                                    <div>
+                                        <div class="dropdown-name" th:text="${nomComplet}">Enseignant</div>
+                                        <div class="dropdown-email" th:text="${email}">enseignant@weschedule.com</div>
+                                    </div>
+                                </div>
+                            </li>
+                            <li><hr class="dropdown-divider"></li>
+                            <li>
+                                <a class="dropdown-item" href="/dashboard/enseignant/profil">
+                                    <i class="fas fa-user"></i>
+                                    <span>Mon profil</span>
+                                </a>
+                            </li>
+                            <li>
+                                <a class="dropdown-item" href="/dashboard/enseignant/disponibilites">
+                                    <i class="fas fa-clock"></i>
+                                    <span>Mes disponibilités</span>
+                                </a>
+                            </li>
+                            <li><hr class="dropdown-divider"></li>
+                            <li>
+                                <form th:action="@{/logout}" method="post" style="margin: 0;">
+                                    <button type="submit" class="dropdown-item logout-item">
+                                        <i class="fas fa-sign-out-alt"></i>
+                                        <span>Déconnexion</span>
+                                    </button>
+                                </form>
+                            </li>
+                        </ul>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </nav>
+</body>
+</html>

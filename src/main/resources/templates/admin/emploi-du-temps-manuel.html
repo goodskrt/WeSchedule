@@ -1,0 +1,388 @@
+<!DOCTYPE html>
+<html lang="fr" xmlns:th="http://www.thymeleaf.org">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title th:text="'Emploi du Temps Manuel - ' + ${classe.nom}">Emploi du Temps Manuel</title>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <link rel="stylesheet" href="/css/dashboard-professional.css">
+    <link rel="stylesheet" href="/css/modern-dashboard.css">
+    <style>
+        .week-info { background: var(--green-50); border: 1px solid var(--green-200); padding: 1rem 1.25rem; border-radius: var(--radius-lg); margin-bottom: 1.5rem; }
+        .schedule-grid { display: grid; grid-template-columns: 70px repeat(7, 1fr); gap: 1px; background: var(--gray-200); border-radius: var(--radius-lg); overflow: hidden; }
+        .schedule-header { background: linear-gradient(135deg, var(--primary-color), var(--green-600)); color: white; padding: 0.625rem 0.25rem; text-align: center; font-weight: 600; font-size: 0.8rem; }
+        .schedule-time { background: var(--gray-50); padding: 0.375rem; text-align: center; font-size: 0.7rem; color: var(--gray-600); display: flex; align-items: center; justify-content: center; }
+        .schedule-cell { background: white; min-height: 32px; cursor: pointer; transition: all var(--transition-fast); position: relative; padding: 0.25rem; font-size: 0.7rem; overflow: hidden; }
+        .schedule-cell:hover { background: var(--green-100); }
+        .schedule-cell.has-seance { background: linear-gradient(135deg, rgba(5,150,105,0.4), rgba(22,163,74,0.4)); cursor: pointer; }
+        .schedule-cell.has-seance:hover { background: linear-gradient(135deg, rgba(5,150,105,0.6), rgba(22,163,74,0.6)); }
+        .seance-content { font-weight: 600; color: var(--green-900); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+        .legend { display: flex; gap: 1.25rem; margin-top: 1rem; font-size: 0.85rem; }
+        .legend-item { display: flex; align-items: center; gap: 0.5rem; }
+        .legend-box { width: 20px; height: 20px; border-radius: var(--radius-sm); }
+        .legend-available { background: linear-gradient(135deg, rgba(5,150,105,0.4), rgba(22,163,74,0.4)); }
+        .legend-unavailable { background: white; border: 1px solid var(--gray-300); }
+    </style>
+</head>
+<body>
+    <div th:replace="~{fragments/header :: admin-header}"></div>
+
+    <div class="container-fluid">
+        <div class="row">
+            <div th:replace="~{fragments/sidebar :: admin-sidebar('emplois')}"></div>
+
+            <div class="col-lg-10 col-md-9">
+                <div class="main-content">
+                    <!-- Breadcrumb -->
+                    <nav aria-label="breadcrumb" class="mb-4">
+                        <ol class="breadcrumb">
+                            <li class="breadcrumb-item"><a th:href="@{/admin/emplois-du-temps}">Emplois du Temps</a></li>
+                            <li class="breadcrumb-item"><a th:href="@{/admin/emplois-du-temps/classe/{id}(id=${classe.idClasse})}"><span th:text="${classe.nom}">Classe</span></a></li>
+                            <li class="breadcrumb-item active">Mode Manuel</li>
+                        </ol>
+                    </nav>
+
+                    <!-- Header -->
+                    <div class="d-flex justify-content-between align-items-center mb-4">
+                        <div>
+                            <h2 class="page-title">
+                                <i class="fas fa-hand-pointer text-primary me-2"></i>
+                                Emploi du Temps Manuel - <span th:text="${classe.nom}">Classe</span>
+                            </h2>
+                            <p class="page-subtitle">Cliquez sur les créneaux pour ajouter des séances</p>
+                        </div>
+                        <a th:href="@{/admin/emplois-du-temps/classe/{id}(id=${classe.idClasse}, semaine=${semaine}, annee=${annee})}" 
+                           class="btn btn-secondary">
+                            <i class="fas fa-arrow-left"></i> Retour
+                        </a>
+                    </div>
+
+                    <!-- Week Info -->
+                    <div class="week-info">
+                        <h5 class="mb-1">
+                            <i class="fas fa-calendar-week me-2"></i>
+                            Semaine <span th:text="${semaine}">1</span> - <span th:text="${annee}">2024</span>
+                        </h5>
+                        <small class="text-muted">
+                            Du <span th:text="${#temporals.format(lundi, 'EEEE dd/MM/yyyy')}">Lundi 01/01/2024</span> 
+                            au <span th:text="${#temporals.format(dimanche, 'EEEE dd/MM/yyyy')}">Dimanche 07/01/2024</span>
+                        </small>
+                    </div>
+
+                    <!-- Instructions -->
+                    <div class="alert alert-info">
+                        <i class="fas fa-info-circle me-2"></i>
+                        <strong>Instructions:</strong> Cliquez sur un créneau vide pour ajouter une séance. Cliquez sur une séance existante pour la modifier ou la supprimer.
+                    </div>
+
+                    <!-- Schedule Grid -->
+                    <div class="card-custom p-4">
+                        <div class="schedule-grid" id="scheduleGrid">
+                            <div class="schedule-header"></div>
+                            <div class="schedule-header" th:each="jour : ${#numbers.sequence(0, 6)}">
+                                <span th:text="${#temporals.format(lundi.plusDays(jour), 'EEE', #locale)}">Lun</span><br>
+                                <small th:text="${#temporals.format(lundi.plusDays(jour), 'dd/MM')}">01/01</small>
+                            </div>
+                        </div>
+
+                        <div class="legend">
+                            <div class="legend-item"><div class="legend-box legend-available"></div><span>Séance planifiée</span></div>
+                            <div class="legend-item"><div class="legend-box legend-unavailable"></div><span>Créneau libre</span></div>
+                        </div>
+
+                        <div class="mt-4">
+                            <button class="btn btn-success" onclick="saveEmploiDuTemps()">
+                                <i class="fas fa-save"></i> Enregistrer l'emploi du temps
+                            </button>
+                            <a th:href="@{/admin/emplois-du-temps/classe/{id}(id=${classe.idClasse}, semaine=${semaine}, annee=${annee})}" 
+                               class="btn btn-outline-danger">
+                                <i class="fas fa-ban"></i> Annuler
+                            </a>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Modal Ajouter/Modifier Séance -->
+    <div class="modal fade" id="seanceModal" tabindex="-1">
+        <div class="modal-dialog modal-lg">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h5 class="modal-title" id="seanceModalTitle">
+                        <i class="fas fa-plus me-2"></i>Ajouter une séance
+                    </h5>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+                </div>
+                <div class="modal-body">
+                    <input type="hidden" id="seanceDay">
+                    <input type="hidden" id="seanceSlot">
+                    
+                    <div class="mb-3">
+                        <label class="form-label">Créneau</label>
+                        <input type="text" class="form-control" id="seanceTime" readonly>
+                    </div>
+                    
+                    <div class="mb-3">
+                        <label class="form-label">Cours *</label>
+                        <select id="seanceCours" class="form-select" required>
+                            <option value="">Sélectionner un cours</option>
+                            <option th:each="c : ${cours}" th:value="${c.idCours}" 
+                                    th:text="${c.intitule + ' (' + c.typeCours + ')'}">Cours</option>
+                        </select>
+                    </div>
+                    
+                    <div class="mb-3">
+                        <label class="form-label">Enseignant</label>
+                        <select id="seanceEnseignant" class="form-select">
+                            <option value="">Aucun</option>
+                            <option th:each="e : ${enseignants}" th:value="${e.idUser}" 
+                                    th:text="${e.prenom + ' ' + e.nom}">Enseignant</option>
+                        </select>
+                    </div>
+                    
+                    <div class="mb-3">
+                        <label class="form-label">Salle</label>
+                        <select id="seanceSalle" class="form-select">
+                            <option value="">Aucune</option>
+                            <option th:each="s : ${salles}" th:value="${s.idSalle}" 
+                                    th:text="${s.nomSalle + ' (' + s.capacite + ' places)'}">Salle</option>
+                        </select>
+                    </div>
+                    
+                    <div class="mb-3">
+                        <label class="form-label">Remarques</label>
+                        <textarea id="seanceRemarques" class="form-control" rows="2"></textarea>
+                    </div>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-danger" id="deleteSeanceBtn" style="display: none;" onclick="deleteSeance()">
+                        <i class="fas fa-trash"></i> Supprimer
+                    </button>
+                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Annuler</button>
+                    <button type="button" class="btn btn-primary" onclick="saveSeance()">
+                        <i class="fas fa-check"></i> Valider
+                    </button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Modal Résultat -->
+    <div class="modal fade" id="resultModal" tabindex="-1">
+        <div class="modal-dialog">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h5 class="modal-title" id="resultModalTitle">Résultat</h5>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+                </div>
+                <div class="modal-body" id="resultModalBody"></div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-primary" id="resultModalBtn" data-bs-dismiss="modal">OK</button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js"></script>
+    <script th:inline="javascript">
+        const classeId = /*[[${classe.idClasse}]]*/ '';
+        const semaine = /*[[${semaine}]]*/ 1;
+        const annee = /*[[${annee}]]*/ 2024;
+        const lundiStr = /*[[${lundi}]]*/ '';
+        
+        const timeSlots = ['08:00-09:00','09:00-10:00','10:00-11:00','11:00-12:00','12:00-13:00','13:00-14:00','14:00-15:00','15:00-16:00','16:00-17:00','17:00-18:00','18:00-19:00','19:00-20:00'];
+        let seances = {}; // Format: "day-slot": {coursId, enseignantId, salleId, remarques, coursNom}
+        let seanceModal, resultModal;
+        
+        document.addEventListener('DOMContentLoaded', function() {
+            seanceModal = new bootstrap.Modal(document.getElementById('seanceModal'));
+            resultModal = new bootstrap.Modal(document.getElementById('resultModal'));
+            initGrid();
+        });
+        
+        function initGrid() {
+            const grid = document.getElementById('scheduleGrid');
+            timeSlots.forEach((slot, slotIndex) => {
+                const timeCell = document.createElement('div');
+                timeCell.className = 'schedule-time';
+                timeCell.textContent = slot;
+                grid.appendChild(timeCell);
+                
+                for (let day = 0; day < 7; day++) {
+                    const cell = document.createElement('div');
+                    cell.className = 'schedule-cell';
+                    cell.dataset.day = day;
+                    cell.dataset.slot = slotIndex;
+                    cell.onclick = () => openSeanceModal(day, slotIndex);
+                    grid.appendChild(cell);
+                }
+            });
+        }
+        
+        function openSeanceModal(day, slot) {
+            const key = day + '-' + slot;
+            const isEdit = seances[key] !== undefined;
+            
+            document.getElementById('seanceDay').value = day;
+            document.getElementById('seanceSlot').value = slot;
+            document.getElementById('seanceTime').value = timeSlots[slot];
+            
+            if (isEdit) {
+                document.getElementById('seanceModalTitle').innerHTML = '<i class="fas fa-edit me-2"></i>Modifier la séance';
+                document.getElementById('seanceCours').value = seances[key].coursId;
+                document.getElementById('seanceEnseignant').value = seances[key].enseignantId || '';
+                document.getElementById('seanceSalle').value = seances[key].salleId || '';
+                document.getElementById('seanceRemarques').value = seances[key].remarques || '';
+                document.getElementById('deleteSeanceBtn').style.display = 'inline-block';
+            } else {
+                document.getElementById('seanceModalTitle').innerHTML = '<i class="fas fa-plus me-2"></i>Ajouter une séance';
+                document.getElementById('seanceCours').value = '';
+                document.getElementById('seanceEnseignant').value = '';
+                document.getElementById('seanceSalle').value = '';
+                document.getElementById('seanceRemarques').value = '';
+                document.getElementById('deleteSeanceBtn').style.display = 'none';
+            }
+            
+            seanceModal.show();
+        }
+        
+        function saveSeance() {
+            const day = parseInt(document.getElementById('seanceDay').value);
+            const slot = parseInt(document.getElementById('seanceSlot').value);
+            const coursId = document.getElementById('seanceCours').value;
+            
+            if (!coursId) {
+                alert('Veuillez sélectionner un cours');
+                return;
+            }
+            
+            const key = day + '-' + slot;
+            const coursSelect = document.getElementById('seanceCours');
+            const coursNom = coursSelect.options[coursSelect.selectedIndex].text;
+            
+            seances[key] = {
+                coursId: coursId,
+                enseignantId: document.getElementById('seanceEnseignant').value,
+                salleId: document.getElementById('seanceSalle').value,
+                remarques: document.getElementById('seanceRemarques').value,
+                coursNom: coursNom
+            };
+            
+            updateCell(day, slot);
+            seanceModal.hide();
+        }
+        
+        function deleteSeance() {
+            const day = parseInt(document.getElementById('seanceDay').value);
+            const slot = parseInt(document.getElementById('seanceSlot').value);
+            const key = day + '-' + slot;
+            
+            delete seances[key];
+            updateCell(day, slot);
+            seanceModal.hide();
+        }
+        
+        function updateCell(day, slot) {
+            const key = day + '-' + slot;
+            const cell = document.querySelector('.schedule-cell[data-day="' + day + '"][data-slot="' + slot + '"]');
+            
+            if (seances[key]) {
+                cell.classList.add('has-seance');
+                cell.innerHTML = '<div class="seance-content">' + seances[key].coursNom + '</div>';
+            } else {
+                cell.classList.remove('has-seance');
+                cell.innerHTML = '';
+            }
+        }
+        
+        function saveEmploiDuTemps() {
+            if (Object.keys(seances).length === 0) {
+                showResult('Erreur', 'Veuillez ajouter au moins une séance', 'danger');
+                return;
+            }
+            
+            // Créer d'abord l'emploi du temps
+            fetch('/admin/emplois-du-temps/creer', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
+                body: 'classeId=' + classeId + '&semaine=' + semaine + '&annee=' + annee
+            })
+            .then(r => {
+                if (!r.ok) throw new Error('Erreur création emploi du temps');
+                return r.text();
+            })
+            .then(() => {
+                // Récupérer l'ID de l'emploi du temps créé
+                return fetch('/admin/emplois-du-temps/classe/' + classeId + '/emploi-id?semaine=' + semaine + '&annee=' + annee)
+                    .then(r => r.text())
+                    .catch(() => {
+                        // Si l'endpoint n'existe pas, on utilise une approche alternative
+                        // On ajoute les séances et le backend trouvera l'emploi du temps
+                        return 'temp';
+                    });
+            })
+            .then(emploiId => {
+                // Ensuite ajouter toutes les séances
+                const promises = [];
+                Object.keys(seances).forEach(key => {
+                    const [day, slot] = key.split('-').map(Number);
+                    const seance = seances[key];
+                    const [heureDebut, heureFin] = timeSlots[slot].split('-');
+                    
+                    const lundiDate = new Date(lundiStr);
+                    const seanceDate = new Date(lundiDate);
+                    seanceDate.setDate(lundiDate.getDate() + day);
+                    const dateStr = seanceDate.toISOString().split('T')[0];
+                    
+                    const formData = new URLSearchParams();
+                    formData.append('classeId', classeId);
+                    formData.append('semaine', semaine);
+                    formData.append('annee', annee);
+                    formData.append('coursId', seance.coursId);
+                    if (seance.enseignantId) formData.append('enseignantId', seance.enseignantId);
+                    if (seance.salleId) formData.append('salleId', seance.salleId);
+                    formData.append('date', dateStr);
+                    formData.append('heureDebut', heureDebut);
+                    formData.append('heureFin', heureFin);
+                    if (seance.remarques) formData.append('remarques', seance.remarques);
+                    
+                    promises.push(
+                        fetch('/admin/emplois-du-temps/seance/ajouter-manuel', {
+                            method: 'POST',
+                            headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
+                            body: formData.toString()
+                        })
+                    );
+                });
+                
+                Promise.all(promises)
+                    .then(() => {
+                        showResult('Succès', 'Emploi du temps créé avec succès!', 'success', true);
+                    })
+                    .catch(e => {
+                        showResult('Erreur', 'Erreur lors de la création des séances', 'danger');
+                    });
+            })
+            .catch(e => {
+                showResult('Erreur', 'Erreur lors de la création de l\'emploi du temps', 'danger');
+            });
+        }
+        
+        function showResult(title, message, type, redirect) {
+            document.getElementById('resultModalTitle').innerHTML = 
+                (type === 'danger' ? '<i class="fas fa-times-circle text-danger me-2"></i>' : '<i class="fas fa-check-circle text-success me-2"></i>') + title;
+            document.getElementById('resultModalBody').textContent = message;
+            if (redirect) {
+                document.getElementById('resultModalBtn').onclick = () => {
+                    window.location.href = '/admin/emplois-du-temps/classe/' + classeId + '?semaine=' + semaine + '&annee=' + annee;
+                };
+            }
+            resultModal.show();
+        }
+    </script>
+</body>
+</html>

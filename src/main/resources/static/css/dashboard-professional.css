@@ -1,6 +1,9 @@
 /* WeSchedule - Thème Professionnel pour Dashboard */
 /* Design moderne avec couleurs vertes et grises professionnelles */
 
+/* Import du fichier de styles modernes */
+@import url('modern-dashboard.css');
+
 :root {
     /* Palette de couleurs professionnelles avec plus de gris et vert */
     --primary-color: #059669;
