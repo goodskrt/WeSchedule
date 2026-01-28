@@ -4,13 +4,12 @@ import { CommonModule, isPlatformBrowser } from '@angular/common';
 import { filter } from 'rxjs/operators';
 import { SidebarEnseignant } from '../../views/enseignant/sidebar-enseignant/sidebar-enseignant';
 import { Navbar } from '../navbar/navbar';
-import { SvgIconComponent } from '../../shared/svg-icon/svg-icon.component';
 import { LayoutService } from '../../shared/services/layout.service';
 
 @Component({
   selector: 'app-enseignant-layout',
   standalone: true,
-  imports: [RouterOutlet, CommonModule, SidebarEnseignant, Navbar, SvgIconComponent],
+  imports: [RouterOutlet, CommonModule, SidebarEnseignant, Navbar],
   templateUrl: './enseignant-layout.html',
   styleUrl: './enseignant-layout.scss'
 })
@@ -74,13 +73,28 @@ export class EnseignantLayout implements OnInit {
     return this.currentPageTitle();
   }
 
+  onSidebarToggle(collapsed: boolean) {
+    console.log('Layout received toggle:', collapsed);
+    this.layoutService.setSidebarCollapsed(collapsed);
+    this.sidebarCollapsed.set(collapsed);
+  }
+
+  // Méthode pour forcer la fermeture
   closeSidebar() {
     this.layoutService.setSidebarCollapsed(true);
     this.sidebarCollapsed.set(true);
   }
 
-  onSidebarToggle(collapsed: boolean) {
-    this.layoutService.setSidebarCollapsed(collapsed);
-    this.sidebarCollapsed.set(collapsed);
+  // Méthode pour forcer l'ouverture
+  openSidebar() {
+    this.layoutService.setSidebarCollapsed(false);
+    this.sidebarCollapsed.set(false);
+  }
+
+  // Toggle manuel
+  toggleSidebar() {
+    const newState = !this.sidebarCollapsed();
+    this.layoutService.setSidebarCollapsed(newState);
+    this.sidebarCollapsed.set(newState);
   }
 }

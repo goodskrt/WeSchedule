@@ -1,5 +1,12 @@
 <!-- Layout Enseignant -->
-<div class="flex h-screen bg-gray-100">
+<div class="enseignant-layout flex h-screen bg-gray-100">
+  <!-- Overlay pour mobile -->
+  <div 
+    class="sidebar-overlay lg:hidden"
+    [class.active]="!sidebarCollapsed() && sidebarMode() === 'overlay'"
+    (click)="closeSidebar()">
+  </div>
+
   <!-- Sidebar Enseignant -->
   <app-sidebar-enseignant 
     [collapsed]="sidebarCollapsed()"
@@ -8,14 +15,12 @@
   </app-sidebar-enseignant>
 
   <!-- Contenu principal -->
-  <div class="flex-1 flex flex-col overflow-hidden">
+  <div 
+    class="main-content flex-1 flex flex-col overflow-hidden sidebar-transition"
+    [class.sidebar-collapsed]="sidebarCollapsed()">
+    
     <!-- Navbar -->
-    <app-navbar 
-      [pageTitle]="getCurrentPageTitle()"
-      [sidebarCollapsed]="sidebarCollapsed()"
-      (toggleSidebar)="onSidebarToggle(!sidebarCollapsed())"
-      (closeSidebar)="closeSidebar()">
-    </app-navbar>
+    <app-navbar></app-navbar>
 
     <!-- Zone de contenu -->
     <main class="flex-1 overflow-x-hidden overflow-y-auto bg-gray-100">

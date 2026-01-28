@@ -9,6 +9,7 @@ import { Salles } from './views/salles/salles';
 import { EmploiDeTemps } from './views/emploi-de-temps/emploi-de-temps';
 import { Professeurs } from './views/professeurs/professeurs';
 import { MainLayout } from './layout/main-layout/main-layout';
+import { EnseignantLayout } from './layout/enseignant-layout/enseignant-layout';
 import { ForgotPassword } from './views/forgot-password/forgot-password';
 
 // Import des composants enseignant
@@ -36,7 +37,7 @@ export const routes: Routes = [
         component: ForgotPassword
     },
     
-    // Routes avec layout (navigation libre après connexion)
+    // Routes avec layout principal (administrateur/étudiant)
     {
         path: 'app',
         component: MainLayout,
@@ -46,7 +47,6 @@ export const routes: Routes = [
                 redirectTo: 'dashboard',
                 pathMatch: 'full'
             },
-            // Routes administrateur/étudiant
             {
                 path: 'dashboard',
                 component: Dashboard
@@ -74,34 +74,41 @@ export const routes: Routes = [
             {
                 path: 'rapports',
                 component: Rapports
-            },
-            // Routes spécifiques enseignant
-            {
-                path: 'enseignant',
-                children: [
-                    {
-                        path: 'dashboard',
-                        component: EnseignantDashboard
-                    },
-                    // TODO: Ajouter les autres composants enseignant
-                    // {
-                    //     path: 'mes-cours',
-                    //     component: MesCours
-                    // },
-                    // {
-                    //     path: 'mon-emploi-de-temps',
-                    //     component: MonEmploiDeTemps
-                    // },
-                    // {
-                    //     path: 'mes-disponibilites',
-                    //     component: MesDisponibilites
-                    // },
-                    // {
-                    //     path: 'mon-profil',
-                    //     component: MonProfil
-                    // }
-                ]
             }
+        ]
+    },
+    
+    // Routes avec layout enseignant
+    {
+        path: 'app/enseignant',
+        component: EnseignantLayout,
+        children: [
+            {
+                path: '',
+                redirectTo: 'dashboard',
+                pathMatch: 'full'
+            },
+            {
+                path: 'dashboard',
+                component: EnseignantDashboard
+            }
+            // TODO: Ajouter les autres composants enseignant
+            // {
+            //     path: 'mes-cours',
+            //     component: MesCours
+            // },
+            // {
+            //     path: 'mon-emploi-de-temps',
+            //     component: MonEmploiDeTemps
+            // },
+            // {
+            //     path: 'mes-disponibilites',
+            //     component: MesDisponibilites
+            // },
+            // {
+            //     path: 'mon-profil',
+            //     component: MonProfil
+            // }
         ]
     }
 ];

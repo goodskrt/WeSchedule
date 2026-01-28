@@ -3,6 +3,7 @@ import { CommonModule } from '@angular/common';
 import { RouterLink } from '@angular/router';
 import { AuthService } from '../../../shared/services/auth.service';
 import { User } from '../../../shared/models/auth.models';
+import { SvgIconComponent } from '../../../shared/svg-icon/svg-icon.component';
 
 interface DashboardStats {
   totalCours: number;
@@ -22,7 +23,7 @@ interface CoursAujourdhui {
 @Component({
   selector: 'app-enseignant-dashboard',
   standalone: true,
-  imports: [CommonModule, RouterLink],
+  imports: [CommonModule, RouterLink, SvgIconComponent],
   templateUrl: './dashboard.html',
   styleUrl: './dashboard.scss',
 })

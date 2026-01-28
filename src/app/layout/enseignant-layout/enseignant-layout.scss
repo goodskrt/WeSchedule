@@ -5,10 +5,44 @@
 }
 
 .main-content {
-  transition: margin-left 0.3s ease-in-out;
+  transition: margin-left 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+  margin-left: 280px; /* Largeur de la sidebar */
+}
+
+.main-content.sidebar-collapsed {
+  margin-left: 80px; /* Largeur de la sidebar réduite */
+}
+
+/* Amélioration des transitions */
+.sidebar-transition {
+  transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
 }
 
 /* Responsive adjustments */
+@media (max-width: 1024px) {
+  .main-content {
+    margin-left: 0 !important;
+  }
+  
+  .sidebar-overlay {
+    position: fixed;
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    background: rgba(0, 0, 0, 0.5);
+    z-index: 30;
+    opacity: 0;
+    visibility: hidden;
+    transition: all 0.3s ease;
+  }
+  
+  .sidebar-overlay.active {
+    opacity: 1;
+    visibility: visible;
+  }
+}
+
 @media (max-width: 768px) {
   .main-content {
     margin-left: 0 !important;
