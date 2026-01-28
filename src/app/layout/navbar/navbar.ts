@@ -4,6 +4,8 @@ import { RouterLink, Router } from '@angular/router';
 import { FormsModule } from '@angular/forms';
 import { SvgIconComponent } from '../../shared/svg-icon/svg-icon.component';
 import { LayoutService } from '../../shared/services/layout.service';
+import { AuthService } from '../../shared/services/auth.service';
+import { UserService } from '../../shared/services/user.service';
 
 interface User {
   name: string;
@@ -59,7 +61,9 @@ export class Navbar implements OnInit {
   constructor(
     @Inject(PLATFORM_ID) private platformId: Object,
     private router: Router,
-    @Inject(LayoutService) private layoutService: LayoutService
+    @Inject(LayoutService) private layoutService: LayoutService,
+    private authService: AuthService,
+    private userService: UserService
   ) {
     this.isBrowser = isPlatformBrowser(this.platformId);
   }
@@ -70,14 +74,49 @@ export class Navbar implements OnInit {
 
   // Getter pour l'utilisateur actuel
   currentUser(): User {
+    const user = this.authService.getCurrentUser();
+    if (user) {
+      return {
+        name: this.userService.getFullName(),
+        email: user.email,
+        role: this.getRoleDisplayName(user.role),
+        avatar: '',
+        status: 'online',
+        lastSeen: new Date()
+      };
+    }
+    
     return {
-      name: 'Dr. fomekong miguel',
-      email: 'fomekong.miguel@iu-saintfomekong.cm',
-      role: 'Enseignant',
+      name: 'Utilisateur',
+      email: '',
+      role: 'Invité',
       avatar: '',
-      status: 'online',
-      lastSeen: new Date()
+      status: 'offline'
     };
+  }
+
+  // Obtenir le nom d'affichage du rôle
+  private getRoleDisplayName(role: string): string {
+    switch (role) {
+      case 'ADMINISTRATEUR':
+        return 'Administrateur';
+      case 'ENSEIGNANT':
+        return 'Enseignant';
+      case 'ETUDIANT':
+        return 'Étudiant';
+      default:
+        return 'Utilisateur';
+    }
+  }
+
+  // Vérifier si l'utilisateur est connecté
+  isAuthenticated(): boolean {
+    return this.authService.isLoggedIn();
+  }
+
+  // Déconnexion
+  logout(): void {
+    this.authService.logout();
   }
 
   // Getter pour l'état de la sidebar
@@ -469,12 +508,6 @@ export class Navbar implements OnInit {
 
   toggleSidebar() {
     this.layoutService.toggleSidebar();
-  }
-
-  logout() {
-    if (confirm('Êtes-vous sûr de vouloir vous déconnecter ?')) {
-      this.router.navigate(['/connexion']);
-    }
   }
 
   goToProfile() {

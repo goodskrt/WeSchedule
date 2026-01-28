@@ -1,0 +1,62 @@
+/* Dashboard Enseignant Styles */
+.dashboard-container {
+  min-height: 100vh;
+  background-color: #f9fafb;
+}
+
+.stats-card {
+  transition: transform 0.2s ease-in-out, box-shadow 0.2s ease-in-out;
+}
+
+.stats-card:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 10px 25px -5px rgba(0, 0, 0, 0.1), 0 10px 10px -5px rgba(0, 0, 0, 0.04);
+}
+
+.cours-card {
+  transition: all 0.2s ease-in-out;
+}
+
+.cours-card:hover {
+  background-color: #f3f4f6;
+  transform: translateX(4px);
+}
+
+.action-button {
+  transition: all 0.2s ease-in-out;
+}
+
+.action-button:hover {
+  transform: translateX(4px);
+  background-color: #f9fafb;
+}
+
+.notification-dot {
+  animation: pulse 2s infinite;
+}
+
+@keyframes pulse {
+  0%, 100% {
+    opacity: 1;
+  }
+  50% {
+    opacity: 0.5;
+  }
+}
+
+/* Responsive adjustments */
+@media (max-width: 768px) {
+  .stats-grid {
+    grid-template-columns: repeat(2, 1fr);
+  }
+  
+  .main-grid {
+    grid-template-columns: 1fr;
+  }
+}
+
+@media (max-width: 640px) {
+  .stats-grid {
+    grid-template-columns: 1fr;
+  }
+}

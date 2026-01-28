@@ -11,6 +11,9 @@ import { Professeurs } from './views/professeurs/professeurs';
 import { MainLayout } from './layout/main-layout/main-layout';
 import { ForgotPassword } from './views/forgot-password/forgot-password';
 
+// Import des composants enseignant
+import { EnseignantDashboard } from './views/enseignant/dashboard/dashboard';
+
 export const routes: Routes = [
     // Route par défaut - redirection vers connexion
     {
@@ -43,6 +46,7 @@ export const routes: Routes = [
                 redirectTo: 'dashboard',
                 pathMatch: 'full'
             },
+            // Routes administrateur/étudiant
             {
                 path: 'dashboard',
                 component: Dashboard
@@ -70,6 +74,33 @@ export const routes: Routes = [
             {
                 path: 'rapports',
                 component: Rapports
+            },
+            // Routes spécifiques enseignant
+            {
+                path: 'enseignant',
+                children: [
+                    {
+                        path: 'dashboard',
+                        component: EnseignantDashboard
+                    },
+                    // TODO: Ajouter les autres composants enseignant
+                    // {
+                    //     path: 'mes-cours',
+                    //     component: MesCours
+                    // },
+                    // {
+                    //     path: 'mon-emploi-de-temps',
+                    //     component: MonEmploiDeTemps
+                    // },
+                    // {
+                    //     path: 'mes-disponibilites',
+                    //     component: MesDisponibilites
+                    // },
+                    // {
+                    //     path: 'mon-profil',
+                    //     component: MonProfil
+                    // }
+                ]
             }
         ]
     }

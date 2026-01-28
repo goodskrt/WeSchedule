@@ -1,0 +1,25 @@
+<!-- Layout Enseignant -->
+<div class="flex h-screen bg-gray-100">
+  <!-- Sidebar Enseignant -->
+  <app-sidebar-enseignant 
+    [collapsed]="sidebarCollapsed()"
+    [mode]="sidebarMode()"
+    (toggleSidebar)="onSidebarToggle($event)">
+  </app-sidebar-enseignant>
+
+  <!-- Contenu principal -->
+  <div class="flex-1 flex flex-col overflow-hidden">
+    <!-- Navbar -->
+    <app-navbar 
+      [pageTitle]="getCurrentPageTitle()"
+      [sidebarCollapsed]="sidebarCollapsed()"
+      (toggleSidebar)="onSidebarToggle(!sidebarCollapsed())"
+      (closeSidebar)="closeSidebar()">
+    </app-navbar>
+
+    <!-- Zone de contenu -->
+    <main class="flex-1 overflow-x-hidden overflow-y-auto bg-gray-100">
+      <router-outlet></router-outlet>
+    </main>
+  </div>
+</div>

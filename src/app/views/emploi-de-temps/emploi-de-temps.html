@@ -17,16 +17,6 @@
         Ajouter
       </button>
       <button
-        (click)="openAddSubjectModal()"
-        class="btn-secondary flex items-center gap-2 bg-gradient-to-r from-green-500 to-emerald-500 text-white hover:from-green-600 hover:to-emerald-600 border-0"
-        title="Ajouter une nouvelle matière"
-      >
-        <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 6.253v13m0-13C10.832 5.477 9.246 5 7.5 5S4.168 5.477 3 6.253v13C4.168 18.477 5.754 18 7.5 18s3.332.477 4.5 1.253m0-13C13.168 5.477 14.754 5 16.5 5c1.746 0 3.332.477 4.5 1.253v13C19.832 18.477 18.246 18 16.5 18c-1.746 0-3.332.477-4.5 1.253"></path>
-        </svg>
-        Nouvelle Matière
-      </button>
-      <button
         (click)="importSchedule()"
         class="btn-secondary flex items-center gap-2"
         title="Importer un emploi du temps"
@@ -625,13 +615,4 @@
     (eventAdded)="onScheduleSave($event)"
     (eventUpdated)="onScheduleSave($event)"
   ></app-modal-schedule>
-}
-
-<!-- Add Subject Modal -->
-@if (showAddSubjectModal()) {
-  <app-modal-add-subject
-    (close)="closeAddSubjectModal()"
-    (subjectAdded)="onSubjectAdded($event)"
-    (subjectUpdated)="onSubjectUpdated($event)"
-  ></app-modal-add-subject>
 }

@@ -1,0 +1,16 @@
+/* Layout Enseignant Styles */
+.enseignant-layout {
+  height: 100vh;
+  overflow: hidden;
+}
+
+.main-content {
+  transition: margin-left 0.3s ease-in-out;
+}
+
+/* Responsive adjustments */
+@media (max-width: 768px) {
+  .main-content {
+    margin-left: 0 !important;
+  }
+}

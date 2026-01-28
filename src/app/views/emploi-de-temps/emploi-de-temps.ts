@@ -3,7 +3,6 @@ import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { SvgIconComponent } from '../../shared/svg-icon/svg-icon.component';
 import { ModalSchedule } from '../../component/modal-schedule/modal-schedule';
-import { ModalAddSubject } from '../../component/modal-add-subject/modal-add-subject';
 
 interface TimeSlot {
   id: string;
@@ -37,7 +36,7 @@ interface CalendarEvent {
 
 @Component({
   selector: 'app-emploi-de-temps',
-  imports: [CommonModule, FormsModule, SvgIconComponent, ModalSchedule, ModalAddSubject],
+  imports: [CommonModule, FormsModule, SvgIconComponent, ModalSchedule],
   templateUrl: './emploi-de-temps.html',
   styleUrl: './emploi-de-temps.scss',
 })
@@ -49,7 +48,6 @@ export class EmploiDeTemps {
   protected readonly selectedRoom = signal<string>('all');
   protected readonly showConflicts = signal(false);
   protected readonly showScheduleModal = signal(false);
-  protected readonly showAddSubjectModal = signal(false);
   protected readonly isEditMode = signal(false);
   protected readonly selectedTimeSlot = signal<{day: string, time: string} | null>(null);
   protected readonly currentEditingCourse = signal<any>(null);
@@ -320,6 +318,7 @@ export class EmploiDeTemps {
     }
   ]);
 
+  // Méthodes de filtrage
   onSchoolFilterChange(event: Event) {
     const target = event.target as HTMLSelectElement;
     this.setSchoolFilter(target.value);
@@ -351,10 +350,27 @@ export class EmploiDeTemps {
     this.selectedRoom.set(room);
   }
 
+  setSearchQuery(query: string) {
+    this.searchQuery.set(query);
+  }
+
+  clearSearch() {
+    this.searchQuery.set('');
+  }
+
   toggleConflicts() {
     this.showConflicts.update(value => !value);
   }
 
+  resetAllFilters() {
+    this.selectedSchool.set('all');
+    this.selectedTeacher.set('all');
+    this.selectedRoom.set('all');
+    this.searchQuery.set('');
+    this.showConflicts.set(false);
+  }
+
+  // Navigation
   previousWeek() {
     this.selectedWeek.update(date => {
       const newDate = new Date(date);
@@ -393,6 +409,7 @@ export class EmploiDeTemps {
     return `${startOfWeek.toLocaleDateString('fr-FR', options)} - ${endOfWeek.toLocaleDateString('fr-FR', options)}`;
   }
 
+  // Filtrage des données
   getFilteredSchedule(): WeekSchedule {
     const schedule = this.schedule();
     
@@ -450,145 +467,9 @@ export class EmploiDeTemps {
     return this.schools.find(s => s.id === schoolId)?.color || 'bg-gray-500';
   }
 
-  exportSchedule() {
-    // Simulation d'export
-    alert('Export de l\'emploi du temps en cours...');
-  }
-
-  printSchedule() {
-    window.print();
-  }
-
-  addEvent() {
-    this.isEditMode.set(false);
-    this.currentEditingCourse.set(null);
-    this.selectedTimeSlot.set(null);
-    this.showScheduleModal.set(true);
-  }
-
-  closeScheduleModal() {
-    this.showScheduleModal.set(false);
-    this.isEditMode.set(false);
-    this.currentEditingCourse.set(null);
-    this.selectedTimeSlot.set(null);
-  }
-
-  addEventToSlot(day: string, timeSlot: string) {
-    this.isEditMode.set(false);
-    this.currentEditingCourse.set(null);
-    this.selectedTimeSlot.set({day, time: timeSlot});
-    this.showScheduleModal.set(true);
-  }
-
-  onScheduleSave(courseData: any) {
-    if (this.isEditMode()) {
-      // Mode édition
-      if (this.selectedTimeSlot()) {
-        const {day, time} = this.selectedTimeSlot()!;
-        this.schedule.update(schedule => {
-          const newSchedule = { ...schedule };
-          newSchedule[day] = { ...newSchedule[day] };
-          newSchedule[day][time] = {
-            id: courseData.id || Date.now().toString(),
-            startTime: time.split('-')[0],
-            endTime: time.split('-')[1],
-            subject: courseData.subject,
-            teacher: courseData.teacher,
-            room: courseData.room,
-            type: courseData.type,
-            school: courseData.school,
-            students: courseData.students || 30,
-            color: courseData.color || this.getColorForSchool(courseData.school)
-          };
-          return newSchedule;
-        });
-      }
-    } else {
-      // Mode ajout
-      if (this.selectedTimeSlot()) {
-        const {day, time} = this.selectedTimeSlot()!;
-        
-        // Vérifier les conflits avant d'ajouter
-        const conflicts = this.checkConflictsForNewEvent(day, time, courseData);
-        if (conflicts.length > 0) {
-          const conflictMessage = conflicts.join('\n');
-          if (!confirm(`Attention! Des conflits ont été détectés:\n\n${conflictMessage}\n\nVoulez-vous continuer quand même?`)) {
-            return;
-          }
-        }
-        
-        const newEvent = {
-          id: Date.now().toString(),
-          startTime: time.split('-')[0],
-          endTime: time.split('-')[1],
-          subject: courseData.subject,
-          teacher: courseData.teacher,
-          room: courseData.room,
-          type: courseData.type,
-          school: courseData.school,
-          students: courseData.students || 30,
-          color: courseData.color || this.getColorForSchool(courseData.school)
-        };
-        
-        this.schedule.update(schedule => {
-          const newSchedule = { ...schedule };
-          newSchedule[day] = { ...newSchedule[day] };
-          newSchedule[day][time] = newEvent;
-          return newSchedule;
-        });
-      }
-    }
-    this.closeScheduleModal();
-  }
-
-  onScheduleDelete() {
-    if (this.selectedTimeSlot()) {
-      const {day, time} = this.selectedTimeSlot()!;
-      this.deleteTimeSlot(day, time);
-    }
-    this.closeScheduleModal();
-  }
-
-  onSuggestSlot(criteria: {type: string, teacher: string, room: string}) {
-    const suggestion = this.suggestOptimalSlot(criteria.type, criteria.teacher, criteria.room);
-    if (suggestion) {
-      const message = `Créneau suggéré: ${suggestion.dayName} ${suggestion.time}\n\nVoulez-vous utiliser ce créneau?`;
-      if (confirm(message)) {
-        this.closeScheduleModal();
-        this.selectedTimeSlot.set({day: suggestion.day, time: suggestion.time});
-        this.isEditMode.set(false);
-        this.showScheduleModal.set(true);
-      }
-    } else {
-      alert('Aucun créneau libre trouvé pour cet enseignant et cette salle.');
-    }
-  }
-
-  // Méthodes pour la recherche et les filtres
-  setSearchQuery(query: string) {
-    this.searchQuery.set(query);
-  }
-
-  clearSearch() {
-    this.searchQuery.set('');
-  }
-
-  toggleAdvancedFilters() {
-    this.showAdvancedFilters.update(value => !value);
-  }
-
-  resetAllFilters() {
-    this.selectedSchool.set('all');
-    this.selectedTeacher.set('all');
-    this.selectedRoom.set('all');
-    this.searchQuery.set('');
-    this.showConflicts.set(false);
-  }
-
-  // Méthode pour obtenir les enseignants uniques dans l'emploi du temps
   getUniqueTeachers(): string[] {
-    const teachers = new Set<string>();
     const schedule = this.schedule();
+    const teachers = new Set<string>();
     
     Object.values(schedule).forEach(day => {
       Object.values(day).forEach(slot => {
@@ -601,10 +482,9 @@ export class EmploiDeTemps {
     return Array.from(teachers).sort();
   }
 
-  // Méthode pour obtenir les salles uniques dans l'emploi du temps
   getUniqueRooms(): string[] {
-    const rooms = new Set<string>();
     const schedule = this.schedule();
+    const rooms = new Set<string>();
     
     Object.values(schedule).forEach(day => {
       Object.values(day).forEach(slot => {
@@ -617,100 +497,7 @@ export class EmploiDeTemps {
     return Array.from(rooms).sort();
   }
 
-  getCurrentEditingEvent(): TimeSlot | null {
-    if (this.selectedTimeSlot()) {
-      const {day, time} = this.selectedTimeSlot()!;
-      return this.schedule()[day][time] || null;
-    }
-    return null;
-  }
-
-  checkConflictsForNewEvent(day: string, timeSlot: string, eventData: any): string[] {
-    const conflicts: string[] = [];
-    const schedule = this.schedule();
-    
-    // Vérifier les conflits d'enseignant
-    for (const dayKey of Object.keys(schedule)) {
-      for (const timeKey of Object.keys(schedule[dayKey])) {
-        const slot = schedule[dayKey][timeKey];
-        if (slot && slot.teacher === eventData.teacher && timeKey === timeSlot) {
-          conflicts.push(`• L'enseignant ${eventData.teacher} a déjà cours le ${dayKey} à ${timeSlot} (${slot.subject})`);
-        }
-      }
-    }
-    
-    // Vérifier les conflits de salle
-    for (const dayKey of Object.keys(schedule)) {
-      for (const timeKey of Object.keys(schedule[dayKey])) {
-        const slot = schedule[dayKey][timeKey];
-        if (slot && slot.room === eventData.room && timeKey === timeSlot) {
-          conflicts.push(`• La salle ${eventData.room} est déjà occupée le ${dayKey} à ${timeSlot} (${slot.subject})`);
-        }
-      }
-    }
-    
-    return conflicts;
-  }
-
-  getColorForSchool(schoolId: string): string {
-    switch (schoolId) {
-      case 'sji': return 'bg-blue-100 border-blue-300 text-blue-800';
-      case 'sjm': return 'bg-green-100 border-green-300 text-green-800';
-      case 'prepa': return 'bg-purple-100 border-purple-300 text-purple-800';
-      case 'cpge': return 'bg-orange-100 border-orange-300 text-orange-800';
-      default: return 'bg-gray-100 border-gray-300 text-gray-800';
-    }
-  }
-
-  getWeekStats() {
-    const schedule = this.getFilteredSchedule();
-    let totalCourses = 0;
-    let totalStudents = 0;
-    const teacherSet = new Set<string>();
-    const roomSet = new Set<string>();
-
-    Object.values(schedule).forEach(day => {
-      Object.values(day).forEach(slot => {
-        if (slot) {
-          totalCourses++;
-          totalStudents += slot.students;
-          teacherSet.add(slot.teacher);
-          roomSet.add(slot.room);
-        }
-      });
-    });
-
-    return {
-      totalCourses,
-      totalStudents,
-      uniqueTeachers: teacherSet.size,
-      uniqueRooms: roomSet.size
-    };
-  }
-
-  editTimeSlot(day: string, timeSlot: string) {
-    const slot = this.schedule()[day][timeSlot];
-    if (slot) {
-      // Éditer un créneau existant
-      this.isEditMode.set(true);
-      this.currentEditingCourse.set(slot);
-      this.selectedTimeSlot.set({day, time: timeSlot});
-      this.showScheduleModal.set(true);
-    } else {
-      // Ajouter un nouveau créneau
-      this.addEventToSlot(day, timeSlot);
-    }
-  }
-
-  deleteTimeSlot(day: string, timeSlot: string) {
-    this.schedule.update(schedule => {
-      const newSchedule = { ...schedule };
-      newSchedule[day] = { ...newSchedule[day] };
-      newSchedule[day][timeSlot] = null;
-      return newSchedule;
-    });
-  }
-
+  // Gestion des conflits
   hasConflict(day: string, timeSlot: string): boolean {
     const slot = this.schedule()[day][timeSlot];
     if (!slot) return false;
@@ -744,20 +531,6 @@ export class EmploiDeTemps {
     return false;
   }
 
-  importSchedule() {
-    const input = document.createElement('input');
-    input.type = 'file';
-    input.accept = '.csv,.xlsx,.xls,.ics';
-    input.onchange = (event: any) => {
-      const file = event.target.files[0];
-      if (file) {
-        alert(`Import du fichier "${file.name}" en cours...`);
-        // Ici vous implémenteriez la logique d'import réelle
-      }
-    };
-    input.click();
-  }
-
   detectConflicts() {
     const conflicts: Array<{day: string, time: string, type: string, details: string}> = [];
     const schedule = this.schedule();
@@ -785,510 +558,202 @@ export class EmploiDeTemps {
     return conflicts;
   }
 
-  generateOptimizedSchedule() {
-    // Algorithme d'optimisation basique
-    alert('Génération d\'un emploi du temps optimisé...');
-    // Ici vous implémenteriez un algorithme d'optimisation
+  // Gestion de la modale
+  addEvent() {
+    this.selectedTimeSlot.set(null);
+    this.currentEditingCourse.set(null);
+    this.showScheduleModal.set(true);
   }
 
-  getScheduleStatistics() {
-    const stats = this.getWeekStats();
-    const schedule = this.schedule();
-    
-    // Calcul du taux d'occupation
-    let totalSlots = 0;
-    let occupiedSlots = 0;
-    
-    Object.values(schedule).forEach(day => {
-      Object.values(day).forEach(slot => {
-        totalSlots++;
-        if (slot) occupiedSlots++;
-      });
-    });
-    
-    const occupancyRate = Math.round((occupiedSlots / totalSlots) * 100);
-    
-    return {
-      ...stats,
-      occupancyRate,
-      totalSlots,
-      occupiedSlots,
-      freeSlots: totalSlots - occupiedSlots
-    };
+  addEventToSlot(day: string, timeSlot: string) {
+    this.selectedTimeSlot.set({ day, time: timeSlot });
+    this.currentEditingCourse.set(null);
+    this.showScheduleModal.set(true);
   }
 
-  exportToCalendar() {
-    // Export vers format iCal
-    const schedule = this.getFilteredSchedule();
-    let icalContent = 'BEGIN:VCALENDAR\nVERSION:2.0\nPRODID:-//Campus//Emploi du Temps//FR\n';
-    
-    Object.keys(schedule).forEach(day => {
-      Object.keys(schedule[day]).forEach(timeSlot => {
-        const slot = schedule[day][timeSlot];
-        if (slot) {
-          const startTime = slot.startTime.replace(':', '');
-          const endTime = slot.endTime.replace(':', '');
-          
-          icalContent += `BEGIN:VEVENT\n`;
-          icalContent += `SUMMARY:${slot.subject}\n`;
-          icalContent += `DESCRIPTION:Enseignant: ${slot.teacher}\\nSalle: ${slot.room}\\nÉtudiants: ${slot.students}\n`;
-          icalContent += `LOCATION:${slot.room}\n`;
-          icalContent += `DTSTART:20241216T${startTime}00\n`;
-          icalContent += `DTEND:20241216T${endTime}00\n`;
-          icalContent += `END:VEVENT\n`;
-        }
-      });
-    });
-    
-    icalContent += 'END:VCALENDAR';
-    
-    const blob = new Blob([icalContent], { type: 'text/calendar' });
-    const url = window.URL.createObjectURL(blob);
-    const a = document.createElement('a');
-    a.href = url;
-    a.download = 'emploi-du-temps.ics';
-    a.click();
-    window.URL.revokeObjectURL(url);
+  editTimeSlot(day: string, timeSlot: string) {
+    const slot = this.schedule()[day][timeSlot];
+    if (slot) {
+      this.selectedTimeSlot.set({ day, time: timeSlot });
+      this.currentEditingCourse.set(slot);
+      this.showScheduleModal.set(true);
+    }
   }
 
-  bulkEditTimeSlots(selectedSlots: Array<{day: string, time: string}>, newData: Partial<TimeSlot>) {
+  closeScheduleModal() {
+    this.showScheduleModal.set(false);
+    this.selectedTimeSlot.set(null);
+    this.currentEditingCourse.set(null);
+  }
+
+  onScheduleSave(eventData: any) {
+    if (!eventData) {
+      // Suppression du cours
+      if (this.selectedTimeSlot()) {
+        const { day, time } = this.selectedTimeSlot()!;
+        this.deleteTimeSlot(day, time);
+      }
+      return;
+    }
+
+    if (!this.selectedTimeSlot()) {
+      alert('Erreur: Aucun créneau sélectionné');
+      return;
+    }
+
+    const { day, time } = this.selectedTimeSlot()!;
+    
     this.schedule.update(schedule => {
       const newSchedule = { ...schedule };
-      
-      selectedSlots.forEach(({day, time}) => {
-        if (newSchedule[day][time]) {
-          newSchedule[day] = { ...newSchedule[day] };
-          newSchedule[day][time] = { ...newSchedule[day][time]!, ...newData };
-        }
-      });
-      
+      newSchedule[day] = { ...newSchedule[day] };
+      newSchedule[day][time] = {
+        ...eventData,
+        id: eventData.id || Date.now().toString()
+      };
+      return newSchedule;
+    });
+
+    // Afficher un message de confirmation
+    const action = this.currentEditingCourse() ? 'modifié' : 'ajouté';
+    alert(`Cours "${eventData.subject}" ${action} avec succès !`);
+  }
+
+  deleteTimeSlot(day: string, timeSlot: string) {
+    this.schedule.update(schedule => {
+      const newSchedule = { ...schedule };
+      newSchedule[day] = { ...newSchedule[day] };
+      newSchedule[day][timeSlot] = null;
       return newSchedule;
     });
   }
 
-  findAvailableSlots(teacher?: string, room?: string): Array<{day: string, time: string, dayName: string}> {
-    const availableSlots: Array<{day: string, time: string, dayName: string}> = [];
-    const schedule = this.schedule();
-    
-    Object.keys(schedule).forEach(day => {
-      const dayName = this.days.find(d => d.key === day)?.name || day;
-      Object.keys(schedule[day]).forEach(timeSlot => {
-        const slot = schedule[day][timeSlot];
-        
-        if (!slot) {
-          // Créneau libre
-          let isAvailable = true;
-          
-          // Vérifier si l'enseignant est libre
-          if (teacher) {
-            for (const checkDay of Object.keys(schedule)) {
-              const checkSlot = schedule[checkDay][timeSlot];
-              if (checkSlot && checkSlot.teacher === teacher) {
-                isAvailable = false;
-                break;
-              }
-            }
-          }
-          
-          // Vérifier si la salle est libre
-          if (room && isAvailable) {
-            for (const checkDay of Object.keys(schedule)) {
-              const checkSlot = schedule[checkDay][timeSlot];
-              if (checkSlot && checkSlot.room === room) {
-                isAvailable = false;
-                break;
-              }
-            }
-          }
-          
-          if (isAvailable) {
-            availableSlots.push({day, time: timeSlot, dayName});
-          }
-        }
-      });
-    });
-    
-    return availableSlots;
-  }
-
-  suggestOptimalSlot(subjectType: string, teacherName: string, roomName: string): {day: string, time: string, dayName: string} | null {
-    const availableSlots = this.findAvailableSlots(teacherName, roomName);
-    
-    if (availableSlots.length === 0) return null;
-    
-    // Préférences selon le type de cours
-    const preferences = {
-      'CM': ['08:00-09:00', '09:00-10:00', '10:00-11:00'], // Matin pour les CM
-      'TD': ['13:00-14:00', '14:00-15:00', '15:00-16:00'], // Après-midi pour les TD
-      'TP': ['14:00-15:00', '15:00-16:00', '16:00-17:00'], // Fin d'après-midi pour les TP
-      'Exam': ['08:00-09:00', '09:00-10:00'] // Matin pour les examens
-    };
-    
-    const preferredTimes = preferences[subjectType as keyof typeof preferences] || this.timeSlots;
-    
-    // Chercher le meilleur créneau selon les préférences
-    for (const preferredTime of preferredTimes) {
-      const slot = availableSlots.find(s => s.time === preferredTime);
-      if (slot) return slot;
-    }
-    
-    // Si aucun créneau préféré, retourner le premier disponible
-    return availableSlots[0];
-  }
-
-  syncWithExternalCalendar() {
-    // Synchronisation avec calendriers externes (Google Calendar, Outlook, etc.)
-    alert('Synchronisation avec les calendriers externes...');
-  }
-
-  // Nouvelle fonctionnalité : Duplication de cours
+  // Méthode pour dupliquer un cours
   duplicateCourse(day: string, timeSlot: string) {
     const slot = this.schedule()[day][timeSlot];
     if (!slot) return;
 
-    const availableSlots = this.findAvailableSlots(slot.teacher, slot.room);
-    if (availableSlots.length === 0) {
-      alert('Aucun créneau libre disponible pour dupliquer ce cours.');
-      return;
-    }
-
-    const slotOptions = availableSlots.map(s => `${s.dayName} ${s.time}`).join('\n');
-    const choice = prompt(`Choisissez un créneau pour dupliquer le cours "${slot.subject}":\n\n${slotOptions}\n\nEntrez le numéro (1-${availableSlots.length}):`);
+    // Trouver le prochain créneau libre
+    const days = ['monday', 'tuesday', 'wednesday', 'thursday', 'friday', 'saturday'];
+    const timeSlots = ['08:00-09:00', '09:00-10:00', '10:00-11:00', '11:00-12:00', '13:00-14:00', '14:00-15:00', '15:00-16:00', '16:00-17:00'];
     
-    if (choice && !isNaN(Number(choice))) {
-      const index = Number(choice) - 1;
-      if (index >= 0 && index < availableSlots.length) {
-        const targetSlot = availableSlots[index];
-        const duplicatedCourse: TimeSlot = {
-          ...slot,
-          id: Date.now().toString()
-        };
-
-        this.schedule.update(schedule => {
-          const newSchedule = { ...schedule };
-          newSchedule[targetSlot.day] = { ...newSchedule[targetSlot.day] };
-          newSchedule[targetSlot.day][targetSlot.time] = duplicatedCourse;
-          return newSchedule;
-        });
-
-        alert(`Cours dupliqué avec succès le ${targetSlot.dayName} à ${targetSlot.time}`);
-      }
-    }
-  }
-
-  // Nouvelle fonctionnalité : Génération automatique d'emploi du temps
-  generateAutoSchedule() {
-    if (!confirm('Cette action va remplacer l\'emploi du temps actuel. Continuer ?')) {
-      return;
-    }
-
-    const subjects = this.availableSubjects();
-    const teachers = this.availableTeachers();
-    const rooms = this.availableRooms();
-    
-    // Réinitialiser l'emploi du temps
-    const newSchedule: WeekSchedule = {};
-    this.days.forEach(day => {
-      newSchedule[day.key] = {};
-      this.timeSlots.forEach(timeSlot => {
-        newSchedule[day.key][timeSlot] = null;
-      });
-    });
-
-    // Algorithme de génération automatique
-    let courseCount = 0;
-    const maxCoursesPerWeek = 20;
-
-    for (let i = 0; i < maxCoursesPerWeek && courseCount < subjects.length; i++) {
-      const subject = subjects[i % subjects.length];
-      const teacher = teachers.find(t => t.school === subject.school) || teachers[0];
-      const room = this.selectOptimalRoom(subject.type, rooms);
-
-      if (room) {
-        const optimalSlot = this.findOptimalSlotForSubject(newSchedule, subject.type);
-        if (optimalSlot) {
-          const newCourse: TimeSlot = {
-            id: `auto-${Date.now()}-${i}`,
-            startTime: optimalSlot.time.split('-')[0],
-            endTime: optimalSlot.time.split('-')[1],
-            subject: subject.name,
-            teacher: teacher.name,
-            room: room.name,
-            type: subject.type as 'CM' | 'TD' | 'TP' | 'Exam',
-            school: subject.school,
-            students: Math.min(30, room.capacity),
-            color: this.getColorForSchool(subject.school)
-          };
-
-          newSchedule[optimalSlot.day][optimalSlot.time] = newCourse;
-          courseCount++;
+    let foundSlot = false;
+    for (const d of days) {
+      for (const t of timeSlots) {
+        if (!this.schedule()[d][t]) {
+          // Créneau libre trouvé
+          this.schedule.update(schedule => {
+            const newSchedule = { ...schedule };
+            newSchedule[d] = { ...newSchedule[d] };
+            newSchedule[d][t] = {
+              ...slot,
+              id: Date.now().toString()
+            };
+            return newSchedule;
+          });
+          
+          alert(`Cours dupliqué vers ${d} ${t}`);
+          foundSlot = true;
+          break;
         }
       }
+      if (foundSlot) break;
     }
 
-    this.schedule.set(newSchedule);
-    alert(`Emploi du temps généré automatiquement avec ${courseCount} cours.`);
+    if (!foundSlot) {
+      alert('Aucun créneau libre disponible pour la duplication.');
+    }
   }
 
-  private selectOptimalRoom(courseType: string, rooms: any[]): any {
-    if (courseType === 'TP') {
-      return rooms.find(r => r.type === 'Informatique' || r.type === 'Laboratoire') || rooms[0];
-    } else if (courseType === 'CM') {
-      return rooms.find(r => r.type === 'Amphithéâtre') || rooms.find(r => r.type === 'Cours') || rooms[0];
-    }
-    return rooms.find(r => r.type === 'Cours') || rooms[0];
-  }
-
-  private findOptimalSlotForSubject(schedule: WeekSchedule, courseType: string): {day: string, time: string} | null {
-    const preferences = {
-      'CM': ['08:00-09:00', '09:00-10:00', '10:00-11:00'],
-      'TD': ['13:00-14:00', '14:00-15:00'],
-      'TP': ['14:00-15:00', '15:00-16:00', '16:00-17:00']
-    };
-
-    const preferredTimes = preferences[courseType as keyof typeof preferences] || this.timeSlots;
-
-    for (const time of preferredTimes) {
-      for (const day of this.days) {
-        if (!schedule[day.key][time]) {
-          return {day: day.key, time};
-        }
-      }
-    }
-
-    // Si aucun créneau préféré, chercher n'importe quel créneau libre
-    for (const day of this.days) {
-      for (const time of this.timeSlots) {
-        if (!schedule[day.key][time]) {
-          return {day: day.key, time};
-        }
-      }
-    }
-
-    return null;
-  }
-
-  // Nouvelle fonctionnalité : Validation de l'emploi du temps
-  validateSchedule(): {isValid: boolean, issues: string[]} {
-    const issues: string[] = [];
-    const schedule = this.schedule();
-
-    // Vérifier les conflits d'enseignants
-    const teacherConflicts = new Map<string, string[]>();
+  // Statistiques
+  getAdvancedStatistics() {
+    const schedule = this.getFilteredSchedule();
+    let totalCourses = 0;
+    let totalStudents = 0;
+    const coursesByType = { CM: 0, TD: 0, TP: 0, Exam: 0 };
     
-    Object.keys(schedule).forEach(day => {
-      Object.keys(schedule[day]).forEach(timeSlot => {
-        const slot = schedule[day][timeSlot];
+    Object.values(schedule).forEach(day => {
+      Object.values(day).forEach(slot => {
         if (slot) {
-          const key = `${slot.teacher}-${timeSlot}`;
-          if (!teacherConflicts.has(key)) {
-            teacherConflicts.set(key, []);
-          }
-          teacherConflicts.get(key)!.push(`${day} ${timeSlot}`);
+          totalCourses++;
+          totalStudents += slot.students;
+          coursesByType[slot.type]++;
         }
       });
     });
 
-    teacherConflicts.forEach((slots, key) => {
-      if (slots.length > 1) {
-        const teacher = key.split('-')[0];
-        issues.push(`Conflit enseignant: ${teacher} a plusieurs cours en même temps: ${slots.join(', ')}`);
-      }
-    });
-
-    // Vérifier les conflits de salles
-    const roomConflicts = new Map<string, string[]>();
-    
-    Object.keys(schedule).forEach(day => {
-      Object.keys(schedule[day]).forEach(timeSlot => {
-        const slot = schedule[day][timeSlot];
-        if (slot) {
-          const key = `${slot.room}-${timeSlot}`;
-          if (!roomConflicts.has(key)) {
-            roomConflicts.set(key, []);
-          }
-          roomConflicts.get(key)!.push(`${day} ${timeSlot}`);
-        }
-      });
-    });
-
-    roomConflicts.forEach((slots, key) => {
-      if (slots.length > 1) {
-        const room = key.split('-')[0];
-        issues.push(`Conflit salle: ${room} est occupée plusieurs fois en même temps: ${slots.join(', ')}`);
-      }
-    });
-
-    // Vérifier la capacité des salles
-    Object.keys(schedule).forEach(day => {
-      Object.keys(schedule[day]).forEach(timeSlot => {
-        const slot = schedule[day][timeSlot];
-        if (slot) {
-          const room = this.availableRooms().find(r => r.name === slot.room);
-          if (room && slot.students > room.capacity) {
-            issues.push(`Capacité dépassée: ${slot.subject} (${slot.students} étudiants) dans ${room.name} (capacité: ${room.capacity})`);
-          }
-        }
-      });
-    });
+    const totalSlots = Object.keys(schedule).length * this.timeSlots.length;
+    const occupancyRate = Math.round((totalCourses / totalSlots) * 100);
+    const averageStudentsPerCourse = totalCourses > 0 ? Math.round(totalStudents / totalCourses) : 0;
 
     return {
-      isValid: issues.length === 0,
-      issues
+      totalCourses,
+      totalStudents,
+      occupancyRate,
+      averageStudentsPerCourse,
+      coursesByType
     };
   }
 
-  // Nouvelle fonctionnalité : Rapport de validation
-  showValidationReport() {
-    const validation = this.validateSchedule();
-    
-    if (validation.isValid) {
-      alert('✅ L\'emploi du temps est valide ! Aucun conflit détecté.');
-    } else {
-      const report = `❌ Problèmes détectés dans l'emploi du temps:\n\n${validation.issues.join('\n\n')}`;
-      alert(report);
-    }
+  // Actions d'export/import
+  exportSchedule() {
+    alert('Export de l\'emploi du temps en cours...');
   }
 
-  // Nouvelle fonctionnalité : Statistiques avancées
-  getAdvancedStatistics() {
-    const schedule = this.schedule();
-    const stats = {
-      totalCourses: 0,
-      coursesByType: { CM: 0, TD: 0, TP: 0, Exam: 0 },
-      coursesBySchool: { sji: 0, sjm: 0, prepa: 0, cpge: 0 },
-      teacherWorkload: new Map<string, number>(),
-      roomUsage: new Map<string, number>(),
-      timeSlotUsage: new Map<string, number>(),
-      averageStudentsPerCourse: 0,
-      totalStudents: 0,
-      occupancyRate: 0
-    };
-
-    let totalSlots = 0;
-    let occupiedSlots = 0;
-    let totalStudentsSum = 0;
-
-    Object.keys(schedule).forEach(day => {
-      Object.keys(schedule[day]).forEach(timeSlot => {
-        totalSlots++;
-        const slot = schedule[day][timeSlot];
-        
-        if (slot) {
-          occupiedSlots++;
-          stats.totalCourses++;
-          stats.coursesByType[slot.type]++;
-          stats.coursesBySchool[slot.school as keyof typeof stats.coursesBySchool]++;
-          
-          // Charge de travail des enseignants
-          const currentLoad = stats.teacherWorkload.get(slot.teacher) || 0;
-          stats.teacherWorkload.set(slot.teacher, currentLoad + 1);
-          
-          // Utilisation des salles
-          const currentUsage = stats.roomUsage.get(slot.room) || 0;
-          stats.roomUsage.set(slot.room, currentUsage + 1);
-          
-          // Utilisation des créneaux horaires
-          const currentTimeUsage = stats.timeSlotUsage.get(timeSlot) || 0;
-          stats.timeSlotUsage.set(timeSlot, currentTimeUsage + 1);
-          
-          totalStudentsSum += slot.students;
-        }
-      });
-    });
-
-    stats.occupancyRate = Math.round((occupiedSlots / totalSlots) * 100);
-    stats.averageStudentsPerCourse = stats.totalCourses > 0 ? Math.round(totalStudentsSum / stats.totalCourses) : 0;
-    stats.totalStudents = totalStudentsSum;
-
-    return stats;
+  printSchedule() {
+    window.print();
   }
 
-  // Nouvelle fonctionnalité : Export détaillé
-  exportDetailedSchedule() {
-    const schedule = this.getFilteredSchedule();
-    const stats = this.getAdvancedStatistics();
-    
-    let csvContent = 'Emploi du Temps Détaillé\n\n';
-    csvContent += 'Jour,Heure,Matière,Enseignant,Salle,Type,École,Étudiants\n';
-    
-    Object.keys(schedule).forEach(day => {
-      const dayName = this.days.find(d => d.key === day)?.name || day;
-      Object.keys(schedule[day]).forEach(timeSlot => {
-        const slot = schedule[day][timeSlot];
-        if (slot) {
-          csvContent += `${dayName},${timeSlot},${slot.subject},${slot.teacher},${slot.room},${slot.type},${slot.school},${slot.students}\n`;
-        }
-      });
-    });
-    
-    csvContent += '\n\nStatistiques:\n';
-    csvContent += `Total des cours,${stats.totalCourses}\n`;
-    csvContent += `Taux d'occupation,${stats.occupancyRate}%\n`;
-    csvContent += `Moyenne étudiants/cours,${stats.averageStudentsPerCourse}\n`;
-    csvContent += `Total étudiants,${stats.totalStudents}\n`;
-    
-    const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
-    const url = window.URL.createObjectURL(blob);
-    const a = document.createElement('a');
-    a.href = url;
-    a.download = `emploi-du-temps-${new Date().toISOString().split('T')[0]}.csv`;
-    a.click();
-    window.URL.revokeObjectURL(url);
-  }
-
-  // Nouvelle fonctionnalité : Sauvegarde et chargement
-  saveScheduleToFile() {
-    const scheduleData = {
-      schedule: this.schedule(),
-      metadata: {
-        createdAt: new Date().toISOString(),
-        version: '1.0',
-        totalCourses: this.getAdvancedStatistics().totalCourses,
-        schools: this.schools.map(s => s.name)
-      }
-    };
-
-    const jsonContent = JSON.stringify(scheduleData, null, 2);
-    const blob = new Blob([jsonContent], { type: 'application/json' });
-    const url = window.URL.createObjectURL(blob);
-    const a = document.createElement('a');
-    a.href = url;
-    a.download = `emploi-du-temps-sauvegarde-${new Date().toISOString().split('T')[0]}.json`;
-    a.click();
-    window.URL.revokeObjectURL(url);
-  }
-
-  loadScheduleFromFile() {
+  importSchedule() {
     const input = document.createElement('input');
     input.type = 'file';
-    input.accept = '.json';
+    input.accept = '.csv,.xlsx,.xls,.ics';
     input.onchange = (event: any) => {
       const file = event.target.files[0];
       if (file) {
-        const reader = new FileReader();
-        reader.onload = (e: any) => {
-          try {
-            const data = JSON.parse(e.target.result);
-            if (data.schedule && data.metadata) {
-              if (confirm(`Charger l'emploi du temps sauvegardé le ${new Date(data.metadata.createdAt).toLocaleDateString('fr-FR')} ?\n\nCela remplacera l'emploi du temps actuel.`)) {
-                this.schedule.set(data.schedule);
-                alert('Emploi du temps chargé avec succès !');
-              }
-            } else {
-              alert('Format de fichier invalide.');
-            }
-          } catch (error) {
-            alert('Erreur lors du chargement du fichier.');
-          }
-        };
-        reader.readAsText(file);
+        alert(`Import du fichier "${file.name}" en cours...`);
       }
     };
     input.click();
   }
 
-  // Nouvelle fonctionnalité : Templates d'emploi du temps
+  exportDetailedSchedule() {
+    const schedule = this.getFilteredSchedule();
+    const data = JSON.stringify(schedule, null, 2);
+    const blob = new Blob([data], { type: 'application/json' });
+    const url = window.URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = 'emploi-du-temps-detaille.json';
+    a.click();
+    window.URL.revokeObjectURL(url);
+  }
+
+  showValidationReport() {
+    const conflicts = this.detectConflicts();
+    const stats = this.getAdvancedStatistics();
+    
+    let report = `=== RAPPORT DE VALIDATION ===\n\n`;
+    report += `Statistiques générales:\n`;
+    report += `- Total des cours: ${stats.totalCourses}\n`;
+    report += `- Taux d'occupation: ${stats.occupancyRate}%\n`;
+    report += `- Total étudiants: ${stats.totalStudents}\n\n`;
+    
+    if (conflicts.length > 0) {
+      report += `Conflits détectés (${conflicts.length}):\n`;
+      conflicts.forEach((conflict, i) => {
+        report += `${i + 1}. ${conflict.details} (${conflict.day} ${conflict.time})\n`;
+      });
+    } else {
+      report += `✅ Aucun conflit détecté\n`;
+    }
+    
+    alert(report);
+  }
+
+  generateAutoSchedule() {
+    alert('Génération automatique d\'emploi du temps...');
+  }
+
   createTemplate() {
     const templateName = prompt('Nom du template:');
     if (!templateName) return;
@@ -1299,7 +764,6 @@ export class EmploiDeTemps {
       createdAt: new Date().toISOString()
     };
 
-    // Sauvegarder dans le localStorage (en production, utiliser une API)
     const templates = JSON.parse(localStorage.getItem('scheduleTemplates') || '[]');
     templates.push(template);
     localStorage.setItem('scheduleTemplates', JSON.stringify(templates));
@@ -1332,7 +796,51 @@ export class EmploiDeTemps {
     }
   }
 
-  // Nouvelle fonctionnalité : Notification de rappel
+  saveScheduleToFile() {
+    const data = {
+      schedule: this.schedule(),
+      metadata: {
+        exportDate: new Date().toISOString(),
+        version: '1.0'
+      }
+    };
+    
+    const blob = new Blob([JSON.stringify(data, null, 2)], { type: 'application/json' });
+    const url = window.URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = `emploi-du-temps-${new Date().toISOString().split('T')[0]}.json`;
+    a.click();
+    window.URL.revokeObjectURL(url);
+  }
+
+  loadScheduleFromFile() {
+    const input = document.createElement('input');
+    input.type = 'file';
+    input.accept = '.json';
+    input.onchange = (event: any) => {
+      const file = event.target.files[0];
+      if (file) {
+        const reader = new FileReader();
+        reader.onload = (e) => {
+          try {
+            const data = JSON.parse(e.target?.result as string);
+            if (data.schedule) {
+              this.schedule.set(data.schedule);
+              alert('Emploi du temps chargé avec succès !');
+            } else {
+              alert('Format de fichier invalide.');
+            }
+          } catch (error) {
+            alert('Erreur lors du chargement du fichier.');
+          }
+        };
+        reader.readAsText(file);
+      }
+    };
+    input.click();
+  }
+
   scheduleReminder(day: string, timeSlot: string) {
     const slot = this.schedule()[day][timeSlot];
     if (!slot) return;
@@ -1346,51 +854,5 @@ export class EmploiDeTemps {
     }, minutes * 60 * 1000);
 
     alert(`Rappel programmé dans ${minutes} minutes pour le cours "${slot.subject}".`);
-  }
-
-  // Méthodes pour la gestion de la modale d'ajout de matière
-  openAddSubjectModal() {
-    this.showAddSubjectModal.set(true);
-  }
-
-  closeAddSubjectModal() {
-    this.showAddSubjectModal.set(false);
-  }
-
-  onSubjectAdded(subjectData: any) {
-    // Ajouter la nouvelle matière à la liste des matières disponibles
-    this.availableSubjects.update(subjects => [
-      ...subjects,
-      {
-        id: subjectData.id,
-        name: subjectData.name,
-        code: subjectData.code,
-        school: subjectData.school,
-        type: subjectData.type
-      }
-    ]);
-
-    // Afficher un message de succès
-    alert(`✅ Matière "${subjectData.name}" ajoutée avec succès !`);
-    
-    // Fermer la modale
-    this.closeAddSubjectModal();
-  }
-
-  onSubjectUpdated(subjectData: any) {
-    // Mettre à jour la matière dans la liste
-    this.availableSubjects.update(subjects => 
-      subjects.map(subject => 
-        subject.id === subjectData.id 
-          ? { ...subject, ...subjectData }
-          : subject
-      )
-    );
-
-    // Afficher un message de succès
-    alert(`✅ Matière "${subjectData.name}" modifiée avec succès !`);
-    
-    // Fermer la modale
-    this.closeAddSubjectModal();
   }
 }
