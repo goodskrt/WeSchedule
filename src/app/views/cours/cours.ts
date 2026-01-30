@@ -1,621 +1,688 @@
-import { Component, signal } from '@angular/core';
-import { CommonModule } from '@angular/common';
-import { AjouterCours } from '../../component/ajouter-cours/ajouter-cours';
+import { Component, signal, OnInit, Inject, PLATFORM_ID } from '@angular/core';
+import { CommonModule, isPlatformBrowser } from '@angular/common';
+import { FormsModule } from '@angular/forms';
+import { SvgIconComponent } from '../../shared/svg-icon/svg-icon.component';
 
-interface Course {
+interface CoursModel {
   id: string;
-  name: string;
-  code: string;
-  teacher: string;
-  school: string;
-  students: number;
-  room: string;
-  schedule: string;
-  type: 'CM' | 'TD' | 'TP';
-  status: 'active' | 'cancelled' | 'completed';
-  favorite?: boolean;
-  duration?: number;
+  ueId: string; // Référence vers l'UE
+  typeId: string; // Référence vers le type de cours
+  professeurId?: string;
+  salleId?: string;
+  duree: number; // en heures
   description?: string;
-  prerequisites?: string;
+  statut: 'actif' | 'annule' | 'termine' | 'planifie';
+  createdAt: Date;
+  updatedAt: Date;
 }
 
-interface School {
+interface UEModel {
   id: string;
-  name: string;
-  abbreviation: string;
-  color: string;
+  code: string;
+  nom: string;
+  credits: number;
+  semestre: number;
+  ecole: string;
+  classes: string[];
+}
+
+interface TypeCours {
+  id: string;
+  nom: string;
+  code: string;
+  description: string;
+  couleur: string;
+  dureeDefaut: number; // durée par défaut en heures
+}
+
+interface Professeur {
+  id: string;
+  nom: string;
+  prenom: string;
+  email: string;
+  specialites: string[];
+}
+
+interface Salle {
+  id: string;
+  nom: string;
+  capacite: number;
+  type: string;
+  equipements: string[];
+}
+
+interface Ecole {
+  id: string;
+  nom: string;
+  code: string;
+  couleur: string;
 }
 
 @Component({
   selector: 'app-cours',
-  imports: [CommonModule, AjouterCours],
+  standalone: true,
+  imports: [CommonModule, FormsModule, SvgIconComponent],
   templateUrl: './cours.html',
-  styleUrl: './cours.scss',
+  styleUrl: './cours.scss'
 })
-export class Cours {
-  protected readonly selectedView = signal<'grid' | 'list'>('grid');
-  protected readonly selectedSchool = signal<string>('all');
-  protected readonly selectedStatus = signal<string>('all');
-  protected readonly selectedType = signal<string>('all');
-  protected readonly selectedTeacher = signal<string>('all');
-  protected readonly searchTerm = signal<string>('');
-  protected readonly showAddModal = signal<boolean>(false);
-  protected readonly selectedCourse = signal<Course | null>(null);
-  protected readonly showDetailsModal = signal<boolean>(false);
-  protected readonly showAdvancedFilters = signal<boolean>(false);
-  protected readonly sortBy = signal<string>('name');
-  protected readonly sortOrder = signal<'asc' | 'desc'>('asc');
-  protected readonly selectedCourseIds = signal<string[]>([]);
+export class Cours implements OnInit {
+  private isBrowser: boolean;
 
-  protected readonly schools = signal<School[]>([
-    { id: 'sji', name: 'saint jean International', abbreviation: 'SJI', color: 'bg-blue-500' },
-    { id: 'sjm', name: 'saint jean Management', abbreviation: 'SJM', color: 'bg-green-500' },
-    { id: 'prepa', name: 'PrepaVogt', abbreviation: 'PV', color: 'bg-purple-500' },
-    { id: 'cpge', name: 'Classes Préparatoires', abbreviation: 'CPGE', color: 'bg-orange-500' }
-  ]);
-
-  protected readonly courses = signal<Course[]>([
-    {
-      id: '1',
-      name: 'Algorithmique et Structures de Données',
-      code: 'INFO301',
-      teacher: 'Dr. Martin Dubois',
-      school: 'sji',
-      students: 35,
-      room: 'Salle 101',
-      schedule: 'Lun 09:00-11:00',
-      type: 'CM',
-      status: 'active',
-      favorite: true,
-      duration: 90,
-      description: 'Introduction aux algorithmes fondamentaux et structures de données',
-      prerequisites: 'Programmation de base'
-    },
-    {
-      id: '2',
-      name: 'Base de Données Avancées',
-      code: 'INFO302',
-      teacher: 'Prof. Marie Laurent',
-      school: 'sji',
-      students: 28,
-      room: 'Lab Info 2',
-      schedule: 'Mar 14:00-16:00',
-      type: 'TP',
-      status: 'active',
-      favorite: false,
-      duration: 120,
-      description: 'Conception et optimisation de bases de données',
-      prerequisites: 'Base de données relationnelles'
-    },
-    {
-      id: '3',
-      name: 'Gestion Financière',
-      code: 'GEST201',
-      teacher: 'Dr. Paul Nguyen',
-      school: 'sjm',
-      students: 45,
-      room: 'Amphi A',
-      schedule: 'Mer 10:00-12:00',
-      type: 'CM',
-      status: 'active',
-      favorite: false,
-      duration: 120,
-      description: 'Principes de gestion financière d\'entreprise',
-      prerequisites: 'Comptabilité générale'
-    },
-    {
-      id: '4',
-      name: 'Mathématiques Supérieures',
-      code: 'MATH101',
-      teacher: 'Prof. Sophie Bernard',
-      school: 'prepa',
-      students: 32,
-      room: 'Salle 205',
-      schedule: 'Jeu 08:00-10:00',
-      type: 'TD',
-      status: 'active',
-      favorite: true,
-      duration: 120,
-      description: 'Mathématiques avancées pour classes préparatoires',
-      prerequisites: 'Mathématiques terminale'
-    },
-    {
-      id: '5',
-      name: 'Physique Quantique',
-      code: 'PHYS301',
-      teacher: 'Dr. fomekong Laurent',
-      school: 'cpge',
-      students: 25,
-      room: 'Salle 301',
-      schedule: 'Ven 14:00-16:00',
-      type: 'CM',
-      status: 'cancelled',
-      favorite: false,
-      duration: 120,
-      description: 'Introduction à la mécanique quantique',
-      prerequisites: 'Physique classique'
-    },
-    {
-      id: '6',
-      name: 'Programmation Web',
-      code: 'INFO201',
-      teacher: 'Prof. Anne Moreau',
-      school: 'sji',
-      students: 40,
-      room: 'Lab Info 1',
-      schedule: 'Lun 14:00-17:00',
-      type: 'TP',
-      status: 'completed',
-      favorite: false,
-      duration: 180,
-      description: 'Développement d\'applications web modernes',
-      prerequisites: 'HTML, CSS, JavaScript'
-    }
-  ]);
-
-  getSchoolInfo(schoolId: string) {
-    return this.schools().find(s => s.id === schoolId);
+  constructor(@Inject(PLATFORM_ID) private platformId: Object) {
+    this.isBrowser = isPlatformBrowser(this.platformId);
   }
 
-  getStatusColor(status: string) {
-    switch (status) {
-      case 'active': return 'bg-green-100 text-green-800';
-      case 'cancelled': return 'bg-red-100 text-red-800';
-      case 'completed': return 'bg-gray-100 text-gray-800';
-      default: return 'bg-gray-100 text-gray-800';
-    }
+  // Signals pour l'état du composant
+  protected readonly showAddModal = signal(false);
+  protected readonly showEditModal = signal(false);
+  protected readonly showDetailsModal = signal(false);
+  protected readonly isLoading = signal(false);
+  protected readonly searchTerm = signal('');
+  protected readonly selectedEcole = signal('');
+  protected readonly selectedSemestre = signal(0);
+  protected readonly selectedType = signal('');
+  protected readonly selectedStatut = signal('');
+  protected readonly selectedProfesseur = signal('');
+  protected readonly currentView = signal<'grid' | 'list'>('grid');
+
+  // Données
+  protected readonly cours = signal<CoursModel[]>([]);
+  protected readonly ues = signal<UEModel[]>([]);
+  protected readonly typesCours = signal<TypeCours[]>([]);
+  protected readonly professeurs = signal<Professeur[]>([]);
+  protected readonly salles = signal<Salle[]>([]);
+  protected readonly ecoles = signal<Ecole[]>([]);
+  protected readonly selectedCours = signal<CoursModel | null>(null);
+
+  // Formulaire
+  protected readonly coursForm = signal({
+    id: '',
+    ueId: '',
+    typeId: '',
+    professeurId: '',
+    salleId: '',
+    duree: 30,
+    description: '',
+    statut: 'planifie' as 'actif' | 'annule' | 'termine' | 'planifie'
+  });
+
+  protected readonly errors = signal<{[key: string]: string}>({});
+
+  ngOnInit() {
+    this.loadInitialData();
   }
 
-  getTypeColor(type: string) {
-    switch (type) {
-      case 'CM': return 'bg-blue-100 text-blue-800';
-      case 'TD': return 'bg-yellow-100 text-yellow-800';
-      case 'TP': return 'bg-purple-100 text-purple-800';
-      default: return 'bg-gray-100 text-gray-800';
-    }
+  private loadInitialData() {
+    // Charger les écoles avec les mêmes styles que la section professeurs
+    const ecoles: Ecole[] = [
+      { id: 'sji', nom: 'Saint Jean Ingénieur', code: 'SJI', couleur: 'bg-blue-500' },
+      { id: 'sjm', nom: 'Saint Jean Management', code: 'SJM', couleur: 'bg-green-500' },
+      { id: 'prepa', nom: 'PrepaVogt', code: 'PV', couleur: 'bg-purple-500' },
+      { id: 'cpge', nom: 'Classes Préparatoires', code: 'CPGE', couleur: 'bg-orange-500' }
+    ];
+    this.ecoles.set(ecoles);
+
+    // Charger les types de cours
+    this.loadTypesCours();
+    
+    // Charger les professeurs
+    this.loadProfesseurs();
+    
+    // Charger les salles
+    this.loadSalles();
+    
+    // Charger les UE
+    this.loadUEs();
+    
+    // Charger les cours
+    this.loadCours();
   }
 
-  filteredCourses() {
-    let filtered = this.courses();
-    
-    // Filter by school
-    if (this.selectedSchool() !== 'all') {
-      filtered = filtered.filter(course => course.school === this.selectedSchool());
-    }
-    
-    // Filter by status
-    if (this.selectedStatus() !== 'all') {
-      filtered = filtered.filter(course => course.status === this.selectedStatus());
-    }
-    
-    // Filter by type
-    if (this.selectedType() !== 'all') {
-      filtered = filtered.filter(course => course.type === this.selectedType());
-    }
-    
-    // Filter by teacher
-    if (this.selectedTeacher() !== 'all') {
-      filtered = filtered.filter(course => course.teacher === this.selectedTeacher());
-    }
-    
-    // Filter by search term
-    if (this.searchTerm()) {
-      const term = this.searchTerm().toLowerCase();
-      filtered = filtered.filter(course => 
-        course.name.toLowerCase().includes(term) ||
-        course.code.toLowerCase().includes(term) ||
-        course.teacher.toLowerCase().includes(term) ||
-        course.description?.toLowerCase().includes(term) ||
-        course.prerequisites?.toLowerCase().includes(term)
-      );
-    }
-    
-    // Sort results
-    filtered = this.sortCourses(filtered);
-    
-    return filtered;
-  }
-
-  sortCourses(courses: Course[]): Course[] {
-    const sortBy = this.sortBy();
-    const order = this.sortOrder();
-    
-    return courses.sort((a, b) => {
-      let aValue: any, bValue: any;
-      
-      switch (sortBy) {
-        case 'name':
-          aValue = a.name.toLowerCase();
-          bValue = b.name.toLowerCase();
-          break;
-        case 'code':
-          aValue = a.code.toLowerCase();
-          bValue = b.code.toLowerCase();
-          break;
-        case 'teacher':
-          aValue = a.teacher.toLowerCase();
-          bValue = b.teacher.toLowerCase();
-          break;
-        case 'students':
-          aValue = a.students;
-          bValue = b.students;
-          break;
-        case 'school':
-          aValue = this.getSchoolInfo(a.school)?.name || '';
-          bValue = this.getSchoolInfo(b.school)?.name || '';
-          break;
-        default:
-          return 0;
+  private loadTypesCours() {
+    const types: TypeCours[] = [
+      {
+        id: '1',
+        nom: 'Cours Magistral',
+        code: 'CM',
+        description: 'Cours théorique en amphithéâtre',
+        couleur: 'bg-blue-500',
+        dureeDefaut: 30
+      },
+      {
+        id: '2',
+        nom: 'Travaux Dirigés',
+        code: 'TD',
+        description: 'Exercices dirigés en petits groupes',
+        couleur: 'bg-green-500',
+        dureeDefaut: 20
+      },
+      {
+        id: '3',
+        nom: 'Travaux Pratiques',
+        code: 'TP',
+        description: 'Travaux pratiques en laboratoire',
+        couleur: 'bg-orange-500',
+        dureeDefaut: 40
+      },
+      {
+        id: '4',
+        nom: 'Projet',
+        code: 'PROJ',
+        description: 'Projet encadré',
+        couleur: 'bg-purple-500',
+        dureeDefaut: 60
+      },
+      {
+        id: '5',
+        nom: 'Stage',
+        code: 'STAGE',
+        description: 'Stage en entreprise',
+        couleur: 'bg-red-500',
+        dureeDefaut: 200
+      },
+      {
+        id: '6',
+        nom: 'Séminaire',
+        code: 'SEM',
+        description: 'Séminaire spécialisé',
+        couleur: 'bg-indigo-500',
+        dureeDefaut: 15
       }
-      
-      if (aValue < bValue) return order === 'asc' ? -1 : 1;
-      if (aValue > bValue) return order === 'asc' ? 1 : -1;
-      return 0;
-    });
+    ];
+    this.typesCours.set(types);
   }
 
-  setView(view: 'grid' | 'list') {
-    this.selectedView.set(view);
+  private loadProfesseurs() {
+    const professeurs: Professeur[] = [
+      {
+        id: '1',
+        nom: 'Dupont',
+        prenom: 'Martin',
+        email: 'martin.dupont@iu-saintjean.cm',
+        specialites: ['Informatique', 'Programmation']
+      },
+      {
+        id: '2',
+        nom: 'Laurent',
+        prenom: 'Sophie',
+        email: 'sophie.laurent@iu-saintjean.cm',
+        specialites: ['Mathématiques', 'Algorithmique']
+      },
+      {
+        id: '3',
+        nom: 'Moreau',
+        prenom: 'Jean',
+        email: 'jean.moreau@iu-saintjean.cm',
+        specialites: ['Gestion', 'Management']
+      },
+      {
+        id: '4',
+        nom: 'Dubois',
+        prenom: 'Marie',
+        email: 'marie.dubois@iu-saintjean.cm',
+        specialites: ['Marketing', 'Communication']
+      }
+    ];
+    this.professeurs.set(professeurs);
   }
 
-  setSchoolFilter(schoolId: string) {
-    this.selectedSchool.set(schoolId);
+  private loadSalles() {
+    const salles: Salle[] = [
+      {
+        id: '1',
+        nom: 'Amphithéâtre A',
+        capacite: 100,
+        type: 'Amphithéâtre',
+        equipements: ['Projecteur', 'Micro', 'Tableau']
+      },
+      {
+        id: '2',
+        nom: 'Salle 101',
+        capacite: 40,
+        type: 'Salle de cours',
+        equipements: ['Projecteur', 'Tableau']
+      },
+      {
+        id: '3',
+        nom: 'Lab Info 1',
+        capacite: 25,
+        type: 'Laboratoire',
+        equipements: ['Ordinateurs', 'Projecteur', 'Réseau']
+      },
+      {
+        id: '4',
+        nom: 'Salle TD 205',
+        capacite: 30,
+        type: 'Salle TD',
+        equipements: ['Tableau', 'Projecteur']
+      }
+    ];
+    this.salles.set(salles);
   }
 
-  setStatusFilter(status: string) {
-    this.selectedStatus.set(status);
+  private loadUEs() {
+    const ues: UEModel[] = [
+      {
+        id: '1',
+        code: 'INF101',
+        nom: 'Introduction à la Programmation',
+        credits: 6,
+        semestre: 1,
+        ecole: 'sji',
+        classes: ['1', '2']
+      },
+      {
+        id: '2',
+        code: 'MAT101',
+        nom: 'Mathématiques Fondamentales',
+        credits: 6,
+        semestre: 1,
+        ecole: 'sji',
+        classes: ['1', '2']
+      },
+      {
+        id: '3',
+        code: 'INF201',
+        nom: 'Programmation Orientée Objet',
+        credits: 6,
+        semestre: 3,
+        ecole: 'sji',
+        classes: ['3']
+      },
+      {
+        id: '4',
+        code: 'GES101',
+        nom: 'Principes de Gestion',
+        credits: 4,
+        semestre: 1,
+        ecole: 'sjm',
+        classes: ['4']
+      },
+      {
+        id: '5',
+        code: 'MKT201',
+        nom: 'Marketing Digital',
+        credits: 5,
+        semestre: 3,
+        ecole: 'sjm',
+        classes: ['5']
+      }
+    ];
+    this.ues.set(ues);
   }
 
-  setTypeFilter(type: string) {
-    this.selectedType.set(type);
+  private loadCours() {
+    const cours: CoursModel[] = [
+      {
+        id: '1',
+        ueId: '1',
+        typeId: '1', // CM
+        professeurId: '1',
+        salleId: '1',
+        duree: 30,
+        description: 'Cours magistral d\'introduction à la programmation',
+        statut: 'actif',
+        createdAt: new Date('2024-01-15'),
+        updatedAt: new Date('2024-01-15')
+      },
+      {
+        id: '2',
+        ueId: '1',
+        typeId: '2', // TD
+        professeurId: '1',
+        salleId: '2',
+        duree: 20,
+        description: 'Travaux dirigés de programmation',
+        statut: 'actif',
+        createdAt: new Date('2024-01-15'),
+        updatedAt: new Date('2024-01-15')
+      },
+      {
+        id: '3',
+        ueId: '1',
+        typeId: '3', // TP
+        professeurId: '1',
+        salleId: '3',
+        duree: 40,
+        description: 'Travaux pratiques de programmation',
+        statut: 'actif',
+        createdAt: new Date('2024-01-15'),
+        updatedAt: new Date('2024-01-15')
+      },
+      {
+        id: '4',
+        ueId: '2',
+        typeId: '1', // CM
+        professeurId: '2',
+        salleId: '1',
+        duree: 30,
+        description: 'Cours magistral de mathématiques',
+        statut: 'actif',
+        createdAt: new Date('2024-01-15'),
+        updatedAt: new Date('2024-01-15')
+      },
+      {
+        id: '5',
+        ueId: '4',
+        typeId: '1', // CM
+        professeurId: '3',
+        salleId: '1',
+        duree: 25,
+        description: 'Cours magistral de gestion',
+        statut: 'planifie',
+        createdAt: new Date('2024-01-15'),
+        updatedAt: new Date('2024-01-15')
+      }
+    ];
+    this.cours.set(cours);
   }
 
-  setTeacherFilter(teacher: string) {
-    this.selectedTeacher.set(teacher);
-  }
-
-  setSortBy(sortBy: string) {
-    if (this.sortBy() === sortBy) {
-      // Toggle sort order if same field
-      this.sortOrder.update(order => order === 'asc' ? 'desc' : 'asc');
-    } else {
-      this.sortBy.set(sortBy);
-      this.sortOrder.set('asc');
-    }
-  }
-
-  toggleAdvancedFilters() {
-    this.showAdvancedFilters.update(value => !value);
-  }
-
-  resetFilters() {
-    this.selectedSchool.set('all');
-    this.selectedStatus.set('all');
-    this.selectedType.set('all');
-    this.selectedTeacher.set('all');
-    this.searchTerm.set('');
-    this.sortBy.set('name');
-    this.sortOrder.set('asc');
-  }
-
-  saveFilters() {
-    const filters = {
-      school: this.selectedSchool(),
-      status: this.selectedStatus(),
-      type: this.selectedType(),
-      teacher: this.selectedTeacher(),
-      search: this.searchTerm(),
-      sortBy: this.sortBy(),
-      sortOrder: this.sortOrder()
-    };
-    localStorage.setItem('courseFilters', JSON.stringify(filters));
-    alert('Filtres sauvegardés avec succès !');
-  }
-
-  loadSavedFilters() {
-    const saved = localStorage.getItem('courseFilters');
-    if (saved) {
-      const filters = JSON.parse(saved);
-      this.selectedSchool.set(filters.school || 'all');
-      this.selectedStatus.set(filters.status || 'all');
-      this.selectedType.set(filters.type || 'all');
-      this.selectedTeacher.set(filters.teacher || 'all');
-      this.searchTerm.set(filters.search || '');
-      this.sortBy.set(filters.sortBy || 'name');
-      this.sortOrder.set(filters.sortOrder || 'asc');
-    }
-  }
-
-  clearSearch() {
-    this.searchTerm.set('');
-  }
-
-  updateSearchTerm(term: string) {
-    this.searchTerm.set(term);
-  }
-
-  onStatusFilterChange(event: Event) {
-    const target = event.target as HTMLSelectElement;
-    this.setStatusFilter(target.value);
-  }
-
-  onTypeFilterChange(event: Event) {
-    const target = event.target as HTMLSelectElement;
-    this.setTypeFilter(target.value);
-  }
-
-  onTeacherFilterChange(event: Event) {
-    const target = event.target as HTMLSelectElement;
-    this.setTeacherFilter(target.value);
-  }
-
-  onSortByChange(event: Event) {
-    const target = event.target as HTMLSelectElement;
-    this.setSortBy(target.value);
-  }
-
-  onSearchInput(event: Event) {
-    const target = event.target as HTMLInputElement;
-    this.updateSearchTerm(target.value);
-  }
-
-  // Modal management methods
+  // Gestion des modales
   openAddModal() {
-    this.selectedCourse.set(null);
+    this.resetForm();
     this.showAddModal.set(true);
   }
 
-  closeAddModal() {
-    this.showAddModal.set(false);
-    this.selectedCourse.set(null);
+  openEditModal(cours: CoursModel) {
+    this.selectedCours.set(cours);
+    this.coursForm.set({
+      id: cours.id,
+      ueId: cours.ueId,
+      typeId: cours.typeId,
+      professeurId: cours.professeurId || '',
+      salleId: cours.salleId || '',
+      duree: cours.duree,
+      description: cours.description || '',
+      statut: cours.statut
+    });
+    this.showEditModal.set(true);
   }
 
-  openDetailsModal(course: Course) {
-    this.selectedCourse.set(course);
+  openDetailsModal(cours: CoursModel) {
+    this.selectedCours.set(cours);
     this.showDetailsModal.set(true);
   }
 
-  closeDetailsModal() {
+  closeModals() {
+    this.showAddModal.set(false);
+    this.showEditModal.set(false);
     this.showDetailsModal.set(false);
-    this.selectedCourse.set(null);
+    this.selectedCours.set(null);
+    this.resetForm();
   }
 
-  editCourse(course: Course) {
-    this.selectedCourse.set(course);
-    this.showAddModal.set(true);
-  }
-
-  deleteCourse(courseId: string) {
-    if (confirm('Êtes-vous sûr de vouloir supprimer ce cours ?')) {
-      this.courses.update(courses => courses.filter(c => c.id !== courseId));
-    }
-  }
-
-  onCourseAdded(courseData: any) {
-    if (this.selectedCourse()) {
-      // Update existing course
-      this.courses.update(courses => 
-        courses.map(c => c.id === this.selectedCourse()!.id ? { ...c, ...courseData } : c)
-      );
-    } else {
-      // Add new course
-      const newCourse: Course = {
-        id: Date.now().toString(),
-        ...courseData,
-        students: courseData.capacity || 0,
-        room: 'À assigner',
-        schedule: 'À planifier',
-        status: 'active'
-      };
-      this.courses.update(courses => [...courses, newCourse]);
-    }
-    this.closeAddModal();
-  }
-
-  duplicateCourse(course: Course) {
-    const duplicatedCourse: Course = {
-      ...course,
-      id: Date.now().toString(),
-      name: `${course.name} (Copie)`,
-      code: `${course.code}_COPY`,
-      status: 'active'
-    };
-    this.courses.update(courses => [...courses, duplicatedCourse]);
-  }
-
-  getActiveCourses(): Course[] {
-    return this.courses().filter(c => c.status === 'active');
-  }
-
-  getCancelledCourses(): Course[] {
-    return this.courses().filter(c => c.status === 'cancelled');
-  }
-
-  getCompletedCourses(): Course[] {
-    return this.courses().filter(c => c.status === 'completed');
-  }
-
-  getTotalStudents(): number {
-    return this.courses().reduce((total, course) => total + course.students, 0);
-  }
-
-  getCoursesByType() {
-    const courses = this.courses();
-    const types = ['CM', 'TD', 'TP'];
-    return types.map(type => ({
-      type,
-      count: courses.filter(c => c.type === type).length,
-      color: this.getTypeColor(type)
-    }));
-  }
-
-  // New methods for additional functionality
-  toggleCourseFavorite(courseId: string) {
-    this.courses.update(courses =>
-      courses.map(c =>
-        c.id === courseId ? { ...c, favorite: !c.favorite } : c
-      )
-    );
-  }
-
-  getUniqueTeachers(): string[] {
-    const teachers = this.courses().map(c => c.teacher);
-    return [...new Set(teachers)].sort();
-  }
-
-  getTotalWeeklyHours(): number {
-    return this.courses()
-      .filter(c => c.status === 'active')
-      .reduce((total, course) => total + (course.duration || 90), 0) / 60;
-  }
-
-  importCourses() {
-    // Create file input
-    const input = document.createElement('input');
-    input.type = 'file';
-    input.accept = '.csv,.xlsx,.xls';
-    input.onchange = (event: any) => {
-      const file = event.target.files[0];
-      if (file) {
-        // Simulate import process
-        alert(`Import du fichier "${file.name}" en cours...`);
-        // Here you would implement actual file parsing
-      }
-    };
-    input.click();
-  }
-
-  exportCourses() {
-    const courses = this.filteredCourses();
-    const csvContent = [
-      'Code,Nom,Enseignant,École,Type,Statut,Étudiants,Horaire,Salle',
-      ...courses.map(c => 
-        `${c.code},"${c.name}","${c.teacher}","${this.getSchoolInfo(c.school)?.name}",${c.type},${c.status},${c.students},"${c.schedule}","${c.room}"`
-      )
-    ].join('\n');
-    
-    const blob = new Blob([csvContent], { type: 'text/csv' });
-    const url = window.URL.createObjectURL(blob);
-    const a = document.createElement('a');
-    a.href = url;
-    a.download = `cours_${new Date().toISOString().split('T')[0]}.csv`;
-    a.click();
-    window.URL.revokeObjectURL(url);
-  }
-
-  bulkUpdateStatus(status: 'active' | 'cancelled' | 'completed') {
-    const selectedIds = this.getSelectedCourseIds();
-    if (selectedIds.length === 0) {
-      alert('Veuillez sélectionner au moins un cours');
-      return;
-    }
-    
-    if (confirm(`Changer le statut de ${selectedIds.length} cours vers "${status}" ?`)) {
-      this.courses.update(courses =>
-        courses.map(c =>
-          selectedIds.includes(c.id) ? { ...c, status } : c
-        )
-      );
-    }
-  }
-
-  bulkDelete() {
-    const selectedIds = this.getSelectedCourseIds();
-    if (selectedIds.length === 0) {
-      alert('Veuillez sélectionner au moins un cours');
-      return;
-    }
-    
-    if (confirm(`Supprimer définitivement ${selectedIds.length} cours ?`)) {
-      this.courses.update(courses =>
-        courses.filter(c => !selectedIds.includes(c.id))
-      );
-    }
-  }
-
-  bulkExport() {
-    const selectedIds = this.getSelectedCourseIds();
-    if (selectedIds.length === 0) {
-      alert('Veuillez sélectionner au moins un cours');
-      return;
-    }
-    
-    const selectedCourses = this.courses().filter(c => selectedIds.includes(c.id));
-    const csvContent = [
-      'Code,Nom,Enseignant,École,Type,Statut,Étudiants,Horaire,Salle',
-      ...selectedCourses.map(c => 
-        `${c.code},"${c.name}","${c.teacher}","${this.getSchoolInfo(c.school)?.name}",${c.type},${c.status},${c.students},"${c.schedule}","${c.room}"`
-      )
-    ].join('\n');
-    
-    const blob = new Blob([csvContent], { type: 'text/csv' });
-    const url = window.URL.createObjectURL(blob);
-    const a = document.createElement('a');
-    a.href = url;
-    a.download = `cours_selection_${new Date().toISOString().split('T')[0]}.csv`;
-    a.click();
-    window.URL.revokeObjectURL(url);
-    
-    // Clear selection after export
-    this.clearSelection();
-  }
-
-  clearSelection() {
-    this.selectedCourseIds.set([]);
-  }
-
-  getSelectedCourseIds(): string[] {
-    return this.selectedCourseIds();
-  }
-
-  toggleCourseSelection(courseId: string) {
-    this.selectedCourseIds.update(ids => {
-      if (ids.includes(courseId)) {
-        return ids.filter(id => id !== courseId);
-      } else {
-        return [...ids, courseId];
-      }
+  private resetForm() {
+    this.coursForm.set({
+      id: '',
+      ueId: '',
+      typeId: '',
+      professeurId: '',
+      salleId: '',
+      duree: 4,
+      description: '',
+      statut: 'planifie'
     });
+    this.errors.set({});
   }
 
-  toggleSelectAll() {
-    const filteredIds = this.filteredCourses().map(c => c.id);
-    const selectedIds = this.selectedCourseIds();
+  // Gestion du formulaire
+  updateForm(field: string, value: any) {
+    this.coursForm.update(form => ({
+      ...form,
+      [field]: value
+    }));
     
-    if (filteredIds.every(id => selectedIds.includes(id))) {
-      // All filtered courses are selected, deselect all
-      this.selectedCourseIds.set(selectedIds.filter(id => !filteredIds.includes(id)));
-    } else {
-      // Not all filtered courses are selected, select all
-      const newSelection = [...new Set([...selectedIds, ...filteredIds])];
-      this.selectedCourseIds.set(newSelection);
+    // Mettre à jour la durée par défaut si le type change
+    if (field === 'typeId') {
+      const type = this.typesCours().find(t => t.id === value);
+      if (type) {
+        this.coursForm.update(form => ({
+          ...form,
+          duree: type.dureeDefaut
+        }));
+      }
+    }
+    
+    // Effacer l'erreur du champ
+    if (this.errors()[field]) {
+      this.errors.update(errors => {
+        const newErrors = { ...errors };
+        delete newErrors[field];
+        return newErrors;
+      });
     }
   }
 
-  isAllSelected(): boolean {
-    const filteredIds = this.filteredCourses().map(c => c.id);
-    const selectedIds = this.selectedCourseIds();
-    return filteredIds.length > 0 && filteredIds.every(id => selectedIds.includes(id));
+  // Validation et soumission
+  validateForm(): boolean {
+    const form = this.coursForm();
+    const newErrors: {[key: string]: string} = {};
+
+    if (!form.ueId) {
+      newErrors['ueId'] = 'L\'UE est requise';
+    }
+
+    if (!form.typeId) {
+      newErrors['typeId'] = 'Le type de cours est requis';
+    }
+
+    if (form.duree < 4) {
+      newErrors['duree'] = 'La durée doit être d\'au moins 4 heures';
+    }
+
+    if (form.duree > 250) {
+      newErrors['duree'] = 'La durée ne peut pas dépasser 250 heures';
+    }
+
+    this.errors.set(newErrors);
+    return Object.keys(newErrors).length === 0;
   }
 
-  isCourseSelected(courseId: string): boolean {
-    return this.selectedCourseIds().includes(courseId);
+  onSubmit() {
+    if (!this.validateForm()) return;
+
+    this.isLoading.set(true);
+    const form = this.coursForm();
+
+    setTimeout(() => {
+      if (form.id) {
+        // Modification
+        this.cours.update(cours => 
+          cours.map(c => 
+            c.id === form.id 
+              ? { 
+                  ...c, 
+                  ...form, 
+                  updatedAt: new Date() 
+                }
+              : c
+          )
+        );
+      } else {
+        // Ajout
+        const newCours: CoursModel = {
+          ...form,
+          id: Date.now().toString(),
+          createdAt: new Date(),
+          updatedAt: new Date()
+        };
+        this.cours.update(cours => [...cours, newCours]);
+      }
+
+      this.isLoading.set(false);
+      this.closeModals();
+    }, 1000);
   }
 
-  getCoursesStats() {
-    const courses = this.courses();
-    return {
-      total: courses.length,
-      active: courses.filter(c => c.status === 'active').length,
-      cancelled: courses.filter(c => c.status === 'cancelled').length,
-      completed: courses.filter(c => c.status === 'completed').length,
-      favorites: courses.filter(c => c.favorite).length,
-      totalStudents: courses.reduce((sum, c) => sum + c.students, 0),
-      averageStudents: Math.round(courses.reduce((sum, c) => sum + c.students, 0) / courses.length),
-      bySchool: this.schools().map(school => ({
-        school: school.name,
-        count: courses.filter(c => c.school === school.id).length
-      }))
+  deleteCours(cours: CoursModel) {
+    const ue = this.getUE(cours.ueId);
+    const type = this.getTypeCours(cours.typeId);
+    const coursName = `${ue?.nom} (${type?.code})`;
+    
+    if (confirm(`Êtes-vous sûr de vouloir supprimer le cours "${coursName}" ?`)) {
+      this.cours.update(coursList => coursList.filter(c => c.id !== cours.id));
+    }
+  }
+
+  // Filtres et recherche
+  getFilteredCours(): CoursModel[] {
+    let filtered = this.cours();
+
+    // Filtre par terme de recherche
+    if (this.searchTerm()) {
+      const term = this.searchTerm().toLowerCase();
+      filtered = filtered.filter(cours => {
+        const ue = this.getUE(cours.ueId);
+        const type = this.getTypeCours(cours.typeId);
+        const prof = this.getProfesseur(cours.professeurId);
+        
+        return (
+          ue?.nom.toLowerCase().includes(term) ||
+          ue?.code.toLowerCase().includes(term) ||
+          type?.nom.toLowerCase().includes(term) ||
+          type?.code.toLowerCase().includes(term) ||
+          prof?.nom.toLowerCase().includes(term) ||
+          prof?.prenom.toLowerCase().includes(term) ||
+          (cours.description && cours.description.toLowerCase().includes(term))
+        );
+      });
+    }
+
+    // Filtre par école
+    if (this.selectedEcole()) {
+      filtered = filtered.filter(cours => {
+        const ue = this.getUE(cours.ueId);
+        return ue?.ecole === this.selectedEcole();
+      });
+    }
+
+    // Filtre par semestre
+    if (this.selectedSemestre()) {
+      filtered = filtered.filter(cours => {
+        const ue = this.getUE(cours.ueId);
+        return ue?.semestre === this.selectedSemestre();
+      });
+    }
+
+    // Filtre par type
+    if (this.selectedType()) {
+      filtered = filtered.filter(cours => cours.typeId === this.selectedType());
+    }
+
+    // Filtre par statut
+    if (this.selectedStatut()) {
+      filtered = filtered.filter(cours => cours.statut === this.selectedStatut());
+    }
+
+    // Filtre par professeur
+    if (this.selectedProfesseur()) {
+      filtered = filtered.filter(cours => cours.professeurId === this.selectedProfesseur());
+    }
+
+    return filtered;
+  }
+
+  // Utilitaires
+  getUE(ueId?: string): UEModel | undefined {
+    if (!ueId) return undefined;
+    return this.ues().find(ue => ue.id === ueId);
+  }
+
+  getTypeCours(typeId?: string): TypeCours | undefined {
+    if (!typeId) return undefined;
+    return this.typesCours().find(type => type.id === typeId);
+  }
+
+  getProfesseur(professeurId?: string): Professeur | undefined {
+    if (!professeurId) return undefined;
+    return this.professeurs().find(prof => prof.id === professeurId);
+  }
+
+  getSalle(salleId?: string): Salle | undefined {
+    if (!salleId) return undefined;
+    return this.salles().find(salle => salle.id === salleId);
+  }
+
+  getEcole(ecoleId: string): Ecole | undefined {
+    return this.ecoles().find(ecole => ecole.id === ecoleId);
+  }
+
+  getCoursName(cours: CoursModel): string {
+    const ue = this.getUE(cours.ueId);
+    const type = this.getTypeCours(cours.typeId);
+    return `${ue?.nom || 'UE inconnue'} (${type?.code || 'Type inconnu'})`;
+  }
+
+  getCoursCode(cours: CoursModel): string {
+    const ue = this.getUE(cours.ueId);
+    const type = this.getTypeCours(cours.typeId);
+    return `${ue?.code || 'UE'}-${type?.code || 'TYPE'}`;
+  }
+
+  getStatutColor(statut: string): string {
+    const colors = {
+      actif: 'bg-green-100 text-green-800',
+      planifie: 'bg-blue-100 text-blue-800',
+      annule: 'bg-red-100 text-red-800',
+      termine: 'bg-gray-100 text-gray-800'
     };
+    return colors[statut as keyof typeof colors] || 'bg-gray-100 text-gray-800';
+  }
+
+  getStatutLabel(statut: string): string {
+    const labels = {
+      actif: 'Actif',
+      planifie: 'Planifié',
+      annule: 'Annulé',
+      termine: 'Terminé'
+    };
+    return labels[statut as keyof typeof labels] || statut;
+  }
+
+  formatDuree(heures: number): string {
+    if (heures >= 1) {
+      return heures % 1 === 0 ? `${heures}h` : `${heures}h`;
+    }
+    return `${heures}h`;
+  }
+
+  clearFilters() {
+    this.searchTerm.set('');
+    this.selectedEcole.set('');
+    this.selectedSemestre.set(0);
+    this.selectedType.set('');
+    this.selectedStatut.set('');
+    this.selectedProfesseur.set('');
+  }
+
+  exportCours() {
+    console.log('Export des cours:', this.getFilteredCours());
+    alert('Export réalisé avec succès !');
+  }
+
+  importCours() {
+    alert('Fonctionnalité d\'import à implémenter');
+  }
+
+  // Statistiques
+  getTotalCours(): number {
+    return this.cours().length;
+  }
+
+  getCoursActifs(): number {
+    return this.cours().filter(c => c.statut === 'actif').length;
+  }
+
+  getStatistiquesParType() {
+    const stats = this.typesCours().map(type => {
+      const coursType = this.cours().filter(c => c.typeId === type.id);
+      return {
+        type: type.nom,
+        code: type.code,
+        couleur: type.couleur,
+        count: coursType.length
+      };
+    });
+    return stats.filter(s => s.count > 0);
   }
 }

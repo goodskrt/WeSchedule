@@ -51,7 +51,7 @@ export class AjouterEnseignant implements OnInit, OnDestroy {
   protected readonly newQualification = signal('');
 
   protected readonly schools: School[] = [
-    { id: 'sji', name: 'saint jean International (SJI)', abbreviation: 'SJI' },
+    { id: 'sji', name: 'Saint Jean Ingénieur (SJI)', abbreviation: 'SJI' },
     { id: 'sjm', name: 'saint jean Management (SJM)', abbreviation: 'SJM' },
     { id: 'prepa', name: 'PrepaVogt', abbreviation: 'PV' },
     { id: 'cpge', name: 'Classes Préparatoires (CPGE)', abbreviation: 'CPGE' }

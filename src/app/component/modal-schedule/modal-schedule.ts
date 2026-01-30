@@ -125,7 +125,7 @@ export class ModalSchedule implements OnInit, OnDestroy {
   ]);
 
   protected readonly schools = [
-    { id: 'sji', name: 'Saint Jean International (SJI)', color: 'bg-blue-500' },
+    { id: 'sji', name: 'Saint Jean Ingénieur (SJI)', color: 'bg-blue-500' },
     { id: 'sjm', name: 'Saint Jean Management (SJM)', color: 'bg-green-500' },
     { id: 'prepa', name: 'PrepaVogt', color: 'bg-purple-500' },
     { id: 'cpge', name: 'Classes Préparatoires (CPGE)', color: 'bg-orange-500' }

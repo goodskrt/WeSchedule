@@ -54,7 +54,7 @@ export class Inscription {
   protected readonly schools = signal<School[]>([
     {
       id: 'sji',
-      name: 'saint jean International (SJI)',
+      name: 'Saint Jean Ingénieur (SJI)',
       departments: ['Informatique', 'Génie Civil', 'Électronique', 'Télécommunications']
     },
     {

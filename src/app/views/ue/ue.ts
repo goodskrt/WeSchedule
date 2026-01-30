@@ -31,6 +31,7 @@ interface Ecole {
   id: string;
   nom: string;
   code: string;
+  couleur: string;
   semestres: number[];
 }
 
@@ -98,21 +99,31 @@ export class UEComponent implements OnInit {
     // Charger les écoles
     const ecoles: Ecole[] = [
       {
-        id: '1',
-        nom: 'École d\'Ingénierie',
-        code: 'EI',
+        id: 'sji',
+        nom: 'Saint Jean Ingénieur',
+        code: 'SJI',
+        couleur: 'bg-blue-500',
         semestres: [1, 2, 3, 4, 5, 6, 7, 8, 9, 10]
       },
       {
-        id: '2',
-        nom: 'École de Commerce',
-        code: 'EC',
+        id: 'sjm',
+        nom: 'Saint Jean Management',
+        code: 'SJM',
+        couleur: 'bg-green-500',
         semestres: [1, 2, 3, 4, 5, 6]
       },
       {
-        id: '3',
-        nom: 'École de Médecine',
-        code: 'EM',
+        id: 'prepa',
+        nom: 'PrepaVogt',
+        code: 'PV',
+        couleur: 'bg-purple-500',
+        semestres: [1, 2, 3, 4, 5, 6, 7, 8, 9, 10]
+      },
+      {
+        id: 'cpge',
+        nom: 'Classes Préparatoires',
+        code: 'CPGE',
+        couleur: 'bg-orange-500',
         semestres: [1, 2, 3, 4, 5, 6, 7, 8, 9, 10]
       }
     ];
@@ -124,8 +135,7 @@ export class UEComponent implements OnInit {
       { id: '2', nom: 'Travaux Dirigés', code: 'TD', description: 'Exercices dirigés en petits groupes', couleur: 'bg-green-500' },
       { id: '3', nom: 'Travaux Pratiques', code: 'TP', description: 'Travaux pratiques en laboratoire', couleur: 'bg-orange-500' },
       { id: '4', nom: 'Projet', code: 'PROJ', description: 'Projet encadré', couleur: 'bg-purple-500' },
-      { id: '5', nom: 'Stage', code: 'STAGE', description: 'Stage en entreprise', couleur: 'bg-red-500' },
-      { id: '6', nom: 'Séminaire', code: 'SEM', description: 'Séminaire spécialisé', couleur: 'bg-indigo-500' }
+      { id: '5', nom: 'séminaire', code: 'séminaire', description: 'séminaire en entreprise', couleur: 'bg-red-500' }
     ];
     this.courseTypes.set(courseTypes);
 
@@ -138,19 +148,27 @@ export class UEComponent implements OnInit {
 
   private loadClasses() {
     const classes: Classe[] = [
-      // École d'Ingénierie
-      { id: '1', nom: 'Informatique L1A', niveau: 'L1', ecole: '1', semestre: 1, effectif: 45 },
-      { id: '2', nom: 'Informatique L1B', niveau: 'L1', ecole: '1', semestre: 1, effectif: 42 },
-      { id: '3', nom: 'Informatique L2', niveau: 'L2', ecole: '1', semestre: 3, effectif: 38 },
-      { id: '4', nom: 'Informatique L2', niveau: 'L2', ecole: '1', semestre: 4, effectif: 38 },
-      { id: '5', nom: 'Informatique L3', niveau: 'L3', ecole: '1', semestre: 5, effectif: 35 },
-      { id: '6', nom: 'Informatique L3', niveau: 'L3', ecole: '1', semestre: 6, effectif: 35 },
+      // Saint Jean Ingénieur (SJI)
+      { id: '1', nom: 'Informatique L1A', niveau: 'L1', ecole: 'sji', semestre: 1, effectif: 45 },
+      { id: '2', nom: 'Informatique L1B', niveau: 'L1', ecole: 'sji', semestre: 1, effectif: 42 },
+      { id: '3', nom: 'Informatique L2', niveau: 'L2', ecole: 'sji', semestre: 3, effectif: 38 },
+      { id: '4', nom: 'Informatique L2', niveau: 'L2', ecole: 'sji', semestre: 4, effectif: 38 },
+      { id: '5', nom: 'Informatique L3', niveau: 'L3', ecole: 'sji', semestre: 5, effectif: 35 },
+      { id: '6', nom: 'Informatique L3', niveau: 'L3', ecole: 'sji', semestre: 6, effectif: 35 },
       
-      // École de Commerce
-      { id: '7', nom: 'Gestion L1', niveau: 'L1', ecole: '2', semestre: 1, effectif: 50 },
-      { id: '8', nom: 'Gestion L1', niveau: 'L1', ecole: '2', semestre: 2, effectif: 50 },
-      { id: '9', nom: 'Marketing L2', niveau: 'L2', ecole: '2', semestre: 3, effectif: 35 },
-      { id: '10', nom: 'Marketing L2', niveau: 'L2', ecole: '2', semestre: 4, effectif: 35 }
+      // Saint Jean Management (SJM)
+      { id: '7', nom: 'Gestion L1', niveau: 'L1', ecole: 'sjm', semestre: 1, effectif: 50 },
+      { id: '8', nom: 'Gestion L1', niveau: 'L1', ecole: 'sjm', semestre: 2, effectif: 50 },
+      { id: '9', nom: 'Marketing L2', niveau: 'L2', ecole: 'sjm', semestre: 3, effectif: 35 },
+      { id: '10', nom: 'Marketing L2', niveau: 'L2', ecole: 'sjm', semestre: 4, effectif: 35 },
+      
+      // PrepaVogt (PV)
+      { id: '11', nom: 'Prépa Scientifique 1A', niveau: 'Prépa', ecole: 'prepa', semestre: 1, effectif: 30 },
+      { id: '12', nom: 'Prépa Scientifique 2A', niveau: 'Prépa', ecole: 'prepa', semestre: 3, effectif: 28 },
+      
+      // Classes Préparatoires (CPGE)
+      { id: '13', nom: 'MPSI', niveau: 'CPGE', ecole: 'cpge', semestre: 1, effectif: 35 },
+      { id: '14', nom: 'PCSI', niveau: 'CPGE', ecole: 'cpge', semestre: 1, effectif: 32 }
     ];
     this.classes.set(classes);
   }
@@ -163,7 +181,7 @@ export class UEComponent implements OnInit {
         nom: 'Introduction à la Programmation',
         credits: 6,
         semestre: 1,
-        ecole: '1',
+        ecole: 'sji',
         classes: ['1'],
         description: 'Initiation aux concepts de base de la programmation',
         prerequis: [],
@@ -177,7 +195,7 @@ export class UEComponent implements OnInit {
         nom: 'Mathématiques Fondamentales',
         credits: 6,
         semestre: 1,
-        ecole: '1',
+        ecole: 'sji',
         classes: ['1'],
         description: 'Bases mathématiques pour l\'informatique',
         prerequis: [],
@@ -191,11 +209,53 @@ export class UEComponent implements OnInit {
         nom: 'Principes de Gestion',
         credits: 4,
         semestre: 1,
-        ecole: '2',
+        ecole: 'sjm',
         classes: ['7'],
         description: 'Introduction aux concepts de gestion d\'entreprise',
         prerequis: [],
         objectifs: ['Comprendre les bases de la gestion', 'Analyser les organisations'],
+        createdAt: new Date('2024-01-15'),
+        updatedAt: new Date('2024-01-15')
+      },
+      {
+        id: '4',
+        code: 'MKT201',
+        nom: 'Marketing Digital',
+        credits: 5,
+        semestre: 3,
+        ecole: 'sjm',
+        classes: ['9'],
+        description: 'Stratégies marketing dans l\'ère numérique',
+        prerequis: ['3'],
+        objectifs: ['Maîtriser les outils digitaux', 'Développer des stratégies marketing'],
+        createdAt: new Date('2024-01-15'),
+        updatedAt: new Date('2024-01-15')
+      },
+      {
+        id: '5',
+        code: 'PHY101',
+        nom: 'Physique Générale',
+        credits: 6,
+        semestre: 1,
+        ecole: 'prepa',
+        classes: ['11'],
+        description: 'Concepts fondamentaux de physique',
+        prerequis: [],
+        objectifs: ['Comprendre la mécanique', 'Maîtriser la thermodynamique'],
+        createdAt: new Date('2024-01-15'),
+        updatedAt: new Date('2024-01-15')
+      },
+      {
+        id: '6',
+        code: 'MATH201',
+        nom: 'Mathématiques Supérieures',
+        credits: 8,
+        semestre: 1,
+        ecole: 'cpge',
+        classes: ['13', '14'],
+        description: 'Mathématiques avancées pour classes préparatoires',
+        prerequis: [],
+        objectifs: ['Maîtriser l\'analyse', 'Comprendre l\'algèbre avancée'],
         createdAt: new Date('2024-01-15'),
         updatedAt: new Date('2024-01-15')
       }
@@ -391,6 +451,10 @@ export class UEComponent implements OnInit {
   getEcoleName(ecoleId: string): string {
     const ecole = this.ecoles().find(e => e.id === ecoleId);
     return ecole ? ecole.nom : 'École inconnue';
+  }
+
+  getEcole(ecoleId: string) {
+    return this.ecoles().find(e => e.id === ecoleId);
   }
 
   getClasseNames(classeIds: string[]): string {

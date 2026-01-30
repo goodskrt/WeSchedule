@@ -43,7 +43,7 @@ export class Professeurs {
   protected readonly showDetailsModal = signal<boolean>(false);
 
   protected readonly schools = signal<School[]>([
-    { id: 'sji', name: 'saint jean International', abbreviation: 'SJI', color: 'bg-blue-500' },
+    { id: 'sji', name: 'Saint Jean Ingénieur', abbreviation: 'SJI', color: 'bg-blue-500' },
     { id: 'sjm', name: 'saint jean Management', abbreviation: 'SJM', color: 'bg-green-500' },
     { id: 'prepa', name: 'PrepaVogt', abbreviation: 'PV', color: 'bg-purple-500' },
     { id: 'cpge', name: 'Classes Préparatoires', abbreviation: 'CPGE', color: 'bg-orange-500' }

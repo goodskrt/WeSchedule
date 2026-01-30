@@ -11,7 +11,7 @@ interface ClasseModel {
   semestre: number;
   effectif: number;
   effectifMax: number;
-  responsable?: string;
+  professeurs: string[]; // Liste des IDs des professeurs
   description?: string;
   specialite?: string;
   ues: string[]; // IDs des UE associées
@@ -23,6 +23,7 @@ interface Ecole {
   id: string;
   nom: string;
   code: string;
+  couleur: string;
   semestres: number[];
 }
 
@@ -85,7 +86,7 @@ export class ClassesComponent implements OnInit {
     semestre: 1,
     effectif: 0,
     effectifMax: 50,
-    responsable: '',
+    professeurs: [] as string[],
     description: '',
     specialite: '',
     ues: [] as string[]
@@ -98,24 +99,34 @@ export class ClassesComponent implements OnInit {
   }
 
   private loadInitialData() {
-    // Charger les écoles
+    // Charger les écoles avec les mêmes styles que la section professeurs
     const ecoles: Ecole[] = [
       {
-        id: '1',
-        nom: 'École d\'Ingénierie',
-        code: 'EI',
+        id: 'sji',
+        nom: 'Saint Jean Ingénieur',
+        code: 'SJI',
+        couleur: 'bg-blue-500',
         semestres: [1, 2, 3, 4, 5, 6, 7, 8, 9, 10]
       },
       {
-        id: '2',
-        nom: 'École de Commerce',
-        code: 'EC',
+        id: 'sjm',
+        nom: 'Saint Jean Management',
+        code: 'SJM',
+        couleur: 'bg-green-500',
         semestres: [1, 2, 3, 4, 5, 6]
       },
       {
-        id: '3',
-        nom: 'École de Médecine',
-        code: 'EM',
+        id: 'prepa',
+        nom: 'PrepaVogt',
+        code: 'PV',
+        couleur: 'bg-purple-500',
+        semestres: [1, 2, 3, 4, 5, 6, 7, 8, 9, 10]
+      },
+      {
+        id: 'cpge',
+        nom: 'Classes Préparatoires',
+        code: 'CPGE',
+        couleur: 'bg-orange-500',
         semestres: [1, 2, 3, 4, 5, 6, 7, 8, 9, 10]
       }
     ];
@@ -213,16 +224,16 @@ export class ClassesComponent implements OnInit {
 
   private loadClasses() {
     const classes: ClasseModel[] = [
-      // École d'Ingénierie
+      // Saint Jean Ingénieur (SJI)
       { 
         id: '1', 
         nom: 'Informatique L1A', 
         niveau: 'L1', 
-        ecole: '1', 
+        ecole: 'sji', 
         semestre: 1, 
         effectif: 45, 
         effectifMax: 50,
-        responsable: '1',
+        professeurs: ['1', '2'], // Martin Dubois et Marie Laurent
         specialite: 'Informatique',
         description: 'Première année de licence en informatique - Groupe A',
         ues: ['1', '2'],
@@ -233,11 +244,11 @@ export class ClassesComponent implements OnInit {
         id: '2', 
         nom: 'Informatique L1B', 
         niveau: 'L1', 
-        ecole: '1', 
+        ecole: 'sji', 
         semestre: 1, 
         effectif: 42, 
         effectifMax: 50,
-        responsable: '1',
+        professeurs: ['1'], // Martin Dubois
         specialite: 'Informatique',
         description: 'Première année de licence en informatique - Groupe B',
         ues: ['1', '2'],
@@ -248,11 +259,11 @@ export class ClassesComponent implements OnInit {
         id: '3', 
         nom: 'Informatique L2', 
         niveau: 'L2', 
-        ecole: '1', 
+        ecole: 'sji', 
         semestre: 3, 
         effectif: 38, 
         effectifMax: 45,
-        responsable: '2',
+        professeurs: ['1', '2'], // Martin Dubois et Marie Laurent
         specialite: 'Informatique',
         description: 'Deuxième année de licence en informatique',
         ues: ['3'],
@@ -260,16 +271,16 @@ export class ClassesComponent implements OnInit {
         updatedAt: new Date('2024-01-15')
       },
       
-      // École de Commerce
+      // Saint Jean Management (SJM)
       { 
         id: '4', 
         nom: 'Gestion L1', 
         niveau: 'L1', 
-        ecole: '2', 
+        ecole: 'sjm', 
         semestre: 1, 
         effectif: 50, 
         effectifMax: 55,
-        responsable: '3',
+        professeurs: ['3'], // Paul Nguyen
         specialite: 'Gestion',
         description: 'Première année de licence en gestion',
         ues: ['4'],
@@ -280,14 +291,48 @@ export class ClassesComponent implements OnInit {
         id: '5', 
         nom: 'Marketing L2', 
         niveau: 'L2', 
-        ecole: '2', 
+        ecole: 'sjm', 
         semestre: 3, 
         effectif: 35, 
         effectifMax: 40,
-        responsable: '4',
+        professeurs: ['3', '4'], // Paul Nguyen et Sophie Bernard
         specialite: 'Marketing',
         description: 'Deuxième année spécialisée en marketing',
         ues: ['5'],
+        createdAt: new Date('2024-01-15'),
+        updatedAt: new Date('2024-01-15')
+      },
+      
+      // PrepaVogt (PV)
+      { 
+        id: '6', 
+        nom: 'Prépa Scientifique 1A', 
+        niveau: 'Prépa', 
+        ecole: 'prepa', 
+        semestre: 1, 
+        effectif: 30, 
+        effectifMax: 35,
+        professeurs: ['4', '5'], // Sophie Bernard et Jean Moreau
+        specialite: 'Sciences',
+        description: 'Première année de classe préparatoire scientifique',
+        ues: ['6'],
+        createdAt: new Date('2024-01-15'),
+        updatedAt: new Date('2024-01-15')
+      },
+      
+      // Classes Préparatoires (CPGE)
+      { 
+        id: '7', 
+        nom: 'MPSI', 
+        niveau: 'CPGE', 
+        ecole: 'cpge', 
+        semestre: 1, 
+        effectif: 35, 
+        effectifMax: 40,
+        professeurs: ['4'], // Sophie Bernard
+        specialite: 'Mathématiques-Physique',
+        description: 'Mathématiques, Physique et Sciences de l\'Ingénieur',
+        ues: ['6'],
         createdAt: new Date('2024-01-15'),
         updatedAt: new Date('2024-01-15')
       }
@@ -311,7 +356,7 @@ export class ClassesComponent implements OnInit {
       semestre: classe.semestre,
       effectif: classe.effectif,
       effectifMax: classe.effectifMax,
-      responsable: classe.responsable || '',
+      professeurs: [...classe.professeurs],
       description: classe.description || '',
       specialite: classe.specialite || '',
       ues: [...classe.ues]
@@ -351,7 +396,7 @@ export class ClassesComponent implements OnInit {
       semestre: 1,
       effectif: 0,
       effectifMax: 50,
-      responsable: '',
+      professeurs: [],
       description: '',
       specialite: '',
       ues: []
@@ -499,7 +544,7 @@ export class ClassesComponent implements OnInit {
         classe.nom.toLowerCase().includes(term) ||
         classe.niveau.toLowerCase().includes(term) ||
         (classe.specialite && classe.specialite.toLowerCase().includes(term)) ||
-        this.getProfesseurName(classe.responsable).toLowerCase().includes(term)
+        this.getProfesseursNames(classe.professeurs).toLowerCase().includes(term)
       );
     }
 
@@ -527,10 +572,42 @@ export class ClassesComponent implements OnInit {
     return ecole ? ecole.nom : 'École inconnue';
   }
 
-  getProfesseurName(professeurId?: string): string {
-    if (!professeurId) return 'Non assigné';
+  getEcole(ecoleId: string) {
+    return this.ecoles().find(e => e.id === ecoleId);
+  }
+
+  // Gestion des professeurs
+  getProfesseurName(professeurId: string): string {
     const prof = this.professeurs().find(p => p.id === professeurId);
     return prof ? `${prof.prenom} ${prof.nom}` : 'Professeur inconnu';
+  }
+
+  getProfesseursNames(professeursIds: string[]): string {
+    if (!professeursIds || professeursIds.length === 0) {
+      return 'Aucun professeur assigné';
+    }
+    
+    const names = professeursIds.map(id => {
+      const prof = this.professeurs().find(p => p.id === id);
+      return prof ? `${prof.prenom} ${prof.nom}` : 'Inconnu';
+    });
+    
+    return names.join(', ');
+  }
+
+  toggleProfesseur(professeurId: string) {
+    this.classeForm.update(form => {
+      const professeurs = [...form.professeurs];
+      const index = professeurs.indexOf(professeurId);
+      
+      if (index > -1) {
+        professeurs.splice(index, 1);
+      } else {
+        professeurs.push(professeurId);
+      }
+      
+      return { ...form, professeurs };
+    });
   }
 
   getUENames(ueIds: string[]): string {

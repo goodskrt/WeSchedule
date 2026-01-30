@@ -44,7 +44,7 @@ export class AjouterCours implements OnInit, OnDestroy {
   protected readonly errors = signal<{[key: string]: string}>({});
 
   protected readonly schools = [
-    { id: 'sji', name: 'saint jean International (SJI)' },
+    { id: 'sji', name: 'Saint Jean Ingénieur (SJI)' },
     { id: 'sjm', name: 'saint jean Management (SJM)' },
     { id: 'prepa', name: 'PrepaVogt' },
     { id: 'cpge', name: 'Classes Préparatoires (CPGE)' }

@@ -64,7 +64,6 @@
                   routerLinkActive="menu-item-active"
                   class="menu-item flex items-center gap-3 px-3 py-3 rounded-xl text-gray-700 hover:bg-white/60 transition-all duration-200 group relative"
                   [title]="isCollapsed() && !isHovered() ? item.label : ''"
-                  (click)="item.subItems ? toggleExpanded(item.path) : null"
                 >
                   <div class="icon-container w-6 h-6 flex items-center justify-center">
                     <app-svg-icon [icon]="item.icon" classes="w-5 h-5"></app-svg-icon>
@@ -79,37 +78,12 @@
                       {{ item.badge }}
                     </span>
                   }
-                  
-                  @if (item.subItems) {
-                    <app-svg-icon 
-                      icon="arrow-right" 
-                      classes="w-4 h-4 transition-transform duration-200"
-                      [class.rotate-90]="isExpanded(item.path)"
-                      [class.opacity-0]="isCollapsed() && !isHovered()"
-                    ></app-svg-icon>
-                  }
                 </a>
 
                 <!-- Tooltip pour sidebar réduite -->
                 @if (isCollapsed() && !isHovered()) {
                   <div class="tooltip absolute left-full top-1/2 transform -translate-y-1/2 ml-2 px-3 py-2 bg-gray-900 text-white text-sm rounded-lg opacity-0 group-hover:opacity-100 transition-opacity duration-200 pointer-events-none z-50 whitespace-nowrap">
                     {{ item.label }}
-                  </div>
-                }
-
-                <!-- Sous-éléments -->
-                @if (item.subItems && isExpanded(item.path) && (!isCollapsed() || isHovered())) {
-                  <div class="sub-items ml-6 mt-2 space-y-1">
-                    @for (subItem of item.subItems; track subItem.path) {
-                      <a 
-                        [routerLink]="subItem.path"
-                        routerLinkActive="sub-item-active"
-                        class="sub-item flex items-center gap-3 px-3 py-2 rounded-lg text-gray-600 hover:bg-white/40 transition-all duration-200 text-sm"
-                      >
-                        <app-svg-icon [icon]="subItem.icon" classes="w-4 h-4"></app-svg-icon>
-                        <span>{{ subItem.label }}</span>
-                      </a>
-                    }
                   </div>
                 }
               </div>

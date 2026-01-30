@@ -9,14 +9,7 @@ interface MenuItem {
   label: string;
   icon: string;
   badge?: number;
-  subItems?: SubMenuItem[];
   category?: string;
-}
-
-interface SubMenuItem {
-  path: string;
-  label: string;
-  icon: string;
 }
 
 interface QuickAction {
@@ -46,7 +39,6 @@ export class Sidebar implements OnInit {
   }
 
   protected readonly isHovered = signal(false);
-  protected readonly expandedItems = signal<string[]>([]);
   protected readonly currentTime = signal(new Date());
   protected readonly showQuickActions = signal(false);
   protected readonly notificationCount = signal(0);
@@ -72,52 +64,31 @@ export class Sidebar implements OnInit {
       path: '/app/ue', 
       label: 'Gestion des UE', 
       icon: 'academic-cap',
-      category: 'gestion',
-      subItems: [
-        { path: '/app/ue', label: 'Liste des UE', icon: 'academic-cap' },
-        { path: '/app/ue/semestres', label: 'Par semestre', icon: 'calendar' }
-      ]
-    },
-    { 
-      path: '/app/cours', 
-      label: 'Gestion des cours', 
-      icon: 'book',
-      category: 'gestion',
-      subItems: [
-        { path: '/app/cours', label: 'Liste des cours', icon: 'clipboard' },
-        { path: '/app/cours/types', label: 'Types de cours', icon: 'tag' },
-        { path: '/app/cours/planning', label: 'Planning', icon: 'clock' }
-      ]
-    },
-    { 
-      path: '/app/professeurs', 
-      label: 'Gestion des professeurs', 
-      icon: 'user',
-      category: 'gestion',
-      subItems: [
-        { path: '/app/professeurs', label: 'Liste des professeurs', icon: 'users' },
-        { path: '/app/professeurs/horaires', label: 'Horaires', icon: 'clock' }
-      ]
-    },
-    { 
-      path: '/app/salles', 
-      label: 'Gestion des salles', 
-      icon: 'building',
-      category: 'gestion',
-      subItems: [
-        { path: '/app/salles', label: 'Liste des salles', icon: 'building' },
-        { path: '/app/salles/reservations', label: 'Réservations', icon: 'clock' }
-      ]
+      category: 'gestion'
     },
     { 
       path: '/app/classes', 
       label: 'Gestion des classes', 
       icon: 'user-group',
-      category: 'gestion',
-      subItems: [
-        { path: '/app/classes', label: 'Liste des classes', icon: 'user-group' },
-        { path: '/app/classes/effectifs', label: 'Effectifs', icon: 'chart-bar' }
-      ]
+      category: 'gestion'
+    },
+    { 
+      path: '/app/cours', 
+      label: 'Gestion des cours', 
+      icon: 'book',
+      category: 'gestion'
+    },
+    { 
+      path: '/app/professeurs', 
+      label: 'Gestion des professeurs', 
+      icon: 'user',
+      category: 'gestion'
+    },
+    { 
+      path: '/app/salles', 
+      label: 'Gestion des salles', 
+      icon: 'building',
+      category: 'gestion'
     },
     { 
       path: '/app/notifications', 
@@ -229,21 +200,6 @@ export class Sidebar implements OnInit {
 
   onMouseLeave() {
     this.isHovered.set(false);
-  }
-
-  toggleExpanded(itemPath: string) {
-    this.expandedItems.update(items => {
-      const index = items.indexOf(itemPath);
-      if (index > -1) {
-        return items.filter(item => item !== itemPath);
-      } else {
-        return [...items, itemPath];
-      }
-    });
-  }
-
-  isExpanded(itemPath: string): boolean {
-    return this.expandedItems().includes(itemPath);
   }
 
   toggleQuickActions() {
