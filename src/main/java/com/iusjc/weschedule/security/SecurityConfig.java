@@ -56,6 +56,9 @@ public class SecurityConfig {
                         .requestMatchers("/", "/login", "/register", "/admin/signup", 
                                 "/css/**", "/js/**", "/images/**", "/error").permitAll()
                         
+                        // API REST d'authentification (publique)
+                        .requestMatchers("/api/auth/**").permitAll()
+                        
                         // Pages et API endpoints pour mot de passe oublié/réinitialisation
                         .requestMatchers("/reset-password-request", "/reset-password", "/reset-password-error", 
                                 "/reset-password-success", "/api/forgot-password", "/api/reset-password-with-token", 

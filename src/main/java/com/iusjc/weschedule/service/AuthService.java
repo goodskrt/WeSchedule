@@ -78,7 +78,7 @@ public class AuthService {
             log.info("Nouvel utilisateur enregistré : {} {}", request.getNom(), request.getPrenom());
 
             return AuthResponse.builder()
-                    .idUser(utilisateur.getIdUser())
+                    .idUser(utilisateur.getIdUser().toString()) // Conversion UUID vers String
                     .email(utilisateur.getEmail())
                     .nom(utilisateur.getNom())
                     .prenom(utilisateur.getPrenom())
@@ -133,7 +133,7 @@ public class AuthService {
             log.info("Authentification réussie pour: {}", email);
 
             return AuthResponse.builder()
-                    .idUser(utilisateur.getIdUser())
+                    .idUser(utilisateur.getIdUser().toString()) // Conversion UUID vers String
                     .email(utilisateur.getEmail())
                     .nom(utilisateur.getNom())
                     .prenom(utilisateur.getPrenom())
