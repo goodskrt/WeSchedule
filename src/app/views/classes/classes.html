@@ -1,0 +1,738 @@
+<!-- Gestion des Classes -->
+<div class="classes-management p-6">
+  <!-- En-tête -->
+  <div class="flex flex-col lg:flex-row lg:items-center lg:justify-between mb-8">
+    <div>
+      <h1 class="text-3xl font-bold text-gray-900 mb-2 flex items-center gap-3">
+        <app-svg-icon icon="user-group" classes="w-8 h-8 text-primary-600"></app-svg-icon>
+        Gestion des Classes
+      </h1>
+      <p class="text-gray-600">Gérez les classes par école, niveau et semestre</p>
+    </div>
+    
+    <div class="flex flex-col sm:flex-row gap-3 mt-4 lg:mt-0">
+      <button
+        (click)="importClasses()"
+        class="px-4 py-2 bg-gray-600 hover:bg-gray-700 text-white rounded-lg transition-colors flex items-center gap-2"
+      >
+        <app-svg-icon icon="arrow-up" classes="w-4 h-4"></app-svg-icon>
+        Importer
+      </button>
+      <button
+        (click)="exportClasses()"
+        class="px-4 py-2 bg-green-600 hover:bg-green-700 text-white rounded-lg transition-colors flex items-center gap-2"
+      >
+        <app-svg-icon icon="arrow-down" classes="w-4 h-4"></app-svg-icon>
+        Exporter
+      </button>
+      <button
+        (click)="openAddModal()"
+        class="px-4 py-2 bg-primary-600 hover:bg-primary-700 text-white rounded-lg transition-colors flex items-center gap-2"
+      >
+        <app-svg-icon icon="plus" classes="w-4 h-4"></app-svg-icon>
+        Nouvelle Classe
+      </button>
+    </div>
+  </div>
+
+  <!-- Filtres et recherche -->
+  <div class="bg-white rounded-xl shadow-sm border border-gray-200 p-6 mb-6">
+    <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-6 gap-4">
+      <!-- Recherche -->
+      <div class="lg:col-span-2">
+        <label class="block text-sm font-medium text-gray-700 mb-2">Rechercher</label>
+        <div class="relative">
+          <input
+            type="text"
+            [value]="searchTerm()"
+            (input)="searchTerm.set($any($event.target).value)"
+            placeholder="Nom, niveau, spécialité..."
+            class="w-full pl-10 pr-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary-500 focus:border-primary-500"
+          >
+          <app-svg-icon icon="search" classes="w-5 h-5 text-gray-400 absolute left-3 top-1/2 transform -translate-y-1/2"></app-svg-icon>
+        </div>
+      </div>
+
+      <!-- École -->
+      <div>
+        <label class="block text-sm font-medium text-gray-700 mb-2">École</label>
+        <select
+          [value]="selectedEcole()"
+          (change)="selectedEcole.set($any($event.target).value)"
+          class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary-500 focus:border-primary-500"
+        >
+          <option value="">Toutes les écoles</option>
+          @for (ecole of ecoles(); track ecole.id) {
+            <option [value]="ecole.id">{{ ecole.nom }}</option>
+          }
+        </select>
+      </div>
+
+      <!-- Niveau -->
+      <div>
+        <label class="block text-sm font-medium text-gray-700 mb-2">Niveau</label>
+        <select
+          [value]="selectedNiveau()"
+          (change)="selectedNiveau.set($any($event.target).value)"
+          class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary-500 focus:border-primary-500"
+        >
+          <option value="">Tous les niveaux</option>
+          @for (niveau of getNiveaux(); track niveau) {
+            <option [value]="niveau">{{ niveau }}</option>
+          }
+        </select>
+      </div>
+
+      <!-- Semestre -->
+      <div>
+        <label class="block text-sm font-medium text-gray-700 mb-2">Semestre</label>
+        <select
+          [value]="selectedSemestre()"
+          (change)="selectedSemestre.set(+$any($event.target).value)"
+          class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary-500 focus:border-primary-500"
+        >
+          <option [value]="0">Tous les semestres</option>
+          @for (i of [1,2,3,4,5,6,7,8,9,10]; track i) {
+            <option [value]="i">Semestre {{ i }}</option>
+          }
+        </select>
+      </div>
+
+      <!-- Actions -->
+      <div class="flex items-end gap-2">
+        <button
+          (click)="clearFilters()"
+          class="px-4 py-2 bg-gray-100 hover:bg-gray-200 text-gray-700 rounded-lg transition-colors flex items-center gap-2"
+        >
+          <app-svg-icon icon="x" classes="w-4 h-4"></app-svg-icon>
+          Effacer
+        </button>
+        <button
+          (click)="currentView.set(currentView() === 'grid' ? 'list' : 'grid')"
+          class="px-4 py-2 bg-gray-100 hover:bg-gray-200 text-gray-700 rounded-lg transition-colors"
+        >
+          <app-svg-icon [icon]="currentView() === 'grid' ? 'list' : 'grid'" classes="w-4 h-4"></app-svg-icon>
+        </button>
+      </div>
+    </div>
+  </div>
+
+  <!-- Statistiques -->
+  <div class="grid grid-cols-1 md:grid-cols-4 gap-6 mb-6">
+    <div class="bg-white rounded-xl shadow-sm border border-gray-200 p-6">
+      <div class="flex items-center justify-between">
+        <div>
+          <p class="text-sm font-medium text-gray-600">Total Classes</p>
+          <p class="text-2xl font-bold text-gray-900">{{ classes().length }}</p>
+        </div>
+        <div class="w-12 h-12 bg-blue-100 rounded-lg flex items-center justify-center">
+          <app-svg-icon icon="user-group" classes="w-6 h-6 text-blue-600"></app-svg-icon>
+        </div>
+      </div>
+    </div>
+
+    <div class="bg-white rounded-xl shadow-sm border border-gray-200 p-6">
+      <div class="flex items-center justify-between">
+        <div>
+          <p class="text-sm font-medium text-gray-600">Total Étudiants</p>
+          <p class="text-2xl font-bold text-gray-900">{{ getTotalEffectif() }}</p>
+        </div>
+        <div class="w-12 h-12 bg-green-100 rounded-lg flex items-center justify-center">
+          <app-svg-icon icon="users" classes="w-6 h-6 text-green-600"></app-svg-icon>
+        </div>
+      </div>
+    </div>
+
+    <div class="bg-white rounded-xl shadow-sm border border-gray-200 p-6">
+      <div class="flex items-center justify-between">
+        <div>
+          <p class="text-sm font-medium text-gray-600">Capacité Totale</p>
+          <p class="text-2xl font-bold text-gray-900">{{ getTotalEffectifMax() }}</p>
+        </div>
+        <div class="w-12 h-12 bg-purple-100 rounded-lg flex items-center justify-center">
+          <app-svg-icon icon="building" classes="w-6 h-6 text-purple-600"></app-svg-icon>
+        </div>
+      </div>
+    </div>
+
+    <div class="bg-white rounded-xl shadow-sm border border-gray-200 p-6">
+      <div class="flex items-center justify-between">
+        <div>
+          <p class="text-sm font-medium text-gray-600">Moyenne/Classe</p>
+          <p class="text-2xl font-bold text-gray-900">{{ getAverageEffectif() }}</p>
+        </div>
+        <div class="w-12 h-12 bg-orange-100 rounded-lg flex items-center justify-center">
+          <app-svg-icon icon="chart-bar" classes="w-6 h-6 text-orange-600"></app-svg-icon>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Liste des Classes -->
+  <div class="bg-white rounded-xl shadow-sm border border-gray-200">
+    @if (getFilteredClasses().length === 0) {
+      <div class="p-12 text-center">
+        <app-svg-icon icon="user-group" classes="w-16 h-16 text-gray-300 mx-auto mb-4"></app-svg-icon>
+        <h3 class="text-lg font-medium text-gray-900 mb-2">Aucune classe trouvée</h3>
+        <p class="text-gray-500 mb-4">Aucune classe ne correspond à vos critères de recherche.</p>
+        <button
+          (click)="clearFilters()"
+          class="px-4 py-2 bg-primary-600 hover:bg-primary-700 text-white rounded-lg transition-colors"
+        >
+          Effacer les filtres
+        </button>
+      </div>
+    } @else {
+      <!-- Vue grille -->
+      @if (currentView() === 'grid') {
+        <div class="p-6">
+          <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+            @for (classe of getFilteredClasses(); track classe.id) {
+              <div class="border border-gray-200 rounded-lg p-6 hover:shadow-md transition-shadow">
+                <div class="flex items-start justify-between mb-4">
+                  <div>
+                    <h3 class="font-semibold text-gray-900 mb-1">{{ classe.nom }}</h3>
+                    <p class="text-sm text-gray-600">{{ classe.niveau }} - {{ classe.specialite }}</p>
+                  </div>
+                  <div class="flex gap-1">
+                    <button
+                      (click)="openDetailsModal(classe)"
+                      class="p-2 text-gray-400 hover:text-blue-600 transition-colors"
+                      title="Voir les détails"
+                    >
+                      <app-svg-icon icon="eye" classes="w-4 h-4"></app-svg-icon>
+                    </button>
+                    <button
+                      (click)="openUEModal(classe)"
+                      class="p-2 text-gray-400 hover:text-purple-600 transition-colors"
+                      title="Gérer les UE"
+                    >
+                      <app-svg-icon icon="academic-cap" classes="w-4 h-4"></app-svg-icon>
+                    </button>
+                    <button
+                      (click)="openEditModal(classe)"
+                      class="p-2 text-gray-400 hover:text-green-600 transition-colors"
+                      title="Modifier"
+                    >
+                      <app-svg-icon icon="edit" classes="w-4 h-4"></app-svg-icon>
+                    </button>
+                    <button
+                      (click)="deleteClasse(classe)"
+                      class="p-2 text-gray-400 hover:text-red-600 transition-colors"
+                      title="Supprimer"
+                    >
+                      <app-svg-icon icon="trash" classes="w-4 h-4"></app-svg-icon>
+                    </button>
+                  </div>
+                </div>
+
+                <div class="space-y-3">
+                  <!-- École et semestre -->
+                  <div class="flex items-center gap-2 text-sm">
+                    <app-svg-icon icon="building" classes="w-4 h-4 text-gray-400"></app-svg-icon>
+                    <span>{{ getEcoleName(classe.ecole) }} - S{{ classe.semestre }}</span>
+                  </div>
+
+                  <!-- Responsable -->
+                  <div class="flex items-center gap-2 text-sm">
+                    <app-svg-icon icon="user" classes="w-4 h-4 text-gray-400"></app-svg-icon>
+                    <span>{{ getProfesseurName(classe.responsable) }}</span>
+                  </div>
+
+                  <!-- Effectif -->
+                  <div class="space-y-2">
+                    <div class="flex items-center justify-between text-sm">
+                      <span class="text-gray-600">Effectif</span>
+                      <span class="font-medium">{{ classe.effectif }}/{{ classe.effectifMax }}</span>
+                    </div>
+                    <div class="w-full bg-gray-200 rounded-full h-2">
+                      <div 
+                        class="h-2 rounded-full transition-all duration-300"
+                        [class]="getEffectifStatus(classe) === 'full' ? 'bg-green-500' : 
+                                getEffectifStatus(classe) === 'high' ? 'bg-blue-500' :
+                                getEffectifStatus(classe) === 'medium' ? 'bg-yellow-500' : 'bg-red-500'"
+                        [style.width.%]="getEffectifPercentage(classe)"
+                      ></div>
+                    </div>
+                    <span 
+                      class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium"
+                      [class]="getEffectifStatusColor(getEffectifStatus(classe))"
+                    >
+                      {{ getEffectifStatusLabel(getEffectifStatus(classe)) }}
+                    </span>
+                  </div>
+
+                  <!-- UE -->
+                  <div class="flex items-center gap-2 text-sm">
+                    <app-svg-icon icon="academic-cap" classes="w-4 h-4 text-gray-400"></app-svg-icon>
+                    <span>{{ classe.ues.length }} UE</span>
+                  </div>
+                </div>
+
+                @if (classe.description) {
+                  <p class="text-sm text-gray-600 mt-3 line-clamp-2">{{ classe.description }}</p>
+                }
+              </div>
+            }
+          </div>
+        </div>
+      }
+
+      <!-- Vue liste -->
+      @if (currentView() === 'list') {
+        <div class="overflow-x-auto">
+          <table class="w-full">
+            <thead class="bg-gray-50 border-b border-gray-200">
+              <tr>
+                <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Classe</th>
+                <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">École</th>
+                <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Niveau</th>
+                <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Semestre</th>
+                <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Effectif</th>
+                <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Responsable</th>
+                <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">UE</th>
+                <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Actions</th>
+              </tr>
+            </thead>
+            <tbody class="bg-white divide-y divide-gray-200">
+              @for (classe of getFilteredClasses(); track classe.id) {
+                <tr class="hover:bg-gray-50">
+                  <td class="px-6 py-4 whitespace-nowrap">
+                    <div>
+                      <div class="text-sm font-medium text-gray-900">{{ classe.nom }}</div>
+                      <div class="text-sm text-gray-500">{{ classe.specialite }}</div>
+                    </div>
+                  </td>
+                  <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
+                    {{ getEcoleName(classe.ecole) }}
+                  </td>
+                  <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
+                    {{ classe.niveau }}
+                  </td>
+                  <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
+                    {{ classe.semestre }}
+                  </td>
+                  <td class="px-6 py-4 whitespace-nowrap">
+                    <div class="flex items-center">
+                      <span class="text-sm text-gray-900 mr-2">{{ classe.effectif }}/{{ classe.effectifMax }}</span>
+                      <span 
+                        class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium"
+                        [class]="getEffectifStatusColor(getEffectifStatus(classe))"
+                      >
+                        {{ getEffectifPercentage(classe) }}%
+                      </span>
+                    </div>
+                  </td>
+                  <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
+                    {{ getProfesseurName(classe.responsable) }}
+                  </td>
+                  <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
+                    {{ classe.ues.length }}
+                  </td>
+                  <td class="px-6 py-4 whitespace-nowrap text-sm font-medium">
+                    <div class="flex gap-2">
+                      <button
+                        (click)="openDetailsModal(classe)"
+                        class="text-blue-600 hover:text-blue-900"
+                      >
+                        Voir
+                      </button>
+                      <button
+                        (click)="openUEModal(classe)"
+                        class="text-purple-600 hover:text-purple-900"
+                      >
+                        UE
+                      </button>
+                      <button
+                        (click)="openEditModal(classe)"
+                        class="text-green-600 hover:text-green-900"
+                      >
+                        Modifier
+                      </button>
+                      <button
+                        (click)="deleteClasse(classe)"
+                        class="text-red-600 hover:text-red-900"
+                      >
+                        Supprimer
+                      </button>
+                    </div>
+                  </td>
+                </tr>
+              }
+            </tbody>
+          </table>
+        </div>
+      }
+    }
+  </div>
+</div>
+
+<!-- Modal d'ajout/modification -->
+@if (showAddModal() || showEditModal()) {
+  <div class="modal-overlay">
+    <div class="modal-content max-w-4xl">
+      <div class="flex items-center justify-between p-6 border-b border-gray-200">
+        <h3 class="text-lg font-semibold text-gray-900">
+          {{ showAddModal() ? 'Nouvelle Classe' : 'Modifier la Classe' }}
+        </h3>
+        <button
+          (click)="closeModals()"
+          class="text-gray-400 hover:text-gray-600 transition-colors"
+        >
+          <app-svg-icon icon="x" classes="w-6 h-6"></app-svg-icon>
+        </button>
+      </div>
+
+      <form (ngSubmit)="onSubmit()" class="p-6">
+        <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+          <!-- Nom de la classe -->
+          <div>
+            <label class="block text-sm font-medium text-gray-700 mb-2">Nom de la classe *</label>
+            <input
+              type="text"
+              [value]="classeForm().nom"
+              (input)="updateForm('nom', $any($event.target).value)"
+              class="w-full px-3 py-2 border rounded-lg focus:ring-2 focus:ring-primary-500 focus:border-primary-500"
+              [class.border-red-300]="errors()['nom']"
+              placeholder="Ex: Informatique L1A"
+              required
+            >
+            @if (errors()['nom']) {
+              <p class="text-red-600 text-sm mt-1">{{ errors()['nom'] }}</p>
+            }
+          </div>
+
+          <!-- Niveau -->
+          <div>
+            <label class="block text-sm font-medium text-gray-700 mb-2">Niveau *</label>
+            <select
+              [value]="classeForm().niveau"
+              (change)="updateForm('niveau', $any($event.target).value)"
+              class="w-full px-3 py-2 border rounded-lg focus:ring-2 focus:ring-primary-500 focus:border-primary-500"
+              [class.border-red-300]="errors()['niveau']"
+              required
+            >
+              <option value="">Sélectionner un niveau</option>
+              @for (niveau of getNiveaux(); track niveau) {
+                <option [value]="niveau">{{ niveau }}</option>
+              }
+            </select>
+            @if (errors()['niveau']) {
+              <p class="text-red-600 text-sm mt-1">{{ errors()['niveau'] }}</p>
+            }
+          </div>
+
+          <!-- École -->
+          <div>
+            <label class="block text-sm font-medium text-gray-700 mb-2">École *</label>
+            <select
+              [value]="classeForm().ecole"
+              (change)="updateForm('ecole', $any($event.target).value)"
+              class="w-full px-3 py-2 border rounded-lg focus:ring-2 focus:ring-primary-500 focus:border-primary-500"
+              [class.border-red-300]="errors()['ecole']"
+              required
+            >
+              <option value="">Sélectionner une école</option>
+              @for (ecole of ecoles(); track ecole.id) {
+                <option [value]="ecole.id">{{ ecole.nom }}</option>
+              }
+            </select>
+            @if (errors()['ecole']) {
+              <p class="text-red-600 text-sm mt-1">{{ errors()['ecole'] }}</p>
+            }
+          </div>
+
+          <!-- Semestre -->
+          <div>
+            <label class="block text-sm font-medium text-gray-700 mb-2">Semestre *</label>
+            <select
+              [value]="classeForm().semestre"
+              (change)="updateForm('semestre', +$any($event.target).value)"
+              class="w-full px-3 py-2 border rounded-lg focus:ring-2 focus:ring-primary-500 focus:border-primary-500"
+              required
+            >
+              @for (semestre of getSemestresForEcole(classeForm().ecole); track semestre) {
+                <option [value]="semestre">Semestre {{ semestre }}</option>
+              }
+            </select>
+          </div>
+
+          <!-- Spécialité -->
+          <div>
+            <label class="block text-sm font-medium text-gray-700 mb-2">Spécialité</label>
+            <select
+              [value]="classeForm().specialite"
+              (change)="updateForm('specialite', $any($event.target).value)"
+              class="w-full px-3 py-2 border rounded-lg focus:ring-2 focus:ring-primary-500 focus:border-primary-500"
+            >
+              <option value="">Sélectionner une spécialité</option>
+              @for (specialite of getSpecialites(); track specialite) {
+                <option [value]="specialite">{{ specialite }}</option>
+              }
+            </select>
+          </div>
+
+          <!-- Responsable -->
+          <div>
+            <label class="block text-sm font-medium text-gray-700 mb-2">Responsable</label>
+            <select
+              [value]="classeForm().responsable"
+              (change)="updateForm('responsable', $any($event.target).value)"
+              class="w-full px-3 py-2 border rounded-lg focus:ring-2 focus:ring-primary-500 focus:border-primary-500"
+            >
+              <option value="">Sélectionner un responsable</option>
+              @for (prof of professeurs(); track prof.id) {
+                <option [value]="prof.id">{{ prof.prenom }} {{ prof.nom }}</option>
+              }
+            </select>
+          </div>
+
+          <!-- Effectif actuel -->
+          <div>
+            <label class="block text-sm font-medium text-gray-700 mb-2">Effectif actuel</label>
+            <input
+              type="number"
+              min="0"
+              [value]="classeForm().effectif"
+              (input)="updateForm('effectif', +$any($event.target).value)"
+              class="w-full px-3 py-2 border rounded-lg focus:ring-2 focus:ring-primary-500 focus:border-primary-500"
+              [class.border-red-300]="errors()['effectif']"
+            >
+            @if (errors()['effectif']) {
+              <p class="text-red-600 text-sm mt-1">{{ errors()['effectif'] }}</p>
+            }
+          </div>
+
+          <!-- Effectif maximum -->
+          <div>
+            <label class="block text-sm font-medium text-gray-700 mb-2">Effectif maximum *</label>
+            <input
+              type="number"
+              min="1"
+              [value]="classeForm().effectifMax"
+              (input)="updateForm('effectifMax', +$any($event.target).value)"
+              class="w-full px-3 py-2 border rounded-lg focus:ring-2 focus:ring-primary-500 focus:border-primary-500"
+              [class.border-red-300]="errors()['effectifMax']"
+              required
+            >
+            @if (errors()['effectifMax']) {
+              <p class="text-red-600 text-sm mt-1">{{ errors()['effectifMax'] }}</p>
+            }
+          </div>
+        </div>
+
+        <!-- Description -->
+        <div class="mt-6">
+          <label class="block text-sm font-medium text-gray-700 mb-2">Description</label>
+          <textarea
+            [value]="classeForm().description"
+            (input)="updateForm('description', $any($event.target).value)"
+            rows="3"
+            class="w-full px-3 py-2 border rounded-lg focus:ring-2 focus:ring-primary-500 focus:border-primary-500"
+            placeholder="Description de la classe..."
+          ></textarea>
+        </div>
+
+        <!-- Boutons -->
+        <div class="flex justify-end gap-3 mt-8 pt-6 border-t border-gray-200">
+          <button
+            type="button"
+            (click)="closeModals()"
+            class="px-4 py-2 border border-gray-300 text-gray-700 rounded-lg hover:bg-gray-50 transition-colors"
+          >
+            Annuler
+          </button>
+          <button
+            type="submit"
+            [disabled]="isLoading()"
+            class="px-4 py-2 bg-primary-600 hover:bg-primary-700 disabled:bg-primary-400 text-white rounded-lg transition-colors flex items-center gap-2"
+          >
+            @if (isLoading()) {
+              <div class="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin"></div>
+            }
+            {{ showAddModal() ? 'Créer' : 'Modifier' }}
+          </button>
+        </div>
+      </form>
+    </div>
+  </div>
+}
+
+<!-- Modal de gestion des UE -->
+@if (showUEModal() && selectedClasse()) {
+  <div class="modal-overlay">
+    <div class="modal-content max-w-3xl">
+      <div class="flex items-center justify-between p-6 border-b border-gray-200">
+        <h3 class="text-lg font-semibold text-gray-900">
+          Gérer les UE - {{ selectedClasse()!.nom }}
+        </h3>
+        <button
+          (click)="closeModals()"
+          class="text-gray-400 hover:text-gray-600 transition-colors"
+        >
+          <app-svg-icon icon="x" classes="w-6 h-6"></app-svg-icon>
+        </button>
+      </div>
+
+      <div class="p-6">
+        <div class="mb-4">
+          <p class="text-sm text-gray-600">
+            Sélectionnez les UE à associer à cette classe. Seules les UE de la même école et du même semestre sont disponibles.
+          </p>
+        </div>
+
+        @if (getAvailableUEs().length === 0) {
+          <div class="text-center py-8">
+            <app-svg-icon icon="academic-cap" classes="w-12 h-12 text-gray-300 mx-auto mb-4"></app-svg-icon>
+            <p class="text-gray-500">Aucune UE disponible pour cette école et ce semestre.</p>
+          </div>
+        } @else {
+          <div class="grid grid-cols-1 md:grid-cols-2 gap-4 max-h-96 overflow-y-auto">
+            @for (ue of getAvailableUEs(); track ue.id) {
+              <label class="flex items-start p-4 border rounded-lg cursor-pointer hover:bg-gray-50 transition-colors">
+                <input
+                  type="checkbox"
+                  [checked]="classeForm().ues.includes(ue.id)"
+                  (change)="toggleUE(ue.id)"
+                  class="mt-1 mr-3"
+                >
+                <div class="flex-1">
+                  <div class="font-medium text-gray-900">{{ ue.nom }}</div>
+                  <div class="text-sm text-gray-600">{{ ue.code }} - {{ ue.credits }} crédits</div>
+                </div>
+              </label>
+            }
+          </div>
+        }
+
+        <div class="flex justify-end gap-3 mt-6 pt-6 border-t border-gray-200">
+          <button
+            type="button"
+            (click)="closeModals()"
+            class="px-4 py-2 border border-gray-300 text-gray-700 rounded-lg hover:bg-gray-50 transition-colors"
+          >
+            Annuler
+          </button>
+          <button
+            (click)="saveUEAssociations()"
+            [disabled]="isLoading()"
+            class="px-4 py-2 bg-primary-600 hover:bg-primary-700 disabled:bg-primary-400 text-white rounded-lg transition-colors flex items-center gap-2"
+          >
+            @if (isLoading()) {
+              <div class="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin"></div>
+            }
+            Sauvegarder
+          </button>
+        </div>
+      </div>
+    </div>
+  </div>
+}
+
+<!-- Modal de détails -->
+@if (showDetailsModal() && selectedClasse()) {
+  <div class="modal-overlay">
+    <div class="modal-content max-w-2xl">
+      <div class="flex items-center justify-between p-6 border-b border-gray-200">
+        <h3 class="text-lg font-semibold text-gray-900">Détails de la classe</h3>
+        <button
+          (click)="closeModals()"
+          class="text-gray-400 hover:text-gray-600 transition-colors"
+        >
+          <app-svg-icon icon="x" classes="w-6 h-6"></app-svg-icon>
+        </button>
+      </div>
+
+      <div class="p-6">
+        <div class="space-y-6">
+          <!-- Informations générales -->
+          <div>
+            <h4 class="text-lg font-medium text-gray-900 mb-4">{{ selectedClasse()!.nom }}</h4>
+            <div class="grid grid-cols-2 gap-4 text-sm">
+              <div>
+                <span class="font-medium text-gray-700">Niveau:</span>
+                <span class="ml-2">{{ selectedClasse()!.niveau }}</span>
+              </div>
+              <div>
+                <span class="font-medium text-gray-700">Spécialité:</span>
+                <span class="ml-2">{{ selectedClasse()!.specialite || 'Non définie' }}</span>
+              </div>
+              <div>
+                <span class="font-medium text-gray-700">École:</span>
+                <span class="ml-2">{{ getEcoleName(selectedClasse()!.ecole) }}</span>
+              </div>
+              <div>
+                <span class="font-medium text-gray-700">Semestre:</span>
+                <span class="ml-2">{{ selectedClasse()!.semestre }}</span>
+              </div>
+              <div>
+                <span class="font-medium text-gray-700">Responsable:</span>
+                <span class="ml-2">{{ getProfesseurName(selectedClasse()!.responsable) }}</span>
+              </div>
+              <div>
+                <span class="font-medium text-gray-700">Effectif:</span>
+                <span class="ml-2">{{ selectedClasse()!.effectif }}/{{ selectedClasse()!.effectifMax }}</span>
+              </div>
+            </div>
+          </div>
+
+          <!-- Description -->
+          @if (selectedClasse()!.description) {
+            <div>
+              <h5 class="font-medium text-gray-700 mb-2">Description</h5>
+              <p class="text-gray-600">{{ selectedClasse()!.description }}</p>
+            </div>
+          }
+
+          <!-- UE associées -->
+          <div>
+            <h5 class="font-medium text-gray-700 mb-2">UE associées ({{ selectedClasse()!.ues.length }})</h5>
+            @if (selectedClasse()!.ues.length === 0) {
+              <p class="text-gray-500 text-sm">Aucune UE associée</p>
+            } @else {
+              <div class="space-y-2">
+                @for (ueId of selectedClasse()!.ues; track ueId) {
+                  @for (ue of ues(); track ue.id) {
+                    @if (ue.id === ueId) {
+                      <div class="flex items-center justify-between p-3 bg-gray-50 rounded-lg">
+                        <div>
+                          <span class="font-medium">{{ ue.nom }}</span>
+                          <span class="text-sm text-gray-500 ml-2">({{ ue.code }})</span>
+                        </div>
+                        <span class="text-sm text-gray-500">{{ ue.credits }} crédits</span>
+                      </div>
+                    }
+                  }
+                }
+              </div>
+            }
+          </div>
+
+          <!-- Statistiques d'effectif -->
+          <div>
+            <h5 class="font-medium text-gray-700 mb-2">Statistiques d'effectif</h5>
+            <div class="space-y-2">
+              <div class="flex justify-between text-sm">
+                <span>Taux de remplissage:</span>
+                <span class="font-medium">{{ getEffectifPercentage(selectedClasse()!) }}%</span>
+              </div>
+              <div class="w-full bg-gray-200 rounded-full h-2">
+                <div 
+                  class="h-2 rounded-full transition-all duration-300"
+                  [class]="getEffectifStatus(selectedClasse()!) === 'full' ? 'bg-green-500' : 
+                          getEffectifStatus(selectedClasse()!) === 'high' ? 'bg-blue-500' :
+                          getEffectifStatus(selectedClasse()!) === 'medium' ? 'bg-yellow-500' : 'bg-red-500'"
+                  [style.width.%]="getEffectifPercentage(selectedClasse()!)"
+                ></div>
+              </div>
+              <div class="flex justify-between text-sm">
+                <span>Places disponibles:</span>
+                <span class="font-medium">{{ selectedClasse()!.effectifMax - selectedClasse()!.effectif }}</span>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+}

@@ -299,8 +299,8 @@ export class EmploiDeTemps {
     {
       id: '1',
       title: 'Réunion Pédagogique',
-      start: new Date(2024, 11, 15, 14, 0),
-      end: new Date(2024, 11, 15, 16, 0),
+      start: new Date(2026, 11, 15, 14, 0),
+      end: new Date(2026, 11, 15, 16, 0),
       type: 'meeting',
       location: 'Salle de Conférence',
       description: 'Réunion mensuelle des enseignants',
@@ -309,8 +309,8 @@ export class EmploiDeTemps {
     {
       id: '2',
       title: 'Journée Portes Ouvertes',
-      start: new Date(2024, 11, 20, 9, 0),
-      end: new Date(2024, 11, 20, 17, 0),
+      start: new Date(2026, 11, 20, 9, 0),
+      end: new Date(2026, 11, 20, 17, 0),
       type: 'event',
       location: 'Campus',
       description: 'Présentation des formations aux futurs étudiants',

@@ -113,7 +113,7 @@ export class Salles {
       teacher: 'Dr. Martin Dubois',
       startTime: '09:00',
       endTime: '11:00',
-      date: '2024-01-08',
+      date: '2026-01-08',
       studentCount: 32,
       status: 'confirmed',
       recurring: true,
@@ -126,7 +126,7 @@ export class Salles {
       teacher: 'Prof. Sarah Johnson',
       startTime: '14:00',
       endTime: '16:00',
-      date: '2024-01-08',
+      date: '2026-01-08',
       studentCount: 25,
       status: 'confirmed',
       recurring: false
@@ -157,7 +157,7 @@ export class Salles {
       },
       features: ['Éclairage LED', 'Insonorisation'],
       accessibility: true,
-      lastCleaned: '2024-01-07T18:00:00Z',
+      lastCleaned: '2026-01-07T18:00:00Z',
       temperature: 22,
       occupancyRate: 85
     },
@@ -172,7 +172,7 @@ export class Salles {
       status: 'available',
       features: ['Postes informatiques', 'Serveur local', 'Logiciels spécialisés'],
       accessibility: true,
-      lastCleaned: '2024-01-07T20:00:00Z',
+      lastCleaned: '2026-01-07T20:00:00Z',
       temperature: 21,
       occupancyRate: 70
     },
@@ -187,7 +187,7 @@ export class Salles {
       status: 'available',
       features: ['Système de diffusion', 'Enregistrement vidéo', 'Éclairage scénique'],
       accessibility: true,
-      lastCleaned: '2024-01-07T19:30:00Z',
+      lastCleaned: '2026-01-07T19:30:00Z',
       temperature: 20,
       occupancyRate: 60
     },
@@ -202,13 +202,13 @@ export class Salles {
       status: 'maintenance',
       maintenanceInfo: {
         reason: 'Remplacement du système de climatisation',
-        startDate: '2024-01-08',
-        endDate: '2024-01-10',
+        startDate: '2026-01-08',
+        endDate: '2026-01-10',
         technician: 'Service Technique Campus'
       },
       features: ['Table de conférence', 'Système de visioconférence'],
       accessibility: true,
-      lastCleaned: '2024-01-06T16:00:00Z',
+      lastCleaned: '2026-01-06T16:00:00Z',
       temperature: 18,
       occupancyRate: 45
     },
@@ -223,7 +223,7 @@ export class Salles {
       status: 'available',
       features: ['Hottes aspirantes', 'Éviers spécialisés', 'Armoires sécurisées'],
       accessibility: false,
-      lastCleaned: '2024-01-07T17:00:00Z',
+      lastCleaned: '2026-01-07T17:00:00Z',
       temperature: 19,
       occupancyRate: 55
     },
@@ -238,7 +238,7 @@ export class Salles {
       status: 'available',
       features: ['Mobilier modulable', 'Prises électriques individuelles'],
       accessibility: true,
-      lastCleaned: '2024-01-07T18:30:00Z',
+      lastCleaned: '2026-01-07T18:30:00Z',
       temperature: 23,
       occupancyRate: 75
     }

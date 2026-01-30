@@ -69,12 +69,23 @@ export class Sidebar implements OnInit {
       category: 'principal'
     },
     { 
+      path: '/app/ue', 
+      label: 'Gestion des UE', 
+      icon: 'academic-cap',
+      category: 'gestion',
+      subItems: [
+        { path: '/app/ue', label: 'Liste des UE', icon: 'academic-cap' },
+        { path: '/app/ue/semestres', label: 'Par semestre', icon: 'calendar' }
+      ]
+    },
+    { 
       path: '/app/cours', 
       label: 'Gestion des cours', 
       icon: 'book',
       category: 'gestion',
       subItems: [
         { path: '/app/cours', label: 'Liste des cours', icon: 'clipboard' },
+        { path: '/app/cours/types', label: 'Types de cours', icon: 'tag' },
         { path: '/app/cours/planning', label: 'Planning', icon: 'clock' }
       ]
     },
@@ -99,6 +110,16 @@ export class Sidebar implements OnInit {
       ]
     },
     { 
+      path: '/app/classes', 
+      label: 'Gestion des classes', 
+      icon: 'user-group',
+      category: 'gestion',
+      subItems: [
+        { path: '/app/classes', label: 'Liste des classes', icon: 'user-group' },
+        { path: '/app/classes/effectifs', label: 'Effectifs', icon: 'chart-bar' }
+      ]
+    },
+    { 
       path: '/app/notifications', 
       label: 'Notifications', 
       icon: 'info', 
@@ -114,6 +135,20 @@ export class Sidebar implements OnInit {
   ]);
 
   protected readonly quickActions: QuickAction[] = [
+    {
+      id: 'add-ue',
+      label: 'Nouvelle UE',
+      icon: 'academic-cap',
+      color: 'bg-indigo-500',
+      action: () => this.router.navigate(['/app/ue'])
+    },
+    {
+      id: 'add-classe',
+      label: 'Nouvelle classe',
+      icon: 'user-group',
+      color: 'bg-teal-500',
+      action: () => this.router.navigate(['/app/classes'])
+    },
     {
       id: 'add-course',
       label: 'Nouveau cours',

@@ -111,9 +111,9 @@ export class Rapports {
   protected readonly recentReports = signal([
     {
       id: '1',
-      name: 'Rapport mensuel - Décembre 2024',
+      name: 'Rapport mensuel - Décembre 2026',
       type: 'Utilisation des salles',
-      date: '2024-12-31',
+      date: '2026-12-31',
       status: 'completed',
       size: '2.4 MB'
     },
@@ -121,15 +121,15 @@ export class Rapports {
       id: '2',
       name: 'Analyse des conflits - Semaine 52',
       type: 'Conflits d\'horaires',
-      date: '2024-12-29',
+      date: '2026-12-29',
       status: 'completed',
       size: '1.8 MB'
     },
     {
       id: '3',
-      name: 'Rapport trimestriel Q4 2024',
+      name: 'Rapport trimestriel Q4 2026',
       type: 'Performance globale',
-      date: '2024-12-28',
+      date: '2026-12-28',
       status: 'processing',
       size: '5.2 MB'
     }

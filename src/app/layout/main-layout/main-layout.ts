@@ -33,6 +33,8 @@ export class MainLayout implements OnInit {
   // Mapping des routes vers les titres
   private readonly routeTitles: { [key: string]: string } = {
     '/app/dashboard': 'Tableau de bord',
+    '/app/ue': 'Gestion des UE',
+    '/app/classes': 'Gestion des classes',
     '/app/cours': 'Gestion des cours',
     '/app/professeurs': 'Gestion des professeurs',
     '/app/emploi-de-temps': 'Emploi du temps',

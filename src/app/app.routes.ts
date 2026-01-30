@@ -11,6 +11,8 @@ import { Professeurs } from './views/professeurs/professeurs';
 import { MainLayout } from './layout/main-layout/main-layout';
 import { EnseignantLayout } from './layout/enseignant-layout/enseignant-layout';
 import { ForgotPassword } from './views/forgot-password/forgot-password';
+import { UEComponent } from './views/ue/ue';
+import { ClassesComponent } from './views/classes/classes';
 
 // Import des composants enseignant
 import { EnseignantDashboard } from './views/enseignant/dashboard/dashboard';
@@ -50,6 +52,14 @@ export const routes: Routes = [
             {
                 path: 'dashboard',
                 component: Dashboard
+            },
+            {
+                path: 'ue',
+                component: UEComponent
+            },
+            {
+                path: 'classes',
+                component: ClassesComponent
             },
             {
                 path: 'cours',
