@@ -37,7 +37,7 @@
 
   <!-- Filtres et recherche -->
   <div class="bg-white rounded-xl shadow-sm border border-gray-200 p-6 mb-6">
-    <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-5 gap-4">
+    <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-6 gap-4">
       <!-- Recherche -->
       <div class="lg:col-span-2">
         <label class="block text-sm font-medium text-gray-700 mb-2">Rechercher</label>
@@ -58,7 +58,7 @@
         <label class="block text-sm font-medium text-gray-700 mb-2">École</label>
         <select
           [value]="selectedEcole()"
-          (change)="selectedEcole.set($any($event.target).value)"
+          (change)="selectedEcole.set($any($event.target).value); selectedClasse.set('')"
           class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary-500 focus:border-primary-500"
         >
           <option value="">Toutes les écoles</option>
@@ -73,12 +73,30 @@
         <label class="block text-sm font-medium text-gray-700 mb-2">Semestre</label>
         <select
           [value]="selectedSemestre()"
-          (change)="selectedSemestre.set(+$any($event.target).value)"
+          (change)="selectedSemestre.set(+$any($event.target).value); selectedClasse.set('')"
           class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary-500 focus:border-primary-500"
         >
           <option [value]="0">Tous les semestres</option>
           @for (i of [1,2,3,4,5,6,7,8,9,10]; track i) {
             <option [value]="i">Semestre {{ i }}</option>
+          }
+        </select>
+      </div>
+
+      <!-- Classe -->
+      <div>
+        <label class="block text-sm font-medium text-gray-700 mb-2">Classe</label>
+        <select
+          [value]="selectedClasse()"
+          (change)="selectedClasse.set($any($event.target).value)"
+          class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary-500 focus:border-primary-500 disabled:bg-gray-100 disabled:text-gray-500"
+          [disabled]="!selectedEcole()"
+        >
+          <option value="">
+            {{ selectedEcole() ? 'Toutes les classes' : 'Sélectionnez d\'abord une école' }}
+          </option>
+          @for (classe of getClassesForFilter(); track classe.id) {
+            <option [value]="classe.id">{{ classe.nom }}</option>
           }
         </select>
       </div>
@@ -222,9 +240,16 @@
                     <app-svg-icon icon="star" classes="w-4 h-4 text-gray-400"></app-svg-icon>
                     <span>{{ ue.credits }} crédits</span>
                   </div>
-                  <div class="flex items-center gap-2">
-                    <app-svg-icon icon="user-group" classes="w-4 h-4 text-gray-400"></app-svg-icon>
-                    <span>{{ ue.classes.length }} classe(s)</span>
+                  <div class="flex items-start gap-2">
+                    <app-svg-icon icon="user-group" classes="w-4 h-4 text-gray-400 mt-0.5"></app-svg-icon>
+                    <div class="flex-1 min-w-0">
+                      @if (ue.classes.length > 0) {
+                        <div class="text-sm text-gray-900 break-words">{{ getClasseNames(ue.classes) }}</div>
+                        <div class="text-xs text-gray-500">{{ ue.classes.length }} classe(s)</div>
+                      } @else {
+                        <span class="text-sm text-gray-500 italic">Aucune classe</span>
+                      }
+                    </div>
                   </div>
                 </div>
 
@@ -274,8 +299,13 @@
                   <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
                     {{ ue.credits }}
                   </td>
-                  <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
-                    {{ ue.classes.length }}
+                  <td class="px-6 py-4 text-sm text-gray-900">
+                    @if (ue.classes.length > 0) {
+                      <div class="font-medium">{{ getClasseNames(ue.classes) }}</div>
+                      <div class="text-xs text-gray-500">{{ ue.classes.length }} classe(s)</div>
+                    } @else {
+                      <span class="text-gray-500 italic">Aucune classe</span>
+                    }
                   </td>
                   <td class="px-6 py-4 whitespace-nowrap text-sm font-medium">
                     <div class="flex gap-2">
@@ -527,19 +557,31 @@
 
           <!-- Classes -->
           <div>
-            <h5 class="font-medium text-gray-700 mb-2">Classes ({{ selectedUE()!.classes.length }})</h5>
-            <div class="space-y-2">
-              @for (classeId of selectedUE()!.classes; track classeId) {
-                @for (classe of classes(); track classe.id) {
-                  @if (classe.id === classeId) {
-                    <div class="flex items-center justify-between p-3 bg-gray-50 rounded-lg">
-                      <span>{{ classe.nom }}</span>
-                      <span class="text-sm text-gray-500">{{ classe.effectif }} étudiants</span>
-                    </div>
+            <h5 class="font-medium text-gray-700 mb-2">Classes associées</h5>
+            @if (selectedUE()!.classes.length > 0) {
+              <div class="space-y-2">
+                @for (classeId of selectedUE()!.classes; track classeId) {
+                  @for (classe of classes(); track classe.id) {
+                    @if (classe.id === classeId) {
+                      <div class="flex items-center justify-between p-3 bg-gray-50 rounded-lg">
+                        <div class="flex items-center gap-3">
+                          <div class="w-6 h-6 rounded-full text-white flex items-center justify-center text-xs font-bold" [ngClass]="getEcole(classe.ecole)?.couleur">
+                            {{ getEcole(classe.ecole)?.code }}
+                          </div>
+                          <div>
+                            <span class="font-medium">{{ classe.nom }}</span>
+                            <div class="text-sm text-gray-500">{{ classe.niveau }} • Semestre {{ classe.semestre }}</div>
+                          </div>
+                        </div>
+                        <span class="text-sm text-gray-500">{{ classe.effectif }} étudiants</span>
+                      </div>
+                    }
                   }
                 }
-              }
-            </div>
+              </div>
+            } @else {
+              <p class="text-gray-500 italic">Aucune classe associée</p>
+            }
           </div>
 
           <!-- Objectifs -->

@@ -35,7 +35,102 @@
     </div>
   </div>
 
-  <!-- Statistiques -->
+  <!-- Filtres et recherche -->
+  <div class="bg-white rounded-xl shadow-sm border border-gray-200 p-6 mb-6">
+    <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-7 gap-4">
+      <!-- Recherche -->
+      <div class="lg:col-span-2">
+        <label class="block text-sm font-medium text-gray-700 mb-2">Rechercher</label>
+        <div class="relative">
+          <input
+            type="text"
+            [value]="searchTerm()"
+            (input)="searchTerm.set($any($event.target).value)"
+            placeholder="Nom, code, professeur..."
+            class="w-full pl-10 pr-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary-500 focus:border-primary-500"
+          >
+          <app-svg-icon icon="search" classes="w-5 h-5 text-gray-400 absolute left-3 top-1/2 transform -translate-y-1/2"></app-svg-icon>
+        </div>
+      </div>
+
+      <!-- École -->
+      <div>
+        <label class="block text-sm font-medium text-gray-700 mb-2">École</label>
+        <select
+          [value]="selectedEcole()"
+          (change)="selectedEcole.set($any($event.target).value)"
+          class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary-500 focus:border-primary-500"
+        >
+          <option value="">Toutes les écoles</option>
+          @for (ecole of ecoles(); track ecole.id) {
+            <option [value]="ecole.id">{{ ecole.nom }}</option>
+          }
+        </select>
+      </div>
+
+      <!-- Semestre -->
+      <div>
+        <label class="block text-sm font-medium text-gray-700 mb-2">Semestre</label>
+        <select
+          [value]="selectedSemestre()"
+          (change)="selectedSemestre.set(+$any($event.target).value)"
+          class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary-500 focus:border-primary-500"
+        >
+          <option [value]="0">Tous les semestres</option>
+          @for (i of [1,2,3,4,5,6,7,8,9,10]; track i) {
+            <option [value]="i">Semestre {{ i }}</option>
+          }
+        </select>
+      </div>
+
+      <!-- Type -->
+      <div>
+        <label class="block text-sm font-medium text-gray-700 mb-2">Type</label>
+        <select
+          [value]="selectedType()"
+          (change)="selectedType.set($any($event.target).value)"
+          class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary-500 focus:border-primary-500"
+        >
+          <option value="">Tous les types</option>
+          @for (type of typesCours(); track type.id) {
+            <option [value]="type.id">{{ type.nom }}</option>
+          }
+        </select>
+      </div>
+
+      <!-- Classe -->
+      <div>
+        <label class="block text-sm font-medium text-gray-700 mb-2">Classe</label>
+        <select
+          [value]="selectedClasse()"
+          (change)="selectedClasse.set($any($event.target).value)"
+          class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary-500 focus:border-primary-500"
+        >
+          <option value="">Toutes les classes</option>
+          @for (classe of getFilteredClasses(); track classe.id) {
+            <option [value]="classe.id">{{ classe.nom }}</option>
+          }
+        </select>
+      </div>
+
+      <!-- Actions -->
+      <div class="flex items-end gap-2">
+        <button
+          (click)="clearFilters()"
+          class="px-4 py-2 bg-gray-100 hover:bg-gray-200 text-gray-700 rounded-lg transition-colors flex items-center gap-2"
+        >
+          <app-svg-icon icon="x" classes="w-4 h-4"></app-svg-icon>
+          Effacer
+        </button>
+        <button
+          (click)="currentView.set(currentView() === 'grid' ? 'list' : 'grid')"
+          class="px-4 py-2 bg-gray-100 hover:bg-gray-200 text-gray-700 rounded-lg transition-colors"
+        >
+          <app-svg-icon [icon]="currentView() === 'grid' ? 'list' : 'grid'" classes="w-4 h-4"></app-svg-icon>
+        </button>
+      </div>
+    </div>
+  </div>
   <div class="grid grid-cols-1 md:grid-cols-4 gap-6 mb-6">
     <div class="bg-white rounded-xl shadow-sm border border-gray-200 p-6">
       <div class="flex items-center justify-between">
@@ -160,13 +255,11 @@
                     </div>
                   }
 
-                  <!-- Salle -->
-                  @if (cours.salleId) {
-                    <div class="flex items-center gap-2 text-sm">
-                      <app-svg-icon icon="map-pin" classes="w-4 h-4 text-gray-400"></app-svg-icon>
-                      <span>{{ getSalle(cours.salleId)?.nom }}</span>
-                    </div>
-                  }
+                  <!-- Classes -->
+                  <div class="flex items-start gap-2 text-sm">
+                    <app-svg-icon icon="user-group" classes="w-4 h-4 text-gray-400 mt-0.5"></app-svg-icon>
+                    <span class="line-clamp-2">{{ getClasseNames(cours.classes) }}</span>
+                  </div>
 
                   <!-- Durée -->
                   <div class="flex items-center gap-2 text-sm">
@@ -195,7 +288,7 @@
                 <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Type</th>
                 <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">École</th>
                 <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Professeur</th>
-                <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Salle</th>
+                <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Classes</th>
                 <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Durée</th>
                 <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Statut</th>
                 <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Actions</th>
@@ -234,12 +327,10 @@
                       <span class="text-gray-400">Non assigné</span>
                     }
                   </td>
-                  <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
-                    @if (cours.salleId) {
-                      {{ getSalle(cours.salleId)?.nom }}
-                    } @else {
-                      <span class="text-gray-400">Non assignée</span>
-                    }
+                  <td class="px-6 py-4 text-sm text-gray-900">
+                    <div class="max-w-xs">
+                      {{ getClasseNames(cours.classes) }}
+                    </div>
                   </td>
                   <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
                     {{ formatDuree(cours.duree) }}
@@ -356,21 +447,6 @@
             </select>
           </div>
 
-          <!-- Salle -->
-          <div>
-            <label class="block text-sm font-medium text-gray-700 mb-2">Salle</label>
-            <select
-              [value]="coursForm().salleId"
-              (change)="updateForm('salleId', $any($event.target).value)"
-              class="w-full px-3 py-2 border rounded-lg focus:ring-2 focus:ring-primary-500 focus:border-primary-500"
-            >
-              <option value="">Sélectionner une salle</option>
-              @for (salle of salles(); track salle.id) {
-                <option [value]="salle.id">{{ salle.nom }} ({{ salle.capacite }} places)</option>
-              }
-            </select>
-          </div>
-
           <!-- Durée -->
           <div>
             <label class="block text-sm font-medium text-gray-700 mb-2">Durée (heures) *</label>
@@ -417,6 +493,32 @@
             placeholder="Description du cours..."
           ></textarea>
         </div>
+
+        <!-- Classes -->
+        @if (coursForm().ueId) {
+          <div class="mt-6">
+            <label class="block text-sm font-medium text-gray-700 mb-2">Classes *</label>
+            <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-3">
+              @for (classe of getAvailableClasses(); track classe.id) {
+                <label class="flex items-center p-3 border rounded-lg cursor-pointer hover:bg-gray-50">
+                  <input
+                    type="checkbox"
+                    [checked]="coursForm().classes.includes(classe.id)"
+                    (change)="toggleClasse(classe.id)"
+                    class="mr-3"
+                  >
+                  <div>
+                    <div class="font-medium text-gray-900">{{ classe.nom }}</div>
+                    <div class="text-sm text-gray-500">{{ classe.effectif }} étudiants</div>
+                  </div>
+                </label>
+              }
+            </div>
+            @if (errors()['classes']) {
+              <p class="text-red-600 text-sm mt-1">{{ errors()['classes'] }}</p>
+            }
+          </div>
+        }
 
         <!-- Boutons -->
         <div class="flex justify-end gap-3 mt-8 pt-6 border-t border-gray-200">
@@ -490,21 +592,21 @@
             </div>
           </div>
 
-          <!-- Professeur et salle -->
-          @if (selectedCours()!.professeurId || selectedCours()!.salleId) {
+          <!-- Professeur et classes -->
+          @if (selectedCours()!.professeurId || selectedCours()!.classes.length > 0) {
             <div>
               <h5 class="font-medium text-gray-700 mb-2">Affectation</h5>
-              <div class="grid grid-cols-2 gap-4 text-sm">
+              <div class="grid grid-cols-1 gap-4 text-sm">
                 @if (selectedCours()!.professeurId) {
                   <div>
                     <span class="font-medium text-gray-700">Professeur:</span>
                     <span class="ml-2">{{ getProfesseur(selectedCours()!.professeurId)?.prenom }} {{ getProfesseur(selectedCours()!.professeurId)?.nom }}</span>
                   </div>
                 }
-                @if (selectedCours()!.salleId) {
+                @if (selectedCours()!.classes.length > 0) {
                   <div>
-                    <span class="font-medium text-gray-700">Salle:</span>
-                    <span class="ml-2">{{ getSalle(selectedCours()!.salleId)?.nom }}</span>
+                    <span class="font-medium text-gray-700">Classes:</span>
+                    <span class="ml-2">{{ getClasseNames(selectedCours()!.classes) }}</span>
                   </div>
                 }
               </div>

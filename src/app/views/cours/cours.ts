@@ -8,7 +8,7 @@ interface CoursModel {
   ueId: string; // Référence vers l'UE
   typeId: string; // Référence vers le type de cours
   professeurId?: string;
-  salleId?: string;
+  classes: string[]; // IDs des classes associées
   duree: number; // en heures
   description?: string;
   statut: 'actif' | 'annule' | 'termine' | 'planifie';
@@ -41,6 +41,15 @@ interface Professeur {
   prenom: string;
   email: string;
   specialites: string[];
+}
+
+interface Classe {
+  id: string;
+  nom: string;
+  niveau: string;
+  ecole: string;
+  semestre: number;
+  effectif: number;
 }
 
 interface Salle {
@@ -83,6 +92,7 @@ export class Cours implements OnInit {
   protected readonly selectedType = signal('');
   protected readonly selectedStatut = signal('');
   protected readonly selectedProfesseur = signal('');
+  protected readonly selectedClasse = signal('');
   protected readonly currentView = signal<'grid' | 'list'>('grid');
 
   // Données
@@ -90,6 +100,7 @@ export class Cours implements OnInit {
   protected readonly ues = signal<UEModel[]>([]);
   protected readonly typesCours = signal<TypeCours[]>([]);
   protected readonly professeurs = signal<Professeur[]>([]);
+  protected readonly classes = signal<Classe[]>([]);
   protected readonly salles = signal<Salle[]>([]);
   protected readonly ecoles = signal<Ecole[]>([]);
   protected readonly selectedCours = signal<CoursModel | null>(null);
@@ -100,8 +111,8 @@ export class Cours implements OnInit {
     ueId: '',
     typeId: '',
     professeurId: '',
-    salleId: '',
-    duree: 30,
+    classes: [] as string[],
+    duree: 4,
     description: '',
     statut: 'planifie' as 'actif' | 'annule' | 'termine' | 'planifie'
   });
@@ -128,7 +139,10 @@ export class Cours implements OnInit {
     // Charger les professeurs
     this.loadProfesseurs();
     
-    // Charger les salles
+    // Charger les classes
+    this.loadClasses();
+    
+    // Charger les salles (gardé pour compatibilité)
     this.loadSalles();
     
     // Charger les UE
@@ -226,6 +240,33 @@ export class Cours implements OnInit {
     this.professeurs.set(professeurs);
   }
 
+  private loadClasses() {
+    const classes: Classe[] = [
+      // Saint Jean Ingénieur (SJI)
+      { id: '1', nom: 'Informatique L1A', niveau: 'L1', ecole: 'sji', semestre: 1, effectif: 45 },
+      { id: '2', nom: 'Informatique L1B', niveau: 'L1', ecole: 'sji', semestre: 1, effectif: 42 },
+      { id: '3', nom: 'Informatique L2', niveau: 'L2', ecole: 'sji', semestre: 3, effectif: 38 },
+      { id: '4', nom: 'Informatique L2', niveau: 'L2', ecole: 'sji', semestre: 4, effectif: 38 },
+      { id: '5', nom: 'Informatique L3', niveau: 'L3', ecole: 'sji', semestre: 5, effectif: 35 },
+      { id: '6', nom: 'Informatique L3', niveau: 'L3', ecole: 'sji', semestre: 6, effectif: 35 },
+      
+      // Saint Jean Management (SJM)
+      { id: '7', nom: 'Gestion L1', niveau: 'L1', ecole: 'sjm', semestre: 1, effectif: 50 },
+      { id: '8', nom: 'Gestion L1', niveau: 'L1', ecole: 'sjm', semestre: 2, effectif: 50 },
+      { id: '9', nom: 'Marketing L2', niveau: 'L2', ecole: 'sjm', semestre: 3, effectif: 35 },
+      { id: '10', nom: 'Marketing L2', niveau: 'L2', ecole: 'sjm', semestre: 4, effectif: 35 },
+      
+      // PrepaVogt (PV)
+      { id: '11', nom: 'Prépa Scientifique 1A', niveau: 'Prépa', ecole: 'prepa', semestre: 1, effectif: 30 },
+      { id: '12', nom: 'Prépa Scientifique 2A', niveau: 'Prépa', ecole: 'prepa', semestre: 3, effectif: 28 },
+      
+      // Classes Préparatoires (CPGE)
+      { id: '13', nom: 'MPSI', niveau: 'CPGE', ecole: 'cpge', semestre: 1, effectif: 35 },
+      { id: '14', nom: 'PCSI', niveau: 'CPGE', ecole: 'cpge', semestre: 1, effectif: 32 }
+    ];
+    this.classes.set(classes);
+  }
+
   private loadSalles() {
     const salles: Salle[] = [
       {
@@ -318,7 +359,7 @@ export class Cours implements OnInit {
         ueId: '1',
         typeId: '1', // CM
         professeurId: '1',
-        salleId: '1',
+        classes: ['1', '2'], // Informatique L1A et L1B
         duree: 30,
         description: 'Cours magistral d\'introduction à la programmation',
         statut: 'actif',
@@ -330,7 +371,7 @@ export class Cours implements OnInit {
         ueId: '1',
         typeId: '2', // TD
         professeurId: '1',
-        salleId: '2',
+        classes: ['1'], // Informatique L1A
         duree: 20,
         description: 'Travaux dirigés de programmation',
         statut: 'actif',
@@ -342,7 +383,7 @@ export class Cours implements OnInit {
         ueId: '1',
         typeId: '3', // TP
         professeurId: '1',
-        salleId: '3',
+        classes: ['2'], // Informatique L1B
         duree: 40,
         description: 'Travaux pratiques de programmation',
         statut: 'actif',
@@ -354,7 +395,7 @@ export class Cours implements OnInit {
         ueId: '2',
         typeId: '1', // CM
         professeurId: '2',
-        salleId: '1',
+        classes: ['1', '2'], // Informatique L1A et L1B
         duree: 30,
         description: 'Cours magistral de mathématiques',
         statut: 'actif',
@@ -366,7 +407,7 @@ export class Cours implements OnInit {
         ueId: '4',
         typeId: '1', // CM
         professeurId: '3',
-        salleId: '1',
+        classes: ['7'], // Gestion L1
         duree: 25,
         description: 'Cours magistral de gestion',
         statut: 'planifie',
@@ -390,7 +431,7 @@ export class Cours implements OnInit {
       ueId: cours.ueId,
       typeId: cours.typeId,
       professeurId: cours.professeurId || '',
-      salleId: cours.salleId || '',
+      classes: [...cours.classes],
       duree: cours.duree,
       description: cours.description || '',
       statut: cours.statut
@@ -417,7 +458,7 @@ export class Cours implements OnInit {
       ueId: '',
       typeId: '',
       professeurId: '',
-      salleId: '',
+      classes: [],
       duree: 4,
       description: '',
       statut: 'planifie'
@@ -464,6 +505,10 @@ export class Cours implements OnInit {
 
     if (!form.typeId) {
       newErrors['typeId'] = 'Le type de cours est requis';
+    }
+
+    if (form.classes.length === 0) {
+      newErrors['classes'] = 'Au moins une classe doit être sélectionnée';
     }
 
     if (form.duree < 4) {
@@ -535,6 +580,7 @@ export class Cours implements OnInit {
         const ue = this.getUE(cours.ueId);
         const type = this.getTypeCours(cours.typeId);
         const prof = this.getProfesseur(cours.professeurId);
+        const classesNames = this.getClasseNames(cours.classes);
         
         return (
           ue?.nom.toLowerCase().includes(term) ||
@@ -543,6 +589,7 @@ export class Cours implements OnInit {
           type?.code.toLowerCase().includes(term) ||
           prof?.nom.toLowerCase().includes(term) ||
           prof?.prenom.toLowerCase().includes(term) ||
+          classesNames.toLowerCase().includes(term) ||
           (cours.description && cours.description.toLowerCase().includes(term))
         );
       });
@@ -579,6 +626,11 @@ export class Cours implements OnInit {
       filtered = filtered.filter(cours => cours.professeurId === this.selectedProfesseur());
     }
 
+    // Filtre par classe
+    if (this.selectedClasse()) {
+      filtered = filtered.filter(cours => cours.classes.includes(this.selectedClasse()));
+    }
+
     return filtered;
   }
 
@@ -596,6 +648,57 @@ export class Cours implements OnInit {
   getProfesseur(professeurId?: string): Professeur | undefined {
     if (!professeurId) return undefined;
     return this.professeurs().find(prof => prof.id === professeurId);
+  }
+
+  getClasse(classeId?: string): Classe | undefined {
+    if (!classeId) return undefined;
+    return this.classes().find(classe => classe.id === classeId);
+  }
+
+  getClasseNames(classeIds: string[]): string {
+    const classes = this.classes().filter(c => classeIds.includes(c.id));
+    return classes.map(c => c.nom).join(', ') || 'Aucune classe';
+  }
+
+  getFilteredClasses(): Classe[] {
+    let filtered = this.classes();
+    
+    // Filtre par école sélectionnée
+    if (this.selectedEcole()) {
+      filtered = filtered.filter(c => c.ecole === this.selectedEcole());
+    }
+    
+    // Filtre par semestre sélectionné
+    if (this.selectedSemestre()) {
+      filtered = filtered.filter(c => c.semestre === this.selectedSemestre());
+    }
+    
+    return filtered;
+  }
+
+  getAvailableClasses(): Classe[] {
+    const form = this.coursForm();
+    if (!form.ueId) return [];
+    
+    const ue = this.getUE(form.ueId);
+    if (!ue) return [];
+    
+    return this.classes().filter(c => 
+      c.ecole === ue.ecole && c.semestre === ue.semestre
+    );
+  }
+
+  toggleClasse(classeId: string) {
+    this.coursForm.update(form => {
+      const classes = [...form.classes];
+      const index = classes.indexOf(classeId);
+      if (index > -1) {
+        classes.splice(index, 1);
+      } else {
+        classes.push(classeId);
+      }
+      return { ...form, classes };
+    });
   }
 
   getSalle(salleId?: string): Salle | undefined {
@@ -653,6 +756,7 @@ export class Cours implements OnInit {
     this.selectedType.set('');
     this.selectedStatut.set('');
     this.selectedProfesseur.set('');
+    this.selectedClasse.set('');
   }
 
   exportCours() {

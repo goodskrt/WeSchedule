@@ -458,8 +458,16 @@ export class UEComponent implements OnInit {
   }
 
   getClasseNames(classeIds: string[]): string {
+    if (!classeIds || classeIds.length === 0) {
+      return '';
+    }
     const classes = this.classes().filter(c => classeIds.includes(c.id));
     return classes.map(c => c.nom).join(', ');
+  }
+
+  getClasseName(classeId: string): string {
+    const classe = this.classes().find(c => c.id === classeId);
+    return classe ? classe.nom : 'Classe inconnue';
   }
 
   getAvailableClasses(): Classe[] {
@@ -469,6 +477,22 @@ export class UEComponent implements OnInit {
     return this.classes().filter(c => 
       c.ecole === form.ecole && c.semestre === form.semestre
     );
+  }
+
+  getClassesForFilter(): Classe[] {
+    let filteredClasses = this.classes();
+    
+    // Filtre par école si sélectionnée
+    if (this.selectedEcole()) {
+      filteredClasses = filteredClasses.filter(c => c.ecole === this.selectedEcole());
+    }
+    
+    // Filtre par semestre si sélectionné
+    if (this.selectedSemestre()) {
+      filteredClasses = filteredClasses.filter(c => c.semestre === this.selectedSemestre());
+    }
+    
+    return filteredClasses;
   }
 
   getSemestresForEcole(ecoleId: string): number[] {

@@ -13,6 +13,7 @@ interface TimeSlot {
   room: string;
   type: 'CM' | 'TD' | 'TP' | 'Exam';
   school: string;
+  classId: string;
   students: number;
   color: string;
 }
@@ -34,6 +35,39 @@ interface CalendarEvent {
   color: string;
 }
 
+interface ClasseModel {
+  id: string;
+  nom: string;
+  niveau: string;
+  ecole: string;
+  semestre: number;
+  effectif: number;
+  effectifMax: number;
+  professeurs: string[];
+  specialite?: string;
+  ues: string[];
+}
+
+interface UEModel {
+  id: string;
+  code: string;
+  nom: string;
+  credits: number;
+  semestre: number;
+  ecole: string;
+  type: 'CM' | 'TD' | 'TP';
+  professeurId: string;
+}
+
+interface Professeur {
+  id: string;
+  nom: string;
+  prenom: string;
+  email: string;
+  specialites: string[];
+  ecoles: string[];
+}
+
 @Component({
   selector: 'app-emploi-de-temps',
   imports: [CommonModule, FormsModule, SvgIconComponent, ModalSchedule],
@@ -43,9 +77,9 @@ interface CalendarEvent {
 export class EmploiDeTemps {
   protected readonly currentView = signal<'week' | 'month' | 'day'>('week');
   protected readonly selectedWeek = signal(new Date());
-  protected readonly selectedSchool = signal<string>('all');
+  protected readonly selectedSchool = signal<string>('sji');
+  protected readonly selectedClass = signal<string>('1'); // Default to first class
   protected readonly selectedTeacher = signal<string>('all');
-  protected readonly selectedRoom = signal<string>('all');
   protected readonly showConflicts = signal(false);
   protected readonly showScheduleModal = signal(false);
   protected readonly isEditMode = signal(false);
@@ -54,37 +88,100 @@ export class EmploiDeTemps {
   protected readonly searchQuery = signal<string>('');
   protected readonly showAdvancedFilters = signal(false);
 
-  // Liste des matières disponibles
-  protected readonly availableSubjects = signal([
-    { id: '1', name: 'Algorithmique', code: 'ALG101', school: 'sji', type: 'CM' },
-    { id: '2', name: 'Base de Données', code: 'BDD201', school: 'sji', type: 'TP' },
-    { id: '3', name: 'Gestion Financière', code: 'GF301', school: 'sjm', type: 'CM' },
-    { id: '4', name: 'Mathématiques', code: 'MATH101', school: 'prepa', type: 'TD' },
-    { id: '5', name: 'Physique Quantique', code: 'PHY401', school: 'cpge', type: 'CM' },
-    { id: '6', name: 'Réseaux', code: 'RES301', school: 'sji', type: 'TP' },
-    { id: '7', name: 'Marketing Digital', code: 'MKT201', school: 'sjm', type: 'CM' },
-    { id: '8', name: 'Chimie Organique', code: 'CHI301', school: 'prepa', type: 'TP' },
-    { id: '9', name: 'Intelligence Artificielle', code: 'IA401', school: 'sji', type: 'CM' },
-    { id: '10', name: 'Comptabilité', code: 'CPT101', school: 'sjm', type: 'TD' },
-    { id: '11', name: 'Programmation Web', code: 'WEB201', school: 'sji', type: 'TP' },
-    { id: '12', name: 'Économie', code: 'ECO101', school: 'sjm', type: 'CM' },
-    { id: '13', name: 'Statistiques', code: 'STAT201', school: 'prepa', type: 'TD' },
-    { id: '14', name: 'Électronique', code: 'ELEC301', school: 'cpge', type: 'TP' },
-    { id: '15', name: 'Droit des Affaires', code: 'DRT201', school: 'sjm', type: 'CM' }
+  // Données des classes et UE
+  protected readonly classes = signal<ClasseModel[]>([
+    {
+      id: '1',
+      nom: 'Informatique L1A',
+      niveau: 'L1',
+      ecole: 'sji',
+      semestre: 1,
+      effectif: 45,
+      effectifMax: 50,
+      professeurs: ['1', '2'],
+      specialite: 'Informatique',
+      ues: ['1', '2'] // INF101, MAT101
+    },
+    {
+      id: '2',
+      nom: 'Informatique L1B',
+      niveau: 'L1',
+      ecole: 'sji',
+      semestre: 1,
+      effectif: 42,
+      effectifMax: 50,
+      professeurs: ['1'],
+      specialite: 'Informatique',
+      ues: ['1', '2'] // INF101, MAT101
+    },
+    {
+      id: '3',
+      nom: 'Gestion L1',
+      niveau: 'L1',
+      ecole: 'sjm',
+      semestre: 1,
+      effectif: 50,
+      effectifMax: 55,
+      professeurs: ['3'],
+      specialite: 'Gestion',
+      ues: ['4'] // GES101
+    },
+    {
+      id: '4',
+      nom: 'Marketing L2',
+      niveau: 'L2',
+      ecole: 'sjm',
+      semestre: 3,
+      effectif: 35,
+      effectifMax: 40,
+      professeurs: ['3'],
+      specialite: 'Marketing',
+      ues: ['5'] // MKT201
+    },
+    {
+      id: '5',
+      nom: 'Prépa Scientifique 1A',
+      niveau: 'Prépa',
+      ecole: 'prepa',
+      semestre: 1,
+      effectif: 30,
+      effectifMax: 35,
+      professeurs: ['4', '6'],
+      specialite: 'Sciences',
+      ues: ['6', '8'] // MAT201, CHI101
+    },
+    {
+      id: '6',
+      nom: 'MPSI',
+      niveau: 'CPGE',
+      ecole: 'cpge',
+      semestre: 1,
+      effectif: 35,
+      effectifMax: 40,
+      professeurs: ['4', '5'],
+      specialite: 'Mathématiques-Physique',
+      ues: ['6', '7'] // MAT201, PHY101
+    }
   ]);
 
-  // Liste des enseignants disponibles
-  protected readonly availableTeachers = signal([
-    { id: '1', name: 'Dr. Martin', speciality: 'Informatique', school: 'sji' },
-    { id: '2', name: 'Prof. Dubois', speciality: 'Base de Données', school: 'sji' },
-    { id: '3', name: 'Dr. Nguyen', speciality: 'Gestion', school: 'sjm' },
-    { id: '4', name: 'Prof. Bernard', speciality: 'Mathématiques', school: 'prepa' },
-    { id: '5', name: 'Dr. Laurent', speciality: 'Physique', school: 'cpge' },
-    { id: '6', name: 'Prof. Moreau', speciality: 'Chimie', school: 'prepa' },
-    { id: '7', name: 'Dr. Patel', speciality: 'Marketing', school: 'sjm' },
-    { id: '8', name: 'Dr. Smith', speciality: 'Intelligence Artificielle', school: 'sji' },
-    { id: '9', name: 'Prof. Leroy', speciality: 'Économie', school: 'sjm' },
-    { id: '10', name: 'Dr. Garcia', speciality: 'Électronique', school: 'cpge' }
+  protected readonly ues = signal<UEModel[]>([
+    { id: '1', code: 'INF101', nom: 'Introduction à la Programmation', credits: 6, semestre: 1, ecole: 'sji', type: 'CM', professeurId: '1' },
+    { id: '2', code: 'MAT101', nom: 'Mathématiques Fondamentales', credits: 6, semestre: 1, ecole: 'sji', type: 'TD', professeurId: '2' },
+    { id: '3', code: 'INF201', nom: 'Programmation Orientée Objet', credits: 6, semestre: 3, ecole: 'sji', type: 'TP', professeurId: '1' },
+    { id: '4', code: 'GES101', nom: 'Principes de Gestion', credits: 4, semestre: 1, ecole: 'sjm', type: 'CM', professeurId: '3' },
+    { id: '5', code: 'MKT201', nom: 'Marketing Digital', credits: 5, semestre: 3, ecole: 'sjm', type: 'CM', professeurId: '3' },
+    { id: '6', code: 'MAT201', nom: 'Mathématiques Supérieures', credits: 8, semestre: 1, ecole: 'prepa', type: 'CM', professeurId: '4' },
+    { id: '7', code: 'PHY101', nom: 'Physique Générale', credits: 6, semestre: 1, ecole: 'cpge', type: 'CM', professeurId: '5' },
+    { id: '8', code: 'CHI101', nom: 'Chimie Générale', credits: 6, semestre: 1, ecole: 'prepa', type: 'TP', professeurId: '6' }
+  ]);
+
+  protected readonly professeurs = signal<Professeur[]>([
+    { id: '1', nom: 'Dubois', prenom: 'Martin', email: 'martin.dubois@saintfomekong.edu', specialites: ['Informatique'], ecoles: ['sji'] },
+    { id: '2', nom: 'Laurent', prenom: 'Marie', email: 'marie.laurent@saintfomekong.edu', specialites: ['Mathématiques'], ecoles: ['sji'] },
+    { id: '3', nom: 'Nguyen', prenom: 'Paul', email: 'paul.nguyen@saintfomekong.edu', specialites: ['Gestion', 'Marketing'], ecoles: ['sjm'] },
+    { id: '4', nom: 'Bernard', prenom: 'Sophie', email: 'sophie.bernard@saintfomekong.edu', specialites: ['Mathématiques'], ecoles: ['prepa', 'cpge'] },
+    { id: '5', nom: 'Moreau', prenom: 'Jean', email: 'jean.moreau@saintfomekong.edu', specialites: ['Physique'], ecoles: ['cpge'] },
+    { id: '6', nom: 'Leroy', prenom: 'Pierre', email: 'pierre.leroy@saintfomekong.edu', specialites: ['Chimie'], ecoles: ['prepa'] }
   ]);
 
   // Liste des salles disponibles
@@ -128,12 +225,13 @@ export class EmploiDeTemps {
         id: '1',
         startTime: '08:00',
         endTime: '09:00',
-        subject: 'Algorithmique',
-        teacher: 'Dr. Martin',
+        subject: 'Introduction à la Programmation',
+        teacher: 'Martin Dubois',
         room: 'Salle 101',
         type: 'CM',
         school: 'sji',
-        students: 35,
+        classId: '1',
+        students: 45,
         color: 'bg-blue-100 border-blue-300 text-blue-800'
       },
       '09:00-10:00': null,
@@ -141,13 +239,14 @@ export class EmploiDeTemps {
         id: '2',
         startTime: '10:00',
         endTime: '11:00',
-        subject: 'Base de Données',
-        teacher: 'Prof. Dubois',
-        room: 'Lab Info 2',
-        type: 'TP',
+        subject: 'Mathématiques Fondamentales',
+        teacher: 'Marie Laurent',
+        room: 'Salle 205',
+        type: 'TD',
         school: 'sji',
-        students: 28,
-        color: 'bg-purple-100 border-purple-300 text-purple-800'
+        classId: '2',
+        students: 42,
+        color: 'bg-green-100 border-green-300 text-green-800'
       },
       '11:00-12:00': null,
       '13:00-14:00': null,
@@ -161,12 +260,13 @@ export class EmploiDeTemps {
         id: '3',
         startTime: '09:00',
         endTime: '10:00',
-        subject: 'Gestion Financière',
-        teacher: 'Dr. Nguyen',
+        subject: 'Principes de Gestion',
+        teacher: 'Paul Nguyen',
         room: 'Amphi A',
         type: 'CM',
         school: 'sjm',
-        students: 45,
+        classId: '3',
+        students: 50,
         color: 'bg-green-100 border-green-300 text-green-800'
       },
       '10:00-11:00': null,
@@ -175,13 +275,14 @@ export class EmploiDeTemps {
         id: '4',
         startTime: '13:00',
         endTime: '14:00',
-        subject: 'Mathématiques',
-        teacher: 'Prof. Bernard',
-        room: 'Salle 205',
-        type: 'TD',
+        subject: 'Mathématiques Supérieures',
+        teacher: 'Sophie Bernard',
+        room: 'Salle 301',
+        type: 'CM',
         school: 'prepa',
-        students: 32,
-        color: 'bg-yellow-100 border-yellow-300 text-yellow-800'
+        classId: '5',
+        students: 30,
+        color: 'bg-purple-100 border-purple-300 text-purple-800'
       },
       '14:00-15:00': null,
       '15:00-16:00': null,
@@ -192,12 +293,13 @@ export class EmploiDeTemps {
         id: '5',
         startTime: '08:00',
         endTime: '09:00',
-        subject: 'Physique Quantique',
-        teacher: 'Dr. Laurent',
+        subject: 'Mathématiques Supérieures',
+        teacher: 'Sophie Bernard',
         room: 'Salle 301',
         type: 'CM',
         school: 'cpge',
-        students: 25,
+        classId: '6',
+        students: 35,
         color: 'bg-orange-100 border-orange-300 text-orange-800'
       },
       '09:00-10:00': null,
@@ -209,13 +311,14 @@ export class EmploiDeTemps {
         id: '6',
         startTime: '15:00',
         endTime: '16:00',
-        subject: 'Réseaux',
-        teacher: 'Prof. Martin',
-        room: 'Lab Réseau',
+        subject: 'Programmation Orientée Objet',
+        teacher: 'Martin Dubois',
+        room: 'Lab Info 1',
         type: 'TP',
         school: 'sji',
-        students: 20,
-        color: 'bg-blue-100 border-blue-300 text-blue-800'
+        classId: '1',
+        students: 45,
+        color: 'bg-purple-100 border-purple-300 text-purple-800'
       },
       '16:00-17:00': null
     },
@@ -227,11 +330,12 @@ export class EmploiDeTemps {
         startTime: '10:00',
         endTime: '11:00',
         subject: 'Marketing Digital',
-        teacher: 'Dr. Patel',
+        teacher: 'Paul Nguyen',
         room: 'Salle 102',
         type: 'CM',
         school: 'sjm',
-        students: 38,
+        classId: '4',
+        students: 35,
         color: 'bg-green-100 border-green-300 text-green-800'
       },
       '11:00-12:00': null,
@@ -241,23 +345,12 @@ export class EmploiDeTemps {
       '16:00-17:00': null
     },
     friday: {
-      '08:00-09:00': {
-        id: '8',
-        startTime: '08:00',
-        endTime: '09:00',
-        subject: 'Chimie Organique',
-        teacher: 'Prof. Moreau',
-        room: 'Lab Chimie',
-        type: 'TP',
-        school: 'prepa',
-        students: 24,
-        color: 'bg-purple-100 border-purple-300 text-purple-800'
-      },
+      '08:00-09:00': null,
       '09:00-10:00': null,
       '10:00-11:00': null,
       '11:00-12:00': null,
       '13:00-14:00': {
-        id: '9',
+        id: '8',
         startTime: '13:00',
         endTime: '14:00',
         subject: 'Examen Final',
@@ -265,7 +358,8 @@ export class EmploiDeTemps {
         room: 'Amphi B',
         type: 'Exam',
         school: 'cpge',
-        students: 50,
+        classId: '6',
+        students: 35,
         color: 'bg-red-100 border-red-300 text-red-800'
       },
       '14:00-15:00': null,
@@ -274,18 +368,7 @@ export class EmploiDeTemps {
     },
     saturday: {
       '08:00-09:00': null,
-      '09:00-10:00': {
-        id: '10',
-        startTime: '09:00',
-        endTime: '10:00',
-        subject: 'Conférence IA',
-        teacher: 'Dr. Smith',
-        room: 'Amphi A',
-        type: 'CM',
-        school: 'sji',
-        students: 100,
-        color: 'bg-indigo-100 border-indigo-300 text-indigo-800'
-      },
+      '09:00-10:00': null,
       '10:00-11:00': null,
       '11:00-12:00': null,
       '13:00-14:00': null,
@@ -322,16 +405,21 @@ export class EmploiDeTemps {
   onSchoolFilterChange(event: Event) {
     const target = event.target as HTMLSelectElement;
     this.setSchoolFilter(target.value);
+    // Set first class of the new school as default
+    const classesForSchool = this.getClassesForSchool();
+    if (classesForSchool.length > 0) {
+      this.selectedClass.set(classesForSchool[0].id);
+    }
+  }
+
+  onClassFilterChange(event: Event) {
+    const target = event.target as HTMLSelectElement;
+    this.setClassFilter(target.value);
   }
 
   onTeacherFilterChange(event: Event) {
     const target = event.target as HTMLInputElement;
     this.setTeacherFilter(target.value || 'all');
-  }
-
-  onRoomFilterChange(event: Event) {
-    const target = event.target as HTMLInputElement;
-    this.setRoomFilter(target.value || 'all');
   }
 
   setView(view: 'week' | 'month' | 'day') {
@@ -342,12 +430,12 @@ export class EmploiDeTemps {
     this.selectedSchool.set(school);
   }
 
-  setTeacherFilter(teacher: string) {
-    this.selectedTeacher.set(teacher);
+  setClassFilter(classId: string) {
+    this.selectedClass.set(classId);
   }
 
-  setRoomFilter(room: string) {
-    this.selectedRoom.set(room);
+  setTeacherFilter(teacher: string) {
+    this.selectedTeacher.set(teacher);
   }
 
   setSearchQuery(query: string) {
@@ -363,11 +451,53 @@ export class EmploiDeTemps {
   }
 
   resetAllFilters() {
-    this.selectedSchool.set('all');
+    this.selectedSchool.set('sji');
+    const classesForSchool = this.getClassesForSchool();
+    if (classesForSchool.length > 0) {
+      this.selectedClass.set(classesForSchool[0].id);
+    }
     this.selectedTeacher.set('all');
-    this.selectedRoom.set('all');
     this.searchQuery.set('');
     this.showConflicts.set(false);
+  }
+
+  // Get classes for selected school
+  getClassesForSchool(): ClasseModel[] {
+    return this.classes().filter(classe => classe.ecole === this.selectedSchool());
+  }
+
+  // Get selected class details
+  getSelectedClass(): ClasseModel | null {
+    if (!this.selectedClass()) return null;
+    return this.classes().find(classe => classe.id === this.selectedClass()) || null;
+  }
+
+  // Get UEs for selected class
+  getUEsForSelectedClass(): UEModel[] {
+    const selectedClass = this.getSelectedClass();
+    if (!selectedClass) return [];
+    
+    // Filter UEs that are associated with the selected class
+    return this.ues().filter(ue => selectedClass.ues.includes(ue.id));
+  }
+
+  // Get professors for selected class
+  getProfesseursForSelectedClass(): Professeur[] {
+    const selectedClass = this.getSelectedClass();
+    if (!selectedClass) return [];
+    return this.professeurs().filter(prof => selectedClass.professeurs.includes(prof.id));
+  }
+
+  // Get class name
+  getClassName(classId: string): string {
+    const classe = this.classes().find(c => c.id === classId);
+    return classe ? classe.nom : 'Classe inconnue';
+  }
+
+  // Get professor full name
+  getProfesseurFullName(professeurId: string): string {
+    const prof = this.professeurs().find(p => p.id === professeurId);
+    return prof ? `${prof.prenom} ${prof.nom}` : 'Professeur inconnu';
   }
 
   // Navigation
@@ -413,11 +543,21 @@ export class EmploiDeTemps {
   getFilteredSchedule(): WeekSchedule {
     const schedule = this.schedule();
     
-    if (this.selectedSchool() === 'all' && 
-        this.selectedTeacher() === 'all' && 
-        this.selectedRoom() === 'all' && 
-        !this.searchQuery().trim()) {
-      return schedule;
+    if (this.selectedTeacher() === 'all' && !this.searchQuery().trim()) {
+      // Show schedule for selected class only
+      const filtered: WeekSchedule = {};
+      Object.keys(schedule).forEach(day => {
+        filtered[day] = {};
+        Object.keys(schedule[day]).forEach(timeSlot => {
+          const slot = schedule[day][timeSlot];
+          if (slot && slot.classId === this.selectedClass()) {
+            filtered[day][timeSlot] = slot;
+          } else {
+            filtered[day][timeSlot] = null;
+          }
+        });
+      });
+      return filtered;
     }
 
     const filtered: WeekSchedule = {};
@@ -430,8 +570,8 @@ export class EmploiDeTemps {
         if (slot) {
           let include = true;
           
-          // Filtre par école
-          if (this.selectedSchool() !== 'all' && slot.school !== this.selectedSchool()) {
+          // Filtre par classe (toujours appliqué)
+          if (slot.classId !== this.selectedClass()) {
             include = false;
           }
           
@@ -439,15 +579,10 @@ export class EmploiDeTemps {
           if (this.selectedTeacher() !== 'all' && !slot.teacher.toLowerCase().includes(this.selectedTeacher().toLowerCase())) {
             include = false;
           }
-          
-          // Filtre par salle
-          if (this.selectedRoom() !== 'all' && !slot.room.toLowerCase().includes(this.selectedRoom().toLowerCase())) {
-            include = false;
-          }
 
           // Filtre par recherche
           if (searchTerm && include) {
-            const searchableText = `${slot.subject} ${slot.teacher} ${slot.room}`.toLowerCase();
+            const searchableText = `${slot.subject} ${slot.teacher}`.toLowerCase();
             if (!searchableText.includes(searchTerm)) {
               include = false;
             }
@@ -473,28 +608,13 @@ export class EmploiDeTemps {
     
     Object.values(schedule).forEach(day => {
       Object.values(day).forEach(slot => {
-        if (slot) {
+        if (slot && slot.classId === this.selectedClass()) {
           teachers.add(slot.teacher);
         }
       });
     });
     
     return Array.from(teachers).sort();
-  }
-
-  getUniqueRooms(): string[] {
-    const schedule = this.schedule();
-    const rooms = new Set<string>();
-    
-    Object.values(schedule).forEach(day => {
-      Object.values(day).forEach(slot => {
-        if (slot) {
-          rooms.add(slot.room);
-        }
-      });
-    });
-    
-    return Array.from(rooms).sort();
   }
 
   // Gestion des conflits
@@ -602,27 +722,94 @@ export class EmploiDeTemps {
     }
 
     const { day, time } = this.selectedTimeSlot()!;
+    const duration = eventData.duration || 1;
     
+    // Calculate which time slots to occupy based on duration
+    const timeSlotIndex = this.timeSlots.indexOf(time);
+    if (timeSlotIndex === -1) {
+      alert('Erreur: Créneau horaire invalide');
+      return;
+    }
+
+    // Check if we have enough consecutive slots
+    if (timeSlotIndex + duration > this.timeSlots.length) {
+      alert(`Impossible de programmer un cours de ${duration}h à partir de ${time}. Pas assez de créneaux disponibles.`);
+      return;
+    }
+
+    // Check for conflicts in the required time slots
+    const conflictingSlots = [];
+    for (let i = 0; i < duration; i++) {
+      const slotTime = this.timeSlots[timeSlotIndex + i];
+      if (this.schedule()[day][slotTime] && this.schedule()[day][slotTime]?.id !== eventData.id) {
+        conflictingSlots.push(slotTime);
+      }
+    }
+
+    if (conflictingSlots.length > 0) {
+      const confirmOverwrite = confirm(
+        `Les créneaux suivants sont déjà occupés: ${conflictingSlots.join(', ')}\n\nVoulez-vous les remplacer ?`
+      );
+      if (!confirmOverwrite) {
+        return;
+      }
+    }
+
     this.schedule.update(schedule => {
       const newSchedule = { ...schedule };
       newSchedule[day] = { ...newSchedule[day] };
-      newSchedule[day][time] = {
-        ...eventData,
-        id: eventData.id || Date.now().toString()
-      };
+      
+      // Clear any existing slots for this course (in case of editing)
+      Object.keys(newSchedule[day]).forEach(timeSlot => {
+        if (newSchedule[day][timeSlot]?.id === eventData.id) {
+          newSchedule[day][timeSlot] = null;
+        }
+      });
+
+      // Set the course in all required time slots
+      for (let i = 0; i < duration; i++) {
+        const slotTime = this.timeSlots[timeSlotIndex + i];
+        const startTime = slotTime.split('-')[0];
+        const endTime = i === duration - 1 ? 
+          this.timeSlots[timeSlotIndex + i].split('-')[1] : 
+          this.timeSlots[timeSlotIndex + duration - 1].split('-')[1];
+
+        newSchedule[day][slotTime] = {
+          ...eventData,
+          id: eventData.id || Date.now().toString(),
+          classId: this.selectedClass(),
+          school: this.selectedSchool(),
+          startTime: startTime,
+          endTime: endTime,
+          students: this.getSelectedClass()?.effectif || 0,
+          room: 'Salle à définir' // Placeholder since room is not selected in form
+        };
+      }
+      
       return newSchedule;
     });
 
     // Afficher un message de confirmation
     const action = this.currentEditingCourse() ? 'modifié' : 'ajouté';
-    alert(`Cours "${eventData.subject}" ${action} avec succès !`);
+    const durationText = duration > 1 ? ` (${duration}h)` : '';
+    alert(`Cours "${eventData.subject}"${durationText} ${action} avec succès !`);
   }
 
   deleteTimeSlot(day: string, timeSlot: string) {
+    const slotToDelete = this.schedule()[day][timeSlot];
+    if (!slotToDelete) return;
+
     this.schedule.update(schedule => {
       const newSchedule = { ...schedule };
       newSchedule[day] = { ...newSchedule[day] };
-      newSchedule[day][timeSlot] = null;
+      
+      // Delete all slots with the same course ID (for multi-hour courses)
+      Object.keys(newSchedule[day]).forEach(slot => {
+        if (newSchedule[day][slot]?.id === slotToDelete.id) {
+          newSchedule[day][slot] = null;
+        }
+      });
+      
       return newSchedule;
     });
   }

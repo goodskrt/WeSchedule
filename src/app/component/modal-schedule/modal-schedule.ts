@@ -4,16 +4,13 @@ import { FormsModule } from '@angular/forms';
 import { SvgIconComponent } from '../../shared/svg-icon/svg-icon.component';
 
 interface ScheduleForm {
+  ueId: string;
   subject: string;
-  subjectId: string;
   teacher: string;
   teacherId: string;
-  room: string;
-  roomId: string;
   type: 'CM' | 'TD' | 'TP' | 'Exam';
   school: string;
-  students: number;
-  duration: number;
+  duration: number; // Duration in hours (1-8)
   description: string;
   color: string;
 }
@@ -41,6 +38,26 @@ interface Room {
   equipment: string[];
 }
 
+interface UEModel {
+  id: string;
+  code: string;
+  nom: string;
+  credits: number;
+  semestre: number;
+  ecole: string;
+  type: 'CM' | 'TD' | 'TP';
+  professeurId: string; // Professor assigned to this UE
+}
+
+interface Professeur {
+  id: string;
+  nom: string;
+  prenom: string;
+  email: string;
+  specialites: string[];
+  ecoles: string[];
+}
+
 @Component({
   selector: 'app-modal-schedule',
   imports: [CommonModule, FormsModule, SvgIconComponent],
@@ -50,34 +67,28 @@ interface Room {
 export class ModalSchedule implements OnInit, OnDestroy {
   @Input() existingEvent: any = null;
   @Input() selectedTimeSlot: {day: string, time: string} | null = null;
+  @Input() selectedClass: any = null;
+  @Input() availableUEs: UEModel[] = [];
+  @Input() availableProfesseurs: Professeur[] = [];
   @Output() close = new EventEmitter<void>();
   @Output() eventAdded = new EventEmitter<any>();
   @Output() eventUpdated = new EventEmitter<any>();
 
   protected readonly scheduleForm = signal<ScheduleForm>({
+    ueId: '',
     subject: '',
-    subjectId: '',
     teacher: '',
     teacherId: '',
-    room: '',
-    roomId: '',
     type: 'CM',
     school: '',
-    students: 30,
-    duration: 60,
+    duration: 1, // Duration in hours
     description: '',
     color: 'bg-blue-100 border-blue-300 text-blue-800'
   });
 
   protected readonly isLoading = signal(false);
   protected readonly errors = signal<{[key: string]: string}>({});
-  protected readonly currentStep = signal<1 | 2>(1);
   protected readonly isEditMode = signal(false);
-  protected readonly searchSubject = signal('');
-  protected readonly searchTeacher = signal('');
-  protected readonly searchRoom = signal('');
-  protected readonly showConflicts = signal(false);
-  protected readonly detectedConflicts = signal<string[]>([]);
 
   // Données disponibles
   protected readonly availableSubjects = signal<Subject[]>([
@@ -142,174 +153,89 @@ export class ModalSchedule implements OnInit, OnDestroy {
     if (this.existingEvent) {
       this.isEditMode.set(true);
       this.scheduleForm.set({
+        ueId: this.existingEvent.ueId || '',
         subject: this.existingEvent.subject || '',
-        subjectId: this.existingEvent.subjectId || '',
         teacher: this.existingEvent.teacher || '',
         teacherId: this.existingEvent.teacherId || '',
-        room: this.existingEvent.room || '',
-        roomId: this.existingEvent.roomId || '',
         type: this.existingEvent.type || 'CM',
         school: this.existingEvent.school || '',
-        students: this.existingEvent.students || 30,
-        duration: this.existingEvent.duration || 60,
+        duration: this.existingEvent.duration || 1,
         description: this.existingEvent.description || '',
         color: this.existingEvent.color || 'bg-blue-100 border-blue-300 text-blue-800'
       });
+    } else if (this.selectedClass) {
+      // Set default values from selected class
+      this.scheduleForm.update(form => ({
+        ...form,
+        school: this.selectedClass.ecole
+      }));
     }
-    
-    // Bloquer le scroll de la page principale
-    document.body.classList.add('modal-open');
   }
 
   ngOnDestroy() {
-    // Restaurer le scroll de la page principale
-    document.body.classList.remove('modal-open');
+    // Component cleanup
   }
 
-  // Filtrage des données
-  getFilteredSubjects() {
-    const search = this.searchSubject().toLowerCase();
-    return this.availableSubjects().filter(subject => 
-      subject.name.toLowerCase().includes(search) ||
-      subject.code.toLowerCase().includes(search)
-    );
+  // UE Selection
+  onUEChange(event: Event) {
+    const target = event.target as HTMLSelectElement;
+    const ueId = target.value;
+    if (ueId) {
+      const selectedUE = this.getAvailableUEs().find(ue => ue.id === ueId);
+      if (selectedUE) {
+        this.selectUE(selectedUE);
+      }
+    }
   }
 
-  getFilteredTeachers() {
-    const search = this.searchTeacher().toLowerCase();
-    const form = this.scheduleForm();
-    return this.availableTeachers().filter(teacher => {
-      const matchesSearch = teacher.name.toLowerCase().includes(search) ||
-                           teacher.speciality.toLowerCase().includes(search);
-      const matchesSchool = !form.school || teacher.school === form.school;
-      return matchesSearch && matchesSchool;
-    });
-  }
-
-  getFilteredRooms() {
-    const search = this.searchRoom().toLowerCase();
-    const form = this.scheduleForm();
-    return this.availableRooms().filter(room => {
-      const matchesSearch = room.name.toLowerCase().includes(search) ||
-                           room.type.toLowerCase().includes(search);
-      const matchesCapacity = room.capacity >= form.students;
-      return matchesSearch && matchesCapacity;
-    });
-  }
-
-  // Sélection des éléments
-  selectSubject(subject: Subject) {
+  selectUE(ue: UEModel) {
+    // Find the professor for this UE
+    const professor = this.availableProfesseurs.find(prof => prof.id === ue.professeurId);
+    
     this.scheduleForm.update(form => ({
       ...form,
-      subject: subject.name,
-      subjectId: subject.id,
-      school: subject.school,
-      type: subject.type,
-      color: this.getColorForType(subject.type)
+      ueId: ue.id,
+      subject: ue.nom,
+      teacher: professor ? `${professor.prenom} ${professor.nom}` : 'Professeur non assigné',
+      teacherId: ue.professeurId,
+      type: ue.type,
+      school: ue.ecole,
+      color: this.getColorForType(ue.type)
     }));
-    this.searchSubject.set('');
-    this.validateStep1();
+    
+    this.validateForm();
   }
 
-  selectTeacher(teacher: Teacher) {
-    this.scheduleForm.update(form => ({
-      ...form,
-      teacher: teacher.name,
-      teacherId: teacher.id
-    }));
-    this.searchTeacher.set('');
-    this.validateStep1();
+  // Get available UEs for the selected class
+  getAvailableUEs(): UEModel[] {
+    return this.availableUEs || [];
   }
 
-  selectRoom(room: Room) {
-    this.scheduleForm.update(form => ({
-      ...form,
-      room: room.name,
-      roomId: room.id
-    }));
-    this.searchRoom.set('');
-    this.validateStep2();
+  // Check if UEs are available
+  hasAvailableUEs(): boolean {
+    return this.availableUEs && this.availableUEs.length > 0;
   }
 
   // Validation
-  validateStep1(): boolean {
+  validateForm(): boolean {
     const form = this.scheduleForm();
     const newErrors: {[key: string]: string} = {};
 
-    if (!form.subject.trim()) {
-      newErrors['subject'] = 'La matière est obligatoire';
+    if (!form.ueId) {
+      newErrors['ue'] = 'Veuillez sélectionner une UE';
     }
 
-    if (!form.teacher.trim()) {
-      newErrors['teacher'] = 'L\'enseignant est obligatoire';
-    }
-
-    if (!form.school.trim()) {
-      newErrors['school'] = 'L\'école est obligatoire';
+    if (form.duration < 1 || form.duration > 8) {
+      newErrors['duration'] = 'La durée doit être comprise entre 1 et 8 heures';
     }
 
     this.errors.set(newErrors);
-    return Object.keys(newErrors).length === 0;
-  }
-
-  validateStep2(): boolean {
-    const form = this.scheduleForm();
-    const newErrors: {[key: string]: string} = {};
-
-    if (!form.room.trim()) {
-      newErrors['room'] = 'La salle est obligatoire';
-    }
-
-    if (form.students <= 0) {
-      newErrors['students'] = 'Le nombre d\'étudiants doit être supérieur à 0';
-    }
-
-    if (form.duration < 30) {
-      newErrors['duration'] = 'La durée doit être d\'au moins 30 minutes';
-    }
-
-    // Vérifier la capacité de la salle
-    const selectedRoom = this.availableRooms().find(r => r.name === form.room);
-    if (selectedRoom && form.students > selectedRoom.capacity) {
-      newErrors['students'] = `La salle ${selectedRoom.name} ne peut accueillir que ${selectedRoom.capacity} étudiants`;
-    }
-
-    this.errors.set(newErrors);
-    this.checkConflicts();
     return Object.keys(newErrors).length === 0;
   }
 
   checkConflicts() {
-    const form = this.scheduleForm();
-    const conflicts: string[] = [];
-
-    if (this.selectedTimeSlot && form.teacher && form.room) {
-      // Simuler la détection de conflits
-      // Dans une vraie application, ceci ferait appel à un service
-      if (form.teacher === 'Dr. Martin' && this.selectedTimeSlot.time === '10:00-11:00') {
-        conflicts.push(`${form.teacher} a déjà un cours à ${this.selectedTimeSlot.time}`);
-      }
-      
-      if (form.room === 'Salle 101' && this.selectedTimeSlot.day === 'monday') {
-        conflicts.push(`${form.room} est déjà occupée le ${this.selectedTimeSlot.day} à ${this.selectedTimeSlot.time}`);
-      }
-    }
-
-    this.detectedConflicts.set(conflicts);
-    this.showConflicts.set(conflicts.length > 0);
-  }
-
-  // Navigation entre étapes
-  nextStep() {
-    if (this.currentStep() === 1 && this.validateStep1()) {
-      this.currentStep.set(2);
-    }
-  }
-
-  previousStep() {
-    if (this.currentStep() === 2) {
-      this.currentStep.set(1);
-    }
+    // Simplified conflict detection since we removed complex validation
+    // In a real application, this would check for teacher/room conflicts
   }
 
   // Utilitaires
@@ -328,30 +254,13 @@ export class ModalSchedule implements OnInit, OnDestroy {
     return school?.color || 'bg-gray-500';
   }
 
-  getTeacherSpeciality(teacherName: string): string {
-    const teacher = this.availableTeachers().find(t => t.name === teacherName);
-    return teacher?.speciality || '';
-  }
-
-  getRoomCapacity(roomName: string): number {
-    const room = this.availableRooms().find(r => r.name === roomName);
-    return room?.capacity || 0;
-  }
-
-  updateStudents(value: string) {
-    this.scheduleForm.update(form => ({
-      ...form,
-      students: +value
-    }));
-    this.validateStep2();
-  }
-
   updateDuration(value: string) {
+    const duration = Math.max(1, Math.min(8, +value)); // Clamp between 1 and 8
     this.scheduleForm.update(form => ({
       ...form,
-      duration: +value
+      duration: duration
     }));
-    this.validateStep2();
+    this.validateForm();
   }
 
   updateDescription(value: string) {
@@ -375,17 +284,8 @@ export class ModalSchedule implements OnInit, OnDestroy {
   }
 
   onSave() {
-    if (!this.validateStep1() || !this.validateStep2()) {
+    if (!this.validateForm()) {
       return;
-    }
-
-    if (this.detectedConflicts().length > 0) {
-      const confirmSave = confirm(
-        `Des conflits ont été détectés :\n${this.detectedConflicts().join('\n')}\n\nVoulez-vous continuer ?`
-      );
-      if (!confirmSave) {
-        return;
-      }
     }
 
     this.isLoading.set(true);
@@ -397,12 +297,12 @@ export class ModalSchedule implements OnInit, OnDestroy {
         id: this.existingEvent?.id || Date.now().toString(),
         startTime: this.selectedTimeSlot?.time.split('-')[0] || '08:00',
         endTime: this.selectedTimeSlot?.time.split('-')[1] || '09:00',
+        ueId: form.ueId,
         subject: form.subject,
         teacher: form.teacher,
-        room: form.room,
+        teacherId: form.teacherId,
         type: form.type,
         school: form.school,
-        students: form.students,
         color: form.color,
         description: form.description,
         duration: form.duration

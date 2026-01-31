@@ -1,6 +1,6 @@
 <!-- Modal Overlay -->
 <div class="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-[99999] p-4 modalFadeIn">
-  <div class="bg-white rounded-xl shadow-2xl w-full max-w-4xl max-h-[90vh] flex flex-col">
+  <div class="bg-white rounded-xl shadow-2xl w-full max-w-3xl max-h-[90vh] flex flex-col">
     
     <!-- Modal Header -->
     <div class="flex items-center justify-between p-6 border-b border-gray-200">
@@ -20,417 +20,204 @@
         </div>
       </div>
       
-      <!-- Step Indicator -->
-      <div class="flex items-center gap-2">
-        <div class="flex items-center gap-2">
-          <div 
-            class="w-8 h-8 rounded-full flex items-center justify-center text-sm font-medium transition-colors"
-            [class.bg-primary-600]="currentStep() >= 1"
-            [class.text-white]="currentStep() >= 1"
-            [class.bg-gray-200]="currentStep() < 1"
-            [class.text-gray-600]="currentStep() < 1"
-          >
-            1
-          </div>
-          <div class="w-8 h-0.5 bg-gray-200">
-            <div 
-              class="h-full bg-primary-600 transition-all duration-300"
-              [style.width]="currentStep() >= 2 ? '100%' : '0%'"
-            ></div>
-          </div>
-          <div 
-            class="w-8 h-8 rounded-full flex items-center justify-center text-sm font-medium transition-colors"
-            [class.bg-primary-600]="currentStep() >= 2"
-            [class.text-white]="currentStep() >= 2"
-            [class.bg-gray-200]="currentStep() < 2"
-            [class.text-gray-600]="currentStep() < 2"
-          >
-            2
-          </div>
-        </div>
-        
-        <button
-          (click)="onClose()"
-          class="ml-4 p-2 hover:bg-gray-100 rounded-lg transition-colors"
-          title="Fermer"
-        >
-          <app-svg-icon icon="x" classes="w-5 h-5 text-gray-500"></app-svg-icon>
-        </button>
-      </div>
+      <button
+        (click)="onClose()"
+        class="p-2 hover:bg-gray-100 rounded-lg transition-colors"
+        title="Fermer"
+      >
+        <app-svg-icon icon="x" classes="w-5 h-5 text-gray-500"></app-svg-icon>
+      </button>
     </div>
 
     <!-- Modal Content -->
     <div class="flex-1 overflow-y-auto custom-scrollbar">
-      
-      <!-- Step 1: Matière et Enseignant -->
-      @if (currentStep() === 1) {
-        <div class="p-6 space-y-6">
-          <div class="text-center mb-6">
-            <h3 class="text-lg font-medium text-gray-900 mb-2">Sélection de la matière et de l'enseignant</h3>
-            <p class="text-sm text-gray-600">Choisissez la matière à enseigner et l'enseignant responsable</p>
-          </div>
-
-          <div class="grid grid-cols-1 lg:grid-cols-2 gap-6">
-            
-            <!-- Sélection de la matière -->
-            <div class="space-y-4">
-              <div>
-                <label class="block text-sm font-medium text-gray-700 mb-2">
-                  Matière *
-                </label>
-                <div class="relative">
-                  <input
-                    type="text"
-                    placeholder="Rechercher une matière..."
-                    [value]="searchSubject()"
-                    (input)="searchSubject.set($any($event.target).value)"
-                    class="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary-500 focus:border-primary-500"
-                    [class.border-red-300]="errors()['subject']"
-                  >
-                  <app-svg-icon icon="search" classes="absolute right-3 top-3.5 w-5 h-5 text-gray-400"></app-svg-icon>
-                </div>
-                @if (errors()['subject']) {
-                  <p class="mt-1 text-sm text-red-600">{{ errors()['subject'] }}</p>
-                }
-              </div>
-
-              <!-- Liste des matières filtrées -->
-              @if (searchSubject() && getFilteredSubjects().length > 0) {
-                <div class="border border-gray-200 rounded-lg max-h-60 overflow-y-auto custom-scrollbar">
-                  @for (subject of getFilteredSubjects(); track subject.id) {
-                    <button
-                      (click)="selectSubject(subject)"
-                      class="w-full p-3 text-left hover:bg-gray-50 border-b border-gray-100 last:border-b-0 transition-colors"
-                    >
-                      <div class="flex items-center justify-between">
-                        <div>
-                          <div class="font-medium text-gray-900">{{ subject.name }}</div>
-                          <div class="text-sm text-gray-600">{{ subject.code }}</div>
-                        </div>
-                        <div class="flex items-center gap-2">
-                          <span class="px-2 py-1 text-xs font-medium rounded-full"
-                                [ngClass]="getColorForType(subject.type)">
-                            {{ subject.type }}
-                          </span>
-                          <div class="w-3 h-3 rounded-full" 
-                               [ngClass]="getSchoolColor(subject.school)"></div>
-                        </div>
-                      </div>
-                    </button>
-                  }
-                </div>
-              }
-
-              <!-- Matière sélectionnée -->
-              @if (scheduleForm().subject) {
-                <div class="p-4 bg-primary-50 border border-primary-200 rounded-lg">
-                  <div class="flex items-center justify-between">
-                    <div>
-                      <div class="font-medium text-primary-900">{{ scheduleForm().subject }}</div>
-                      <div class="text-sm text-primary-700">{{ getSchoolName(scheduleForm().school) }}</div>
-                    </div>
-                    <span class="px-3 py-1 text-sm font-medium rounded-full"
-                          [ngClass]="scheduleForm().color">
-                      {{ scheduleForm().type }}
-                    </span>
-                  </div>
-                </div>
-              }
-            </div>
-
-            <!-- Sélection de l'enseignant -->
-            <div class="space-y-4">
-              <div>
-                <label class="block text-sm font-medium text-gray-700 mb-2">
-                  Enseignant *
-                </label>
-                <div class="relative">
-                  <input
-                    type="text"
-                    placeholder="Rechercher un enseignant..."
-                    [value]="searchTeacher()"
-                    (input)="searchTeacher.set($any($event.target).value)"
-                    class="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary-500 focus:border-primary-500"
-                    [class.border-red-300]="errors()['teacher']"
-                  >
-                  <app-svg-icon icon="search" classes="absolute right-3 top-3.5 w-5 h-5 text-gray-400"></app-svg-icon>
-                </div>
-                @if (errors()['teacher']) {
-                  <p class="mt-1 text-sm text-red-600">{{ errors()['teacher'] }}</p>
-                }
-              </div>
-
-              <!-- Liste des enseignants filtrés -->
-              @if (searchTeacher() && getFilteredTeachers().length > 0) {
-                <div class="border border-gray-200 rounded-lg max-h-60 overflow-y-auto custom-scrollbar">
-                  @for (teacher of getFilteredTeachers(); track teacher.id) {
-                    <button
-                      (click)="selectTeacher(teacher)"
-                      class="w-full p-3 text-left hover:bg-gray-50 border-b border-gray-100 last:border-b-0 transition-colors"
-                    >
-                      <div class="flex items-center justify-between">
-                        <div>
-                          <div class="font-medium text-gray-900">{{ teacher.name }}</div>
-                          <div class="text-sm text-gray-600">{{ teacher.speciality }}</div>
-                        </div>
-                        <div class="w-3 h-3 rounded-full" 
-                             [ngClass]="getSchoolColor(teacher.school)"></div>
-                      </div>
-                    </button>
-                  }
-                </div>
-              }
-
-              <!-- Enseignant sélectionné -->
-              @if (scheduleForm().teacher) {
-                <div class="p-4 bg-green-50 border border-green-200 rounded-lg">
-                  <div class="flex items-center gap-3">
-                    <div class="w-10 h-10 bg-green-100 rounded-full flex items-center justify-center">
-                      <app-svg-icon icon="user" classes="w-5 h-5 text-green-600"></app-svg-icon>
-                    </div>
-                    <div>
-                      <div class="font-medium text-green-900">{{ scheduleForm().teacher }}</div>
-                      <div class="text-sm text-green-700">
-                        {{ getTeacherSpeciality(scheduleForm().teacher) }}
-                      </div>
-                    </div>
-                  </div>
-                </div>
-              }
-            </div>
-          </div>
-
-          <!-- Type de cours -->
-          @if (scheduleForm().subject) {
-            <div>
-              <label class="block text-sm font-medium text-gray-700 mb-3">Type de cours</label>
-              <div class="grid grid-cols-2 md:grid-cols-4 gap-3">
-                @for (type of courseTypes; track type.id) {
-                  <button
-                    (click)="updateCourseType(type.id, type.color)"
-                    class="p-3 border-2 rounded-lg transition-all hover:shadow-md"
-                    [class.border-primary-500]="scheduleForm().type === type.id"
-                    [class.bg-primary-50]="scheduleForm().type === type.id"
-                    [class.border-gray-200]="scheduleForm().type !== type.id"
-                  >
-                    <div class="flex flex-col items-center gap-2">
-                      <app-svg-icon [icon]="type.icon" classes="w-6 h-6 text-gray-600"></app-svg-icon>
-                      <span class="text-sm font-medium">{{ type.name }}</span>
-                    </div>
-                  </button>
-                }
-              </div>
-            </div>
-          }
+      <div class="p-6 space-y-6">
+        <div class="text-center mb-6">
+          <h3 class="text-lg font-medium text-gray-900 mb-2">Configuration du cours</h3>
+          <p class="text-sm text-gray-600">Sélectionnez la matière, l'enseignant et définissez la durée</p>
         </div>
-      }
 
-      <!-- Step 2: Salle et Détails -->
-      @if (currentStep() === 2) {
-        <div class="p-6 space-y-6">
-          <div class="text-center mb-6">
-            <h3 class="text-lg font-medium text-gray-900 mb-2">Configuration de la salle et détails</h3>
-            <p class="text-sm text-gray-600">Définissez la salle, le nombre d'étudiants et les détails du cours</p>
-          </div>
-
-          <div class="grid grid-cols-1 lg:grid-cols-2 gap-6">
-            
-            <!-- Sélection de la salle -->
-            <div class="space-y-4">
-              <div>
-                <label class="block text-sm font-medium text-gray-700 mb-2">
-                  Salle *
-                </label>
-                <div class="relative">
-                  <input
-                    type="text"
-                    placeholder="Rechercher une salle..."
-                    [value]="searchRoom()"
-                    (input)="searchRoom.set($any($event.target).value)"
-                    class="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary-500 focus:border-primary-500"
-                    [class.border-red-300]="errors()['room']"
-                  >
-                  <app-svg-icon icon="search" classes="absolute right-3 top-3.5 w-5 h-5 text-gray-400"></app-svg-icon>
-                </div>
-                @if (errors()['room']) {
-                  <p class="mt-1 text-sm text-red-600">{{ errors()['room'] }}</p>
-                }
-              </div>
-
-              <!-- Liste des salles filtrées -->
-              @if (searchRoom() && getFilteredRooms().length > 0) {
-                <div class="border border-gray-200 rounded-lg max-h-60 overflow-y-auto custom-scrollbar">
-                  @for (room of getFilteredRooms(); track room.id) {
-                    <button
-                      (click)="selectRoom(room)"
-                      class="w-full p-3 text-left hover:bg-gray-50 border-b border-gray-100 last:border-b-0 transition-colors"
-                    >
-                      <div class="flex items-center justify-between">
-                        <div>
-                          <div class="font-medium text-gray-900">{{ room.name }}</div>
-                          <div class="text-sm text-gray-600">{{ room.type }} - {{ room.capacity }} places</div>
-                        </div>
-                        <div class="flex flex-wrap gap-1">
-                          @for (equipment of room.equipment.slice(0, 2); track equipment) {
-                            <span class="px-2 py-1 text-xs bg-gray-100 text-gray-600 rounded">
-                              {{ equipment }}
-                            </span>
-                          }
-                        </div>
-                      </div>
-                    </button>
+        <div class="grid grid-cols-1 gap-6">
+          
+          <!-- Sélection de l'UE -->
+          <div class="space-y-4">
+            <div>
+              <label class="block text-sm font-medium text-gray-700 mb-2">
+                Unité d'Enseignement (UE) *
+              </label>
+              
+              @if (hasAvailableUEs()) {
+                <select
+                  [value]="scheduleForm().ueId"
+                  (change)="onUEChange($event)"
+                  class="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary-500 focus:border-primary-500"
+                  [class.border-red-300]="errors()['ue']"
+                >
+                  <option value="">Sélectionnez une UE</option>
+                  @for (ue of getAvailableUEs(); track ue.id) {
+                    <option [value]="ue.id">{{ ue.code }} - {{ ue.nom }} ({{ ue.type }})</option>
                   }
+                </select>
+              } @else {
+                <div class="w-full px-4 py-3 border border-gray-300 rounded-lg bg-gray-50 text-gray-500">
+                  Aucune UE disponible pour cette classe
                 </div>
               }
+              
+              @if (errors()['ue']) {
+                <p class="mt-1 text-sm text-red-600">{{ errors()['ue'] }}</p>
+              }
+            </div>
 
-              <!-- Salle sélectionnée -->
-              @if (scheduleForm().room) {
-                <div class="p-4 bg-blue-50 border border-blue-200 rounded-lg">
-                  <div class="flex items-center gap-3">
-                    <div class="w-10 h-10 bg-blue-100 rounded-full flex items-center justify-center">
-                      <app-svg-icon icon="building" classes="w-5 h-5 text-blue-600"></app-svg-icon>
+            <!-- UE sélectionnée -->
+            @if (scheduleForm().subject) {
+              <div class="p-4 bg-primary-50 border border-primary-200 rounded-lg">
+                <div class="flex items-center justify-between mb-3">
+                  <div>
+                    <div class="font-medium text-primary-900">{{ scheduleForm().subject }}</div>
+                    <div class="text-sm text-primary-700">{{ getSchoolName(scheduleForm().school) }}</div>
+                  </div>
+                  <span class="px-3 py-1 text-sm font-medium rounded-full"
+                        [ngClass]="scheduleForm().color">
+                    {{ scheduleForm().type }}
+                  </span>
+                </div>
+                
+                <!-- Professeur assigné -->
+                @if (scheduleForm().teacher) {
+                  <div class="flex items-center gap-3 p-3 bg-white bg-opacity-50 rounded-lg">
+                    <div class="w-8 h-8 bg-green-100 rounded-full flex items-center justify-center">
+                      <app-svg-icon icon="user" classes="w-4 h-4 text-green-600"></app-svg-icon>
                     </div>
-                    <div class="flex-1">
-                      <div class="font-medium text-blue-900">{{ scheduleForm().room }}</div>
-                      <div class="text-sm text-blue-700">
-                        {{ getRoomCapacity(scheduleForm().room) }} places disponibles
-                      </div>
+                    <div>
+                      <div class="text-sm font-medium text-gray-900">Professeur assigné</div>
+                      <div class="text-sm text-gray-600">{{ scheduleForm().teacher }}</div>
                     </div>
                   </div>
-                </div>
+                }
+              </div>
+            }
+          </div>
+        </div>
+
+        <!-- Durée du cours -->
+        <div>
+          <label class="block text-sm font-medium text-gray-700 mb-2">
+            Durée du cours (heures) *
+          </label>
+          <select
+            [value]="scheduleForm().duration"
+            (change)="updateDuration($any($event.target).value)"
+            class="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary-500 focus:border-primary-500"
+            [class.border-red-300]="errors()['duration']"
+          >
+            <option value="1">1 heure</option>
+            <option value="2">2 heures</option>
+            <option value="3">3 heures</option>
+            <option value="4">4 heures</option>
+            <option value="5">5 heures</option>
+            <option value="6">6 heures</option>
+            <option value="7">7 heures</option>
+            <option value="8">8 heures</option>
+          </select>
+          @if (errors()['duration']) {
+            <p class="mt-1 text-sm text-red-600">{{ errors()['duration'] }}</p>
+          }
+          <p class="mt-1 text-sm text-gray-500">
+            Le cours occupera {{ scheduleForm().duration }} créneau(x) consécutif(s)
+          </p>
+        </div>
+
+        <!-- Type de cours -->
+        @if (scheduleForm().subject) {
+          <div>
+            <label class="block text-sm font-medium text-gray-700 mb-3">Type de cours</label>
+            <div class="grid grid-cols-2 md:grid-cols-4 gap-3">
+              @for (type of courseTypes; track type.id) {
+                <button
+                  (click)="updateCourseType(type.id, type.color)"
+                  class="p-3 border-2 rounded-lg transition-all hover:shadow-md"
+                  [class.border-primary-500]="scheduleForm().type === type.id"
+                  [class.bg-primary-50]="scheduleForm().type === type.id"
+                  [class.border-gray-200]="scheduleForm().type !== type.id"
+                >
+                  <div class="flex flex-col items-center gap-2">
+                    <app-svg-icon [icon]="type.icon" classes="w-6 h-6 text-gray-600"></app-svg-icon>
+                    <span class="text-sm font-medium">{{ type.name }}</span>
+                  </div>
+                </button>
               }
             </div>
-
-            <!-- Détails du cours -->
-            <div class="space-y-4">
-              <!-- Nombre d'étudiants -->
-              <div>
-                <label class="block text-sm font-medium text-gray-700 mb-2">
-                  Nombre d'étudiants *
-                </label>
-                <input
-                  type="number"
-                  min="1"
-                  max="200"
-                  [value]="scheduleForm().students"
-                  (input)="updateStudents($any($event.target).value)"
-                  class="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary-500 focus:border-primary-500"
-                  [class.border-red-300]="errors()['students']"
-                >
-                @if (errors()['students']) {
-                  <p class="mt-1 text-sm text-red-600">{{ errors()['students'] }}</p>
-                }
-              </div>
-
-              <!-- Durée -->
-              <div>
-                <label class="block text-sm font-medium text-gray-700 mb-2">
-                  Durée (minutes) *
-                </label>
-                <select
-                  [value]="scheduleForm().duration"
-                  (change)="updateDuration($any($event.target).value)"
-                  class="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary-500 focus:border-primary-500"
-                  [class.border-red-300]="errors()['duration']"
-                >
-                  <option value="30">30 minutes</option>
-                  <option value="60">1 heure</option>
-                  <option value="90">1h30</option>
-                  <option value="120">2 heures</option>
-                  <option value="180">3 heures</option>
-                </select>
-                @if (errors()['duration']) {
-                  <p class="mt-1 text-sm text-red-600">{{ errors()['duration'] }}</p>
-                }
-              </div>
-
-              <!-- Description -->
-              <div>
-                <label class="block text-sm font-medium text-gray-700 mb-2">
-                  Description (optionnel)
-                </label>
-                <textarea
-                  rows="3"
-                  placeholder="Ajoutez des notes ou des détails sur le cours..."
-                  [value]="scheduleForm().description"
-                  (input)="updateDescription($any($event.target).value)"
-                  class="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary-500 focus:border-primary-500 resize-none"
-                ></textarea>
-              </div>
-            </div>
           </div>
+        }
 
-          <!-- Alertes de conflit -->
-          @if (showConflicts() && detectedConflicts().length > 0) {
-            <div class="bg-red-50 border border-red-200 rounded-lg p-4">
-              <div class="flex items-start gap-3">
-                <app-svg-icon icon="alert-triangle" classes="w-5 h-5 text-red-600 mt-0.5"></app-svg-icon>
-                <div>
-                  <h4 class="font-medium text-red-900 mb-2">Conflits détectés</h4>
-                  <ul class="space-y-1">
-                    @for (conflict of detectedConflicts(); track conflict) {
-                      <li class="text-sm text-red-700">• {{ conflict }}</li>
-                    }
-                  </ul>
-                  <p class="text-sm text-red-600 mt-2">
-                    Vous pouvez continuer mais ces conflits devront être résolus.
-                  </p>
-                </div>
-              </div>
-            </div>
-          }
+        <!-- Description -->
+        <div>
+          <label class="block text-sm font-medium text-gray-700 mb-2">
+            Description (optionnel)
+          </label>
+          <textarea
+            rows="3"
+            placeholder="Ajoutez des notes ou des détails sur le cours..."
+            [value]="scheduleForm().description"
+            (input)="updateDescription($any($event.target).value)"
+            class="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary-500 focus:border-primary-500 resize-none"
+          ></textarea>
+        </div>
 
-          <!-- Résumé du cours -->
+        <!-- Résumé du cours -->
+        @if (scheduleForm().subject && scheduleForm().teacher) {
           <div class="bg-gray-50 border border-gray-200 rounded-lg p-4">
             <h4 class="font-medium text-gray-900 mb-3">Résumé du cours</h4>
             <div class="grid grid-cols-1 md:grid-cols-2 gap-4 text-sm">
               <div class="flex items-center gap-2">
                 <app-svg-icon icon="book" classes="w-4 h-4 text-gray-500"></app-svg-icon>
                 <span class="text-gray-600">Matière:</span>
-                <span class="font-medium">{{ scheduleForm().subject || 'Non définie' }}</span>
+                <span class="font-medium">{{ scheduleForm().subject }}</span>
               </div>
               <div class="flex items-center gap-2">
                 <app-svg-icon icon="user" classes="w-4 h-4 text-gray-500"></app-svg-icon>
                 <span class="text-gray-600">Enseignant:</span>
-                <span class="font-medium">{{ scheduleForm().teacher || 'Non défini' }}</span>
+                <span class="font-medium">{{ scheduleForm().teacher }}</span>
               </div>
               <div class="flex items-center gap-2">
-                <app-svg-icon icon="building" classes="w-4 h-4 text-gray-500"></app-svg-icon>
-                <span class="text-gray-600">Salle:</span>
-                <span class="font-medium">{{ scheduleForm().room || 'Non définie' }}</span>
+                <app-svg-icon icon="clock" classes="w-4 h-4 text-gray-500"></app-svg-icon>
+                <span class="text-gray-600">Durée:</span>
+                <span class="font-medium">{{ scheduleForm().duration }} heure(s)</span>
               </div>
               <div class="flex items-center gap-2">
                 <app-svg-icon icon="users" classes="w-4 h-4 text-gray-500"></app-svg-icon>
                 <span class="text-gray-600">Étudiants:</span>
-                <span class="font-medium">{{ scheduleForm().students }}</span>
+                <span class="font-medium">{{ selectedClass?.effectif || 0 }}</span>
               </div>
             </div>
           </div>
-        </div>
-      }
+        }
+      </div>
     </div>
 
     <!-- Modal Footer -->
     <div class="flex items-center justify-between p-6 border-t border-gray-200 bg-gray-50">
       <div class="flex items-center gap-2 text-sm text-gray-600">
-        @if (currentStep() === 1) {
-          <span>Étape 1 sur 2 - Sélection de base</span>
-        } @else {
-          <span>Étape 2 sur 2 - Configuration finale</span>
-        }
+        <span>Configuration du cours pour {{ selectedClass?.nom }}</span>
       </div>
 
       <div class="flex items-center gap-3">
-        @if (currentStep() === 2) {
-          <button
-            (click)="previousStep()"
-            class="px-4 py-2 text-gray-700 bg-white border border-gray-300 rounded-lg hover:bg-gray-50 transition-colors"
-          >
-            Précédent
-          </button>
-        }
+        <button
+          (click)="onClose()"
+          class="px-4 py-2 text-gray-700 bg-white border border-gray-300 rounded-lg hover:bg-gray-50 transition-colors"
+        >
+          Annuler
+        </button>
 
-        @if (isEditMode() && currentStep() === 2) {
+        <button
+          (click)="onClose()"
+          class="px-4 py-2 text-gray-700 bg-gray-100 border border-gray-300 rounded-lg hover:bg-gray-200 transition-colors"
+        >
+          Fermer
+        </button>
+
+        @if (isEditMode()) {
           <button
             (click)="onDelete()"
             class="px-4 py-2 text-red-700 bg-red-50 border border-red-200 rounded-lg hover:bg-red-100 transition-colors"
@@ -439,26 +226,16 @@
           </button>
         }
 
-        @if (currentStep() === 1) {
-          <button
-            (click)="nextStep()"
-            [disabled]="!validateStep1()"
-            class="px-6 py-2 bg-primary-600 text-white rounded-lg hover:bg-primary-700 disabled:bg-gray-300 disabled:cursor-not-allowed transition-colors"
-          >
-            Suivant
-          </button>
-        } @else {
-          <button
-            (click)="onSave()"
-            [disabled]="isLoading() || !validateStep1() || !validateStep2()"
-            class="px-6 py-2 bg-primary-600 text-white rounded-lg hover:bg-primary-700 disabled:bg-gray-300 disabled:cursor-not-allowed transition-colors flex items-center gap-2"
-          >
-            @if (isLoading()) {
-              <div class="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin"></div>
-            }
-            {{ isEditMode() ? 'Modifier' : 'Ajouter' }}
-          </button>
-        }
+        <button
+          (click)="onSave()"
+          [disabled]="isLoading() || !validateForm()"
+          class="px-6 py-2 bg-primary-600 text-white rounded-lg hover:bg-primary-700 disabled:bg-gray-300 disabled:cursor-not-allowed transition-colors flex items-center gap-2"
+        >
+          @if (isLoading()) {
+            <div class="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin"></div>
+          }
+          {{ isEditMode() ? 'Modifier' : 'Ajouter' }}
+        </button>
       </div>
     </div>
   </div>

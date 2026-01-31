@@ -97,14 +97,10 @@ export class AjouterEnseignant implements OnInit, OnDestroy {
         joinDate: this.teacher.joinDate || new Date().toISOString().split('T')[0]
       });
     }
-    
-    // Bloquer le scroll de la page principale
-    document.body.classList.add('modal-open');
   }
 
   ngOnDestroy() {
-    // Restaurer le scroll de la page principale
-    document.body.classList.remove('modal-open');
+    // Component cleanup
   }
 
   updateForm(field: keyof TeacherForm, value: any) {
@@ -231,8 +227,6 @@ export class AjouterEnseignant implements OnInit, OnDestroy {
   }
 
   onClose() {
-    // Restaurer le scroll avant de fermer
-    document.body.classList.remove('modal-open');
     this.close.emit();
   }
 
