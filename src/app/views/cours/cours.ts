@@ -188,14 +188,6 @@ export class Cours implements OnInit {
       },
       {
         id: '5',
-        nom: 'Stage',
-        code: 'STAGE',
-        description: 'Stage en entreprise',
-        couleur: 'bg-red-500',
-        dureeDefaut: 200
-      },
-      {
-        id: '6',
         nom: 'Séminaire',
         code: 'SEM',
         description: 'Séminaire spécialisé',

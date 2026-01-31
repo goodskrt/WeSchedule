@@ -6,14 +6,10 @@ import { SvgIconComponent } from '../../shared/svg-icon/svg-icon.component';
 interface ClasseModel {
   id: string;
   nom: string;
-  niveau: string;
   ecole: string;
-  semestre: number;
   effectif: number;
   effectifMax: number;
-  professeurs: string[]; // Liste des IDs des professeurs
   description?: string;
-  specialite?: string;
   ues: string[]; // IDs des UE associées
   createdAt: Date;
   updatedAt: Date;
@@ -34,14 +30,6 @@ interface UEModel {
   credits: number;
   semestre: number;
   ecole: string;
-}
-
-interface Professeur {
-  id: string;
-  nom: string;
-  prenom: string;
-  email: string;
-  specialites: string[];
 }
 
 @Component({
@@ -66,29 +54,22 @@ export class ClassesComponent implements OnInit {
   protected readonly isLoading = signal(false);
   protected readonly searchTerm = signal('');
   protected readonly selectedEcole = signal('');
-  protected readonly selectedSemestre = signal(0);
-  protected readonly selectedNiveau = signal('');
   protected readonly currentView = signal<'grid' | 'list'>('grid');
 
   // Données
   protected readonly classes = signal<ClasseModel[]>([]);
   protected readonly ecoles = signal<Ecole[]>([]);
   protected readonly ues = signal<UEModel[]>([]);
-  protected readonly professeurs = signal<Professeur[]>([]);
   protected readonly selectedClasse = signal<ClasseModel | null>(null);
 
   // Formulaire
   protected readonly classeForm = signal({
     id: '',
     nom: '',
-    niveau: '',
     ecole: '',
-    semestre: 1,
     effectif: 0,
     effectifMax: 50,
-    professeurs: [] as string[],
     description: '',
-    specialite: '',
     ues: [] as string[]
   });
 
@@ -132,48 +113,11 @@ export class ClassesComponent implements OnInit {
     ];
     this.ecoles.set(ecoles);
 
-    // Charger les professeurs
-    this.loadProfesseurs();
-    
     // Charger les UE
     this.loadUEs();
     
     // Charger les classes
     this.loadClasses();
-  }
-
-  private loadProfesseurs() {
-    const professeurs: Professeur[] = [
-      {
-        id: '1',
-        nom: 'Dupont',
-        prenom: 'Martin',
-        email: 'martin.dupont@iu-saintjean.cm',
-        specialites: ['Informatique', 'Programmation']
-      },
-      {
-        id: '2',
-        nom: 'Laurent',
-        prenom: 'Sophie',
-        email: 'sophie.laurent@iu-saintjean.cm',
-        specialites: ['Mathématiques', 'Algorithmique']
-      },
-      {
-        id: '3',
-        nom: 'Moreau',
-        prenom: 'Jean',
-        email: 'jean.moreau@iu-saintjean.cm',
-        specialites: ['Gestion', 'Management']
-      },
-      {
-        id: '4',
-        nom: 'Dubois',
-        prenom: 'Marie',
-        email: 'marie.dubois@iu-saintjean.cm',
-        specialites: ['Marketing', 'Communication']
-      }
-    ];
-    this.professeurs.set(professeurs);
   }
 
   private loadUEs() {
@@ -228,13 +172,9 @@ export class ClassesComponent implements OnInit {
       { 
         id: '1', 
         nom: 'Informatique L1A', 
-        niveau: 'L1', 
         ecole: 'sji', 
-        semestre: 1, 
         effectif: 45, 
         effectifMax: 50,
-        professeurs: ['1', '2'], // Martin Dubois et Marie Laurent
-        specialite: 'Informatique',
         description: 'Première année de licence en informatique - Groupe A',
         ues: ['1', '2'],
         createdAt: new Date('2024-01-15'),
@@ -243,13 +183,9 @@ export class ClassesComponent implements OnInit {
       { 
         id: '2', 
         nom: 'Informatique L1B', 
-        niveau: 'L1', 
         ecole: 'sji', 
-        semestre: 1, 
         effectif: 42, 
         effectifMax: 50,
-        professeurs: ['1'], // Martin Dubois
-        specialite: 'Informatique',
         description: 'Première année de licence en informatique - Groupe B',
         ues: ['1', '2'],
         createdAt: new Date('2024-01-15'),
@@ -258,13 +194,9 @@ export class ClassesComponent implements OnInit {
       { 
         id: '3', 
         nom: 'Informatique L2', 
-        niveau: 'L2', 
         ecole: 'sji', 
-        semestre: 3, 
         effectif: 38, 
         effectifMax: 45,
-        professeurs: ['1', '2'], // Martin Dubois et Marie Laurent
-        specialite: 'Informatique',
         description: 'Deuxième année de licence en informatique',
         ues: ['3'],
         createdAt: new Date('2024-01-15'),
@@ -275,13 +207,9 @@ export class ClassesComponent implements OnInit {
       { 
         id: '4', 
         nom: 'Gestion L1', 
-        niveau: 'L1', 
         ecole: 'sjm', 
-        semestre: 1, 
         effectif: 50, 
         effectifMax: 55,
-        professeurs: ['3'], // Paul Nguyen
-        specialite: 'Gestion',
         description: 'Première année de licence en gestion',
         ues: ['4'],
         createdAt: new Date('2024-01-15'),
@@ -290,13 +218,9 @@ export class ClassesComponent implements OnInit {
       { 
         id: '5', 
         nom: 'Marketing L2', 
-        niveau: 'L2', 
         ecole: 'sjm', 
-        semestre: 3, 
         effectif: 35, 
         effectifMax: 40,
-        professeurs: ['3', '4'], // Paul Nguyen et Sophie Bernard
-        specialite: 'Marketing',
         description: 'Deuxième année spécialisée en marketing',
         ues: ['5'],
         createdAt: new Date('2024-01-15'),
@@ -307,13 +231,9 @@ export class ClassesComponent implements OnInit {
       { 
         id: '6', 
         nom: 'Prépa Scientifique 1A', 
-        niveau: 'Prépa', 
         ecole: 'prepa', 
-        semestre: 1, 
         effectif: 30, 
         effectifMax: 35,
-        professeurs: ['4', '5'], // Sophie Bernard et Jean Moreau
-        specialite: 'Sciences',
         description: 'Première année de classe préparatoire scientifique',
         ues: ['6'],
         createdAt: new Date('2024-01-15'),
@@ -324,13 +244,9 @@ export class ClassesComponent implements OnInit {
       { 
         id: '7', 
         nom: 'MPSI', 
-        niveau: 'CPGE', 
         ecole: 'cpge', 
-        semestre: 1, 
         effectif: 35, 
         effectifMax: 40,
-        professeurs: ['4'], // Sophie Bernard
-        specialite: 'Mathématiques-Physique',
         description: 'Mathématiques, Physique et Sciences de l\'Ingénieur',
         ues: ['6'],
         createdAt: new Date('2024-01-15'),
@@ -351,14 +267,10 @@ export class ClassesComponent implements OnInit {
     this.classeForm.set({
       id: classe.id,
       nom: classe.nom,
-      niveau: classe.niveau,
       ecole: classe.ecole,
-      semestre: classe.semestre,
       effectif: classe.effectif,
       effectifMax: classe.effectifMax,
-      professeurs: [...classe.professeurs],
       description: classe.description || '',
-      specialite: classe.specialite || '',
       ues: [...classe.ues]
     });
     this.showEditModal.set(true);
@@ -391,14 +303,10 @@ export class ClassesComponent implements OnInit {
     this.classeForm.set({
       id: '',
       nom: '',
-      niveau: '',
       ecole: '',
-      semestre: 1,
       effectif: 0,
       effectifMax: 50,
-      professeurs: [],
       description: '',
-      specialite: '',
       ues: []
     });
     this.errors.set({});
@@ -441,10 +349,6 @@ export class ClassesComponent implements OnInit {
 
     if (!form.nom.trim()) {
       newErrors['nom'] = 'Le nom de la classe est requis';
-    }
-
-    if (!form.niveau) {
-      newErrors['niveau'] = 'Le niveau est requis';
     }
 
     if (!form.ecole) {
@@ -542,25 +446,13 @@ export class ClassesComponent implements OnInit {
       const term = this.searchTerm().toLowerCase();
       filtered = filtered.filter(classe => 
         classe.nom.toLowerCase().includes(term) ||
-        classe.niveau.toLowerCase().includes(term) ||
-        (classe.specialite && classe.specialite.toLowerCase().includes(term)) ||
-        this.getProfesseursNames(classe.professeurs).toLowerCase().includes(term)
+        (classe.description && classe.description.toLowerCase().includes(term))
       );
     }
 
     // Filtre par école
     if (this.selectedEcole()) {
       filtered = filtered.filter(classe => classe.ecole === this.selectedEcole());
-    }
-
-    // Filtre par semestre
-    if (this.selectedSemestre()) {
-      filtered = filtered.filter(classe => classe.semestre === this.selectedSemestre());
-    }
-
-    // Filtre par niveau
-    if (this.selectedNiveau()) {
-      filtered = filtered.filter(classe => classe.niveau === this.selectedNiveau());
     }
 
     return filtered;
@@ -576,72 +468,16 @@ export class ClassesComponent implements OnInit {
     return this.ecoles().find(e => e.id === ecoleId);
   }
 
-  // Gestion des professeurs
-  getProfesseurName(professeurId: string): string {
-    const prof = this.professeurs().find(p => p.id === professeurId);
-    return prof ? `${prof.prenom} ${prof.nom}` : 'Professeur inconnu';
-  }
-
-  getProfesseursNames(professeursIds: string[]): string {
-    if (!professeursIds || professeursIds.length === 0) {
-      return 'Aucun professeur assigné';
-    }
-    
-    const names = professeursIds.map(id => {
-      const prof = this.professeurs().find(p => p.id === id);
-      return prof ? `${prof.prenom} ${prof.nom}` : 'Inconnu';
-    });
-    
-    return names.join(', ');
-  }
-
-  toggleProfesseur(professeurId: string) {
-    this.classeForm.update(form => {
-      const professeurs = [...form.professeurs];
-      const index = professeurs.indexOf(professeurId);
-      
-      if (index > -1) {
-        professeurs.splice(index, 1);
-      } else {
-        professeurs.push(professeurId);
-      }
-      
-      return { ...form, professeurs };
-    });
-  }
-
   getUENames(ueIds: string[]): string {
     const ues = this.ues().filter(ue => ueIds.includes(ue.id));
     return ues.map(ue => ue.code).join(', ') || 'Aucune UE';
   }
 
-  getUEsForClasse(classe: ClasseModel): UEModel[] {
-    return this.ues().filter(ue => 
-      ue.ecole === classe.ecole && 
-      ue.semestre === classe.semestre
-    );
-  }
-
   getAvailableUEs(): UEModel[] {
     const form = this.classeForm();
-    if (!form.ecole || !form.semestre) return [];
+    if (!form.ecole) return [];
     
-    return this.ues().filter(ue => 
-      ue.ecole === form.ecole && ue.semestre === form.semestre
-    );
-  }
-
-  getSemestresForEcole(ecoleId: string): number[] {
-    const ecole = this.ecoles().find(e => e.id === ecoleId);
-    return ecole ? ecole.semestres : [];
-  }
-
-  getNiveaux(): string[] {
-    return ['L1', 'L2', 'L3', 'M1', 'M2'];
-  }
-
-  getSpecialites(): string[] {
-    return ['Informatique', 'Mathématiques', 'Gestion', 'Marketing', 'Commerce', 'Médecine', 'Droit'];
+    return this.ues().filter(ue => ue.ecole === form.ecole);
   }
 
   getEffectifPercentage(classe: ClasseModel): number {
@@ -679,8 +515,6 @@ export class ClassesComponent implements OnInit {
   clearFilters() {
     this.searchTerm.set('');
     this.selectedEcole.set('');
-    this.selectedSemestre.set(0);
-    this.selectedNiveau.set('');
   }
 
   exportClasses() {
