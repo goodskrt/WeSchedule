@@ -6,11 +6,11 @@ import { SvgIconComponent } from '../../shared/svg-icon/svg-icon.component';
 interface Room {
   id: string;
   name: string;
-  type: 'classroom' | 'lab' | 'amphitheater' | 'conference';
+  type: 'cours' | 'td' | 'labo' | 'info' | 'conference';
   capacity: number;
-  equipment: string[];
-  building: string;
-  floor: number;
+  equipment: EquipmentItem[];
+  building: 'ancien' | 'nouveau';
+  floor: 'rez' | 'un' | 'deux' | 'trois';
   status: 'available' | 'occupied' | 'maintenance';
   currentBooking?: {
     course: string;
@@ -37,24 +37,34 @@ interface Room {
   occupancyRate?: number;
 }
 
+interface EquipmentItem {
+  id: string;
+  quantity: number;
+}
+
 interface Equipment {
   id: string;
   name: string;
   icon: string;
 }
 
+interface ReservationEquipment {
+  equipmentId: string;
+  quantity: number;
+}
+
 interface Reservation {
   id: string;
   roomId: string;
-  course: string;
-  teacher: string;
   startTime: string;
   endTime: string;
   date: string;
   studentCount: number;
+  reason: string;
   status: 'confirmed' | 'pending' | 'cancelled';
   recurring?: boolean;
   notes?: string;
+  equipmentReserved?: ReservationEquipment[];
 }
 
 interface RoomStatistics {
@@ -89,6 +99,16 @@ export class Salles {
   protected readonly viewMode = signal<'grid' | 'list' | 'map'>('grid');
   protected readonly selectedDate = signal<string>(new Date().toISOString().split('T')[0]);
   protected readonly selectedTimeSlot = signal<string>('');
+  protected readonly reservationEquipment = signal<ReservationEquipment[]>([]);
+  protected readonly reservationForm = signal({
+    date: new Date().toISOString().split('T')[0],
+    startTime: '08:00',
+    endTime: '10:00',
+    studentCount: 20,
+    reason: '',
+    recurring: false,
+    notes: ''
+  });
 
   protected readonly equipmentList = signal<Equipment[]>([
     { id: 'projector', name: 'Projecteur', icon: '📽️' },
@@ -109,12 +129,11 @@ export class Salles {
     {
       id: '1',
       roomId: '1',
-      course: 'Algorithmique Avancée',
-      teacher: 'Dr. Martin Dubois',
       startTime: '09:00',
       endTime: '11:00',
       date: '2026-01-08',
       studentCount: 32,
+      reason: 'Cours magistral d\'algorithmique',
       status: 'confirmed',
       recurring: true,
       notes: 'Cours avec TP pratique'
@@ -122,12 +141,11 @@ export class Salles {
     {
       id: '2',
       roomId: '2',
-      course: 'Base de Données',
-      teacher: 'Prof. Sarah Johnson',
       startTime: '14:00',
       endTime: '16:00',
       date: '2026-01-08',
       studentCount: 25,
+      reason: 'Travaux pratiques de base de données',
       status: 'confirmed',
       recurring: false
     }
@@ -137,11 +155,16 @@ export class Salles {
     {
       id: '1',
       name: 'Salle 101',
-      type: 'classroom',
+      type: 'cours',
       capacity: 35,
-      equipment: ['projector', 'whiteboard', 'speakers', 'wifi'],
-      building: 'Bâtiment A',
-      floor: 1,
+      equipment: [
+        { id: 'projector', quantity: 1 },
+        { id: 'whiteboard', quantity: 2 },
+        { id: 'speakers', quantity: 2 },
+        { id: 'wifi', quantity: 1 }
+      ],
+      building: 'ancien',
+      floor: 'un',
       status: 'occupied',
       currentBooking: {
         course: 'Algorithmique Avancée',
@@ -164,11 +187,19 @@ export class Salles {
     {
       id: '2',
       name: 'Lab Info 2',
-      type: 'lab',
+      type: 'info',
       capacity: 28,
-      equipment: ['computer', 'projector', 'whiteboard', 'printer', 'scanner', 'wifi', 'ethernet'],
-      building: 'Bâtiment B',
-      floor: 2,
+      equipment: [
+        { id: 'computer', quantity: 30 },
+        { id: 'projector', quantity: 1 },
+        { id: 'whiteboard', quantity: 1 },
+        { id: 'printer', quantity: 2 },
+        { id: 'scanner', quantity: 1 },
+        { id: 'wifi', quantity: 1 },
+        { id: 'ethernet', quantity: 30 }
+      ],
+      building: 'nouveau',
+      floor: 'deux',
       status: 'available',
       features: ['Postes informatiques', 'Serveur local', 'Logiciels spécialisés'],
       accessibility: true,
@@ -179,11 +210,18 @@ export class Salles {
     {
       id: '3',
       name: 'Amphithéâtre A',
-      type: 'amphitheater',
+      type: 'conference',
       capacity: 150,
-      equipment: ['projector', 'microphone', 'speakers', 'camera', 'smartboard', 'wifi'],
-      building: 'Bâtiment C',
-      floor: 0,
+      equipment: [
+        { id: 'projector', quantity: 2 },
+        { id: 'microphone', quantity: 4 },
+        { id: 'speakers', quantity: 8 },
+        { id: 'camera', quantity: 2 },
+        { id: 'smartboard', quantity: 1 },
+        { id: 'wifi', quantity: 1 }
+      ],
+      building: 'nouveau',
+      floor: 'rez',
       status: 'available',
       features: ['Système de diffusion', 'Enregistrement vidéo', 'Éclairage scénique'],
       accessibility: true,
@@ -193,34 +231,43 @@ export class Salles {
     },
     {
       id: '4',
-      name: 'Salle de Conférence',
-      type: 'conference',
-      capacity: 50,
-      equipment: ['projector', 'microphone', 'speakers', 'whiteboard', 'camera', 'wifi'],
-      building: 'Bâtiment A',
-      floor: 3,
-      status: 'maintenance',
-      maintenanceInfo: {
-        reason: 'Remplacement du système de climatisation',
-        startDate: '2026-01-08',
-        endDate: '2026-01-10',
-        technician: 'Service Technique Campus'
-      },
-      features: ['Table de conférence', 'Système de visioconférence'],
+      name: 'Salle TD 205',
+      type: 'td',
+      capacity: 25,
+      equipment: [
+        { id: 'projector', quantity: 1 },
+        { id: 'whiteboard', quantity: 3 },
+        { id: 'wifi', quantity: 1 }
+      ],
+      building: 'ancien',
+      floor: 'deux',
+      status: 'available',
+      features: ['Tables modulables', 'Prises électriques individuelles'],
       accessibility: true,
-      lastCleaned: '2026-01-06T16:00:00Z',
-      temperature: 18,
-      occupancyRate: 45
+      lastCleaned: '2026-01-07T18:30:00Z',
+      temperature: 23,
+      occupancyRate: 75
     },
     {
       id: '5',
       name: 'Lab Chimie 1',
-      type: 'lab',
+      type: 'labo',
       capacity: 20,
-      equipment: ['projector', 'whiteboard', 'airconditioner', 'wifi'],
-      building: 'Bâtiment D',
-      floor: 1,
-      status: 'available',
+      equipment: [
+        { id: 'projector', quantity: 1 },
+        { id: 'whiteboard', quantity: 1 },
+        { id: 'airconditioner', quantity: 2 },
+        { id: 'wifi', quantity: 1 }
+      ],
+      building: 'ancien',
+      floor: 'un',
+      status: 'maintenance',
+      maintenanceInfo: {
+        reason: 'Remplacement du système de ventilation',
+        startDate: '2026-01-08',
+        endDate: '2026-01-10',
+        technician: 'Service Technique Campus'
+      },
       features: ['Hottes aspirantes', 'Éviers spécialisés', 'Armoires sécurisées'],
       accessibility: false,
       lastCleaned: '2026-01-07T17:00:00Z',
@@ -229,26 +276,34 @@ export class Salles {
     },
     {
       id: '6',
-      name: 'Salle 205',
-      type: 'classroom',
-      capacity: 40,
-      equipment: ['projector', 'smartboard', 'speakers', 'wifi'],
-      building: 'Bâtiment B',
-      floor: 2,
+      name: 'Salle Conférence B',
+      type: 'conference',
+      capacity: 80,
+      equipment: [
+        { id: 'projector', quantity: 2 },
+        { id: 'microphone', quantity: 6 },
+        { id: 'speakers', quantity: 4 },
+        { id: 'camera', quantity: 1 },
+        { id: 'smartboard', quantity: 1 },
+        { id: 'wifi', quantity: 1 }
+      ],
+      building: 'nouveau',
+      floor: 'trois',
       status: 'available',
-      features: ['Mobilier modulable', 'Prises électriques individuelles'],
+      features: ['Table de conférence', 'Système de visioconférence'],
       accessibility: true,
-      lastCleaned: '2026-01-07T18:30:00Z',
-      temperature: 23,
-      occupancyRate: 75
+      lastCleaned: '2026-01-06T16:00:00Z',
+      temperature: 18,
+      occupancyRate: 45
     }
   ]);
 
   getTypeInfo(type: string) {
     switch (type) {
-      case 'classroom': return { name: 'Salle de cours', icon: '🏫', color: 'bg-blue-100 text-blue-800' };
-      case 'lab': return { name: 'Laboratoire', icon: '🔬', color: 'bg-purple-100 text-purple-800' };
-      case 'amphitheater': return { name: 'Amphithéâtre', icon: '🎭', color: 'bg-green-100 text-green-800' };
+      case 'cours': return { name: 'Salle de cours', icon: '🏫', color: 'bg-blue-100 text-blue-800' };
+      case 'td': return { name: 'Salle TD', icon: '📚', color: 'bg-green-100 text-green-800' };
+      case 'labo': return { name: 'Laboratoire', icon: '🔬', color: 'bg-purple-100 text-purple-800' };
+      case 'info': return { name: 'Salle informatique', icon: '💻', color: 'bg-indigo-100 text-indigo-800' };
       case 'conference': return { name: 'Salle de conférence', icon: '🏢', color: 'bg-orange-100 text-orange-800' };
       default: return { name: 'Salle', icon: '🏫', color: 'bg-gray-100 text-gray-800' };
     }
@@ -265,6 +320,29 @@ export class Salles {
 
   getEquipmentIcon(equipmentId: string): string {
     return this.equipmentList().find(e => e.id === equipmentId)?.icon || '📦';
+  }
+
+  getEquipmentQuantity(room: Room, equipmentId: string): number {
+    const equipment = room.equipment.find(e => e.id === equipmentId);
+    return equipment ? equipment.quantity : 0;
+  }
+
+  getBuildingName(buildingId: string): string {
+    switch (buildingId) {
+      case 'ancien': return 'Ancien Bâtiment';
+      case 'nouveau': return 'Nouveau Bâtiment';
+      default: return 'Bâtiment inconnu';
+    }
+  }
+
+  getFloorName(floorId: string): string {
+    switch (floorId) {
+      case 'rez': return 'Rez de chaussée';
+      case 'un': return 'Premier étage';
+      case 'deux': return 'Deuxième étage';
+      case 'trois': return 'Troisième étage';
+      default: return 'Étage inconnu';
+    }
   }
 
   filteredRooms() {
@@ -286,7 +364,8 @@ export class Salles {
       const term = this.searchTerm().toLowerCase();
       filtered = filtered.filter(room => 
         room.name.toLowerCase().includes(term) ||
-        room.building.toLowerCase().includes(term)
+        this.getBuildingName(room.building).toLowerCase().includes(term) ||
+        this.getTypeInfo(room.type).name.toLowerCase().includes(term)
       );
     }
     
@@ -327,7 +406,7 @@ export class Salles {
   }
 
   getUniqueBuildings() {
-    return [...new Set(this.rooms().map(room => room.building))];
+    return ['ancien', 'nouveau'];
   }
 
   // Modal management methods
@@ -353,12 +432,32 @@ export class Salles {
 
   openReservationModal(room: Room) {
     this.selectedRoom.set(room);
+    this.reservationEquipment.set([]);
+    this.reservationForm.set({
+      date: new Date().toISOString().split('T')[0],
+      startTime: '08:00',
+      endTime: '10:00',
+      studentCount: 20,
+      reason: '',
+      recurring: false,
+      notes: ''
+    });
     this.showReservationModal.set(true);
   }
 
   closeReservationModal() {
     this.showReservationModal.set(false);
     this.selectedRoom.set(null);
+    this.reservationEquipment.set([]);
+    this.reservationForm.set({
+      date: new Date().toISOString().split('T')[0],
+      startTime: '08:00',
+      endTime: '10:00',
+      studentCount: 20,
+      reason: '',
+      recurring: false,
+      notes: ''
+    });
   }
 
   editRoom(room: Room) {
@@ -405,7 +504,7 @@ export class Salles {
 
   getRoomsByType() {
     const rooms = this.rooms();
-    const types = ['classroom', 'lab', 'amphitheater', 'conference'];
+    const types = ['cours', 'td', 'labo', 'info', 'conference'];
     return types.map(type => ({
       type,
       count: rooms.filter(r => r.type === type).length,
@@ -432,7 +531,7 @@ export class Salles {
     const csvContent = [
       'Nom,Bâtiment,Étage,Capacité,Type,Statut,Équipements',
       ...rooms.map(r => 
-        `"${r.name}","${r.building}",${r.floor},${r.capacity},"${r.type}","${r.status}","${r.equipment.join(';')}"`
+        `"${r.name}","${this.getBuildingName(r.building)}","${this.getFloorName(r.floor)}",${r.capacity},"${this.getTypeInfo(r.type).name}","${r.status}","${r.equipment.map(e => `${this.getEquipmentName(e.id)}(${e.quantity})`).join(';')}"`
       )
     ].join('\n');
     
@@ -480,15 +579,13 @@ export class Salles {
   }
 
   getTimeSlots(): string[] {
-    return [
-      '08:00 - 09:30',
-      '09:45 - 11:15',
-      '11:30 - 13:00',
-      '14:00 - 15:30',
-      '15:45 - 17:15',
-      '17:30 - 19:00',
-      '19:15 - 20:45'
-    ];
+    const slots = [];
+    for (let hour = 8; hour <= 20; hour++) {
+      const startTime = `${hour.toString().padStart(2, '0')}:00`;
+      const endTime = `${(hour + 1).toString().padStart(2, '0')}:00`;
+      slots.push(`${startTime} - ${endTime}`);
+    }
+    return slots;
   }
 
   isRoomAvailableAtTime(roomId: string, date: string, timeSlot: string): boolean {
@@ -498,8 +595,11 @@ export class Salles {
       r.status === 'confirmed'
     );
     
-    const [startTime] = timeSlot.split(' - ');
-    return !reservations.some(r => r.startTime === startTime);
+    const [startTime, endTime] = timeSlot.split(' - ');
+    return !reservations.some(r => {
+      // Check if there's any overlap
+      return (startTime < r.endTime && endTime > r.startTime);
+    });
   }
 
   getRoomOccupancyForWeek(roomId: string): number[] {
@@ -566,12 +666,11 @@ export class Salles {
     const newReservation: Reservation = {
       id: Date.now().toString(),
       roomId,
-      course: reservationData.course || '',
-      teacher: reservationData.teacher || '',
       startTime: reservationData.startTime || '',
       endTime: reservationData.endTime || '',
       date: reservationData.date || this.selectedDate(),
       studentCount: reservationData.studentCount || 0,
+      reason: reservationData.reason || '',
       status: 'pending',
       recurring: reservationData.recurring || false,
       notes: reservationData.notes || ''
@@ -586,8 +685,8 @@ export class Salles {
     
     if (now >= reservationDate && now <= endDate) {
       this.updateRoomStatus(roomId, 'occupied', {
-        course: newReservation.course,
-        teacher: newReservation.teacher,
+        course: newReservation.reason,
+        teacher: 'Réservé',
         time: `${newReservation.startTime} - ${newReservation.endTime}`,
         endTime: newReservation.endTime,
         studentCount: newReservation.studentCount
@@ -628,14 +727,16 @@ export class Salles {
       summary: stats,
       roomDetails: rooms.map(room => ({
         name: room.name,
-        building: room.building,
+        building: this.getBuildingName(room.building),
+        floor: this.getFloorName(room.floor),
         capacity: room.capacity,
         occupancyRate: room.occupancyRate,
         status: room.status,
         lastCleaned: room.lastCleaned,
         temperature: room.temperature,
         equipmentCount: room.equipment.length,
-        accessibility: room.accessibility
+        accessibility: room.accessibility,
+        type: this.getTypeInfo(room.type).name
       })),
       maintenanceSchedule: this.getMaintenanceSchedule(),
       upcomingReservations: this.getUpcomingReservations()
@@ -646,9 +747,11 @@ export class Salles {
     const report = this.generateRoomReport();
     const csvContent = [
       'Nom,Bâtiment,Étage,Capacité,Type,Statut,Taux d\'occupation,Température,Accessibilité,Équipements',
-      ...report.roomDetails.map((r: any) => 
-        `"${r.name}","${r.building}",${this.rooms().find(room => room.name === r.name)?.floor},"${r.capacity}","${this.rooms().find(room => room.name === r.name)?.type}","${r.status}","${r.occupancyRate}%","${r.temperature}°C","${r.accessibility ? 'Oui' : 'Non'}","${r.equipmentCount} équipements"`
-      )
+      ...report.roomDetails.map((r: any) => {
+        const room = this.rooms().find(room => room.name === r.name);
+        const equipmentStr = room ? room.equipment.map(e => `${this.getEquipmentName(e.id)}(${e.quantity})`).join(';') : '';
+        return `"${r.name}","${this.getBuildingName(room?.building || '')}","${this.getFloorName(room?.floor || '')}","${r.capacity}","${this.getTypeInfo(room?.type || '').name}","${r.status}","${r.occupancyRate}%","${r.temperature}°C","${r.accessibility ? 'Oui' : 'Non'}","${equipmentStr}"`;
+      })
     ].join('\n');
     
     const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
@@ -668,5 +771,91 @@ export class Salles {
   // Helper pour Math.round dans les templates
   round(value: number): number {
     return Math.round(value);
+  }
+
+  // Equipment reservation methods
+  updateReservationEquipment(equipmentId: string, quantity: number) {
+    this.reservationEquipment.update(equipment => {
+      const existing = equipment.find(e => e.equipmentId === equipmentId);
+      if (existing) {
+        if (quantity > 0) {
+          existing.quantity = quantity;
+        } else {
+          return equipment.filter(e => e.equipmentId !== equipmentId);
+        }
+        return [...equipment];
+      } else if (quantity > 0) {
+        return [...equipment, { equipmentId, quantity }];
+      }
+      return equipment;
+    });
+  }
+
+  getReservationEquipmentQuantity(equipmentId: string): number {
+    const equipment = this.reservationEquipment().find(e => e.equipmentId === equipmentId);
+    return equipment ? equipment.quantity : 0;
+  }
+
+  getMaxEquipmentQuantity(room: Room, equipmentId: string): number {
+    const equipment = room.equipment.find(e => e.id === equipmentId);
+    return equipment ? equipment.quantity : 0;
+  }
+
+  // Reservation form methods
+  updateReservationForm(field: string, value: any) {
+    this.reservationForm.update(form => ({
+      ...form,
+      [field]: value
+    }));
+  }
+
+  validateReservationForm(): boolean {
+    const form = this.reservationForm();
+    
+    // Validate required fields
+    if (!form.reason.trim()) return false;
+    if (form.studentCount < 1 || form.studentCount > 300) return false;
+    if (!form.startTime || !form.endTime) return false;
+    
+    // Validate time logic
+    if (form.startTime >= form.endTime) return false;
+    
+    // Validate capacity
+    const room = this.selectedRoom();
+    if (room && form.studentCount > room.capacity) return false;
+    
+    return true;
+  }
+
+  submitReservation() {
+    if (!this.validateReservationForm() || !this.selectedRoom()) return;
+    
+    const form = this.reservationForm();
+    const room = this.selectedRoom()!;
+    
+    // Check for conflicts
+    if (this.checkForConflicts(room.id, form.date, form.startTime, form.endTime)) {
+      alert('Conflit détecté : la salle est déjà réservée sur ce créneau.');
+      return;
+    }
+    
+    const newReservation: Reservation = {
+      id: Date.now().toString(),
+      roomId: room.id,
+      startTime: form.startTime,
+      endTime: form.endTime,
+      date: form.date,
+      studentCount: form.studentCount,
+      reason: form.reason,
+      status: 'pending',
+      recurring: form.recurring,
+      notes: form.notes,
+      equipmentReserved: [...this.reservationEquipment()]
+    };
+    
+    this.reservations.update(reservations => [...reservations, newReservation]);
+    
+    alert('Réservation créée avec succès !');
+    this.closeReservationModal();
   }
 }

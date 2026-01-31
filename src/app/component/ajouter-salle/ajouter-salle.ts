@@ -4,13 +4,18 @@ import { FormsModule } from '@angular/forms';
 
 interface RoomForm {
   name: string;
-  type: 'classroom' | 'lab' | 'amphitheater' | 'conference';
+  type: 'cours' | 'td' | 'labo' | 'info' | 'conference';
   capacity: number;
-  building: string;
-  floor: number;
-  equipment: string[];
+  building: 'ancien' | 'nouveau';
+  floor: 'rez' | 'un' | 'deux' | 'trois';
+  equipment: EquipmentItem[];
   description: string;
   status: 'available' | 'occupied' | 'maintenance';
+}
+
+interface EquipmentItem {
+  id: string;
+  quantity: number;
 }
 
 interface Equipment {
@@ -33,10 +38,10 @@ export class AjouterSalle implements OnInit, OnDestroy {
 
   protected readonly roomForm = signal<RoomForm>({
     name: '',
-    type: 'classroom',
+    type: 'cours',
     capacity: 30,
-    building: '',
-    floor: 1,
+    building: 'ancien',
+    floor: 'rez',
     equipment: [],
     description: '',
     status: 'available'
@@ -47,17 +52,22 @@ export class AjouterSalle implements OnInit, OnDestroy {
   protected readonly currentStep = signal<1 | 2 | 3>(1);
 
   protected readonly buildings = [
-    'Bâtiment A - Administration',
-    'Bâtiment B - Sciences et Technologies',
-    'Bâtiment C - Management',
-    'Bâtiment D - Laboratoires',
-    'Bâtiment E - Amphithéâtres'
+    { id: 'ancien', name: 'Ancien Bâtiment' },
+    { id: 'nouveau', name: 'Nouveau Bâtiment' }
+  ];
+
+  protected readonly floors = [
+    { id: 'rez', name: 'Rez de chaussée' },
+    { id: 'un', name: 'Premier étage' },
+    { id: 'deux', name: 'Deuxième étage' },
+    { id: 'trois', name: 'Troisième étage' }
   ];
 
   protected readonly roomTypes = [
-    { id: 'classroom', name: 'Salle de cours', icon: '🏫', description: 'Salle standard pour cours magistraux et TD' },
-    { id: 'lab', name: 'Laboratoire', icon: '🔬', description: 'Laboratoire pour travaux pratiques' },
-    { id: 'amphitheater', name: 'Amphithéâtre', icon: '🎭', description: 'Grande salle pour conférences et cours magistraux' },
+    { id: 'cours', name: 'Salle de cours', icon: '🏫', description: 'Salle standard pour cours magistraux' },
+    { id: 'td', name: 'Salle TD', icon: '📚', description: 'Salle pour travaux dirigés en petits groupes' },
+    { id: 'labo', name: 'Laboratoire', icon: '🔬', description: 'Laboratoire pour travaux pratiques' },
+    { id: 'info', name: 'Salle informatique', icon: '💻', description: 'Salle équipée d\'ordinateurs' },
     { id: 'conference', name: 'Salle de conférence', icon: '🏢', description: 'Salle équipée pour réunions et présentations' }
   ];
 
@@ -80,10 +90,10 @@ export class AjouterSalle implements OnInit, OnDestroy {
     if (this.room) {
       this.roomForm.set({
         name: this.room.name || '',
-        type: this.room.type || 'classroom',
+        type: this.room.type || 'cours',
         capacity: this.room.capacity || 30,
-        building: this.room.building || '',
-        floor: this.room.floor || 1,
+        building: this.room.building || 'ancien',
+        floor: this.room.floor || 'rez',
         equipment: [...(this.room.equipment || [])],
         description: this.room.description || '',
         status: this.room.status || 'available'
@@ -115,17 +125,30 @@ export class AjouterSalle implements OnInit, OnDestroy {
     }
   }
 
-  onEquipmentChange(equipmentId: string, checked: boolean) {
-    this.roomForm.update(form => ({
-      ...form,
-      equipment: checked 
-        ? [...form.equipment, equipmentId]
-        : form.equipment.filter(id => id !== equipmentId)
-    }));
+  onEquipmentChange(equipmentId: string, quantity: number) {
+    this.roomForm.update(form => {
+      const equipment = [...form.equipment];
+      const existingIndex = equipment.findIndex(e => e.id === equipmentId);
+      
+      if (quantity > 0) {
+        if (existingIndex > -1) {
+          equipment[existingIndex].quantity = quantity;
+        } else {
+          equipment.push({ id: equipmentId, quantity });
+        }
+      } else {
+        if (existingIndex > -1) {
+          equipment.splice(existingIndex, 1);
+        }
+      }
+      
+      return { ...form, equipment };
+    });
   }
 
-  isEquipmentSelected(equipmentId: string): boolean {
-    return this.roomForm().equipment.includes(equipmentId);
+  getEquipmentQuantity(equipmentId: string): number {
+    const equipment = this.roomForm().equipment.find(e => e.id === equipmentId);
+    return equipment ? equipment.quantity : 0;
   }
 
   getEquipmentsByCategory() {
@@ -148,12 +171,11 @@ export class AjouterSalle implements OnInit, OnDestroy {
 
     if (step === 1) {
       if (!form.name.trim()) newErrors['name'] = 'Le nom de la salle est requis';
-      if (!form.building) newErrors['building'] = 'Le bâtiment est requis';
     }
 
     if (step === 2) {
-      if (form.capacity < 1) newErrors['capacity'] = 'La capacité doit être supérieure à 0';
-      if (form.floor < 0) newErrors['floor'] = 'L\'étage ne peut pas être négatif';
+      if (form.capacity < 10) newErrors['capacity'] = 'La capacité doit être d\'au moins 10 places';
+      if (form.capacity > 300) newErrors['capacity'] = 'La capacité ne peut pas dépasser 300 places';
     }
 
     // Step 3 has no required validations (equipment is optional)
@@ -190,10 +212,10 @@ export class AjouterSalle implements OnInit, OnDestroy {
   resetForm() {
     this.roomForm.set({
       name: '',
-      type: 'classroom',
+      type: 'cours',
       capacity: 30,
-      building: '',
-      floor: 1,
+      building: 'ancien',
+      floor: 'rez',
       equipment: [],
       description: '',
       status: 'available'
@@ -239,6 +261,11 @@ export class AjouterSalle implements OnInit, OnDestroy {
     this.updateForm('building', target.value);
   }
 
+  onFloorChange(event: Event) {
+    const target = event.target as HTMLSelectElement;
+    this.updateForm('floor', target.value);
+  }
+
   onStatusChange(event: Event) {
     const target = event.target as HTMLSelectElement;
     this.updateForm('status', target.value);
@@ -255,11 +282,11 @@ export class AjouterSalle implements OnInit, OnDestroy {
 
   isStep1Valid(): boolean {
     const form = this.roomForm();
-    return form.name.trim() !== '' && form.building !== '';
+    return form.name.trim() !== '';
   }
 
   isStep2Valid(): boolean {
     const form = this.roomForm();
-    return form.capacity > 0 && form.floor >= 0;
+    return form.capacity >= 10 && form.capacity <= 300;
   }
 }
