@@ -91,6 +91,12 @@ export class Sidebar implements OnInit {
       category: 'gestion'
     },
     { 
+      path: '/app/equipements', 
+      label: 'Gestion des équipements', 
+      icon: 'cog',
+      category: 'gestion'
+    },
+    { 
       path: '/app/notifications', 
       label: 'Notifications', 
       icon: 'info', 
@@ -140,6 +146,13 @@ export class Sidebar implements OnInit {
       icon: 'building',
       color: 'bg-purple-500',
       action: () => this.router.navigate(['/app/salles'])
+    },
+    {
+      id: 'add-equipment',
+      label: 'Nouvel équipement',
+      icon: 'cog',
+      color: 'bg-gray-500',
+      action: () => this.router.navigate(['/app/equipements'])
     },
     {
       id: 'schedule',

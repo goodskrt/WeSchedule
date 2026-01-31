@@ -1,0 +1,86 @@
+.equipements-management {
+  min-height: 100vh;
+  background-color: #f8fafc;
+
+  .modal-overlay {
+    position: fixed;
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    background-color: rgba(0, 0, 0, 0.5);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    z-index: 9999;
+    padding: 1rem;
+  }
+
+  .modal-content {
+    background: white;
+    border-radius: 0.75rem;
+    box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.25);
+    width: 100%;
+    max-height: 90vh;
+    overflow-y: auto;
+    position: relative;
+    z-index: 10000;
+  }
+
+  .line-clamp-2 {
+    display: -webkit-box;
+    -webkit-line-clamp: 2;
+    -webkit-box-orient: vertical;
+    overflow: hidden;
+  }
+
+  // Animations pour les cartes
+  .hover\:shadow-md:hover {
+    transition: box-shadow 0.15s ease-in-out;
+  }
+
+  // Styles pour les barres de progression
+  .bg-gray-200 {
+    background-color: #e5e7eb;
+  }
+
+  .rounded-full {
+    border-radius: 9999px;
+  }
+
+  // Responsive design
+  @media (max-width: 768px) {
+    .modal-content {
+      margin: 1rem;
+      max-width: calc(100vw - 2rem);
+    }
+  }
+
+  // Styles pour les badges de statut
+  .inline-flex {
+    display: inline-flex;
+    align-items: center;
+  }
+
+  // Transitions pour les boutons
+  button {
+    transition: all 0.15s ease-in-out;
+  }
+
+  // Styles pour les inputs
+  input:focus,
+  select:focus,
+  textarea:focus {
+    outline: none;
+    box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.1);
+  }
+
+  // S'assurer que les modals sont au-dessus de tout
+  .modal-overlay {
+    z-index: 9999 !important;
+  }
+
+  .modal-content {
+    z-index: 10000 !important;
+  }
+}

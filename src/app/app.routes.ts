@@ -13,6 +13,7 @@ import { EnseignantLayout } from './layout/enseignant-layout/enseignant-layout';
 import { ForgotPassword } from './views/forgot-password/forgot-password';
 import { UEComponent } from './views/ue/ue';
 import { ClassesComponent } from './views/classes/classes';
+import { EquipementsComponent } from './views/equipements/equipements';
 
 // Import des composants enseignant
 import { EnseignantDashboard } from './views/enseignant/dashboard/dashboard';
@@ -72,6 +73,10 @@ export const routes: Routes = [
             {
                 path: 'salles',
                 component: Salles
+            },
+            {
+                path: 'equipements',
+                component: EquipementsComponent
             },
             {
                 path: 'emploi-de-temps',

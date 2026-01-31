@@ -39,6 +39,7 @@ export class MainLayout implements OnInit {
     '/app/professeurs': 'Gestion des professeurs',
     '/app/emploi-de-temps': 'Emploi du temps',
     '/app/salles': 'Gestion des salles',
+    '/app/equipements': 'Gestion des équipements',
     '/app/notifications': 'Notifications',
     '/app/rapports': 'Rapports',
     '/connexion': 'Connexion',
