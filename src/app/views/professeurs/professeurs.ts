@@ -1,24 +1,7 @@
-import { Component, signal } from '@angular/core';
+import { Component, signal, OnInit } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { AjouterEnseignant } from '../../component/ajouter-enseignant/ajouter-enseignant';
-
-interface Teacher {
-  id: string;
-  firstName: string;
-  lastName: string;
-  email: string;
-  phone: string;
-  specialization: string;
-  department: string;
-  schools: string[];
-  status: 'active' | 'inactive' | 'on-leave';
-  courses: string[];
-  joinDate: string;
-  qualifications: string[];
-  avatar?: string;
-  totalStudents: number;
-  weeklyHours: number;
-}
+import { ProfesseurService, Teacher } from '../../shared/services/professeur.service';
 
 interface School {
   id: string;
@@ -33,7 +16,8 @@ interface School {
   templateUrl: './professeurs.html',
   styleUrl: './professeurs.scss',
 })
-export class Professeurs {
+export class Professeurs implements OnInit {
+  constructor(private professeurService: ProfesseurService) {}
   protected readonly selectedView = signal<'grid' | 'list'>('grid');
   protected readonly selectedSchool = signal<string>('all');
   protected readonly selectedStatus = signal<string>('all');
@@ -49,104 +33,30 @@ export class Professeurs {
     { id: 'cpge', name: 'Classes Préparatoires', abbreviation: 'CPGE', color: 'bg-orange-500' }
   ]);
 
-  protected readonly teachers = signal<Teacher[]>([
-    {
-      id: '1',
-      firstName: 'Martin',
-      lastName: 'Dubois',
-      email: 'martin.dubois@saintfomekong.edu',
-      phone: '+237 6 78 90 12 34',
-      specialization: 'Informatique',
-      department: 'Sciences et Technologies',
-      schools: ['sji', 'prepa'],
-      status: 'active',
-      courses: ['Algorithmique', 'Structures de Données', 'Programmation Java'],
-      joinDate: '2020-09-01',
-      qualifications: ['PhD Informatique', 'Master IA', 'Certification Oracle'],
-      totalStudents: 125,
-      weeklyHours: 18
-    },
-    {
-      id: '2',
-      firstName: 'Marie',
-      lastName: 'Laurent',
-      email: 'marie.laurent@saintfomekong.edu',
-      phone: '+237 6 78 90 12 35',
-      specialization: 'Base de Données',
-      department: 'Sciences et Technologies',
-      schools: ['sji'],
-      status: 'active',
-      courses: ['Base de Données Avancées', 'SQL', 'NoSQL'],
-      joinDate: '2019-02-15',
-      qualifications: ['PhD Informatique', 'Master SGBD', 'Certification MongoDB'],
-      totalStudents: 89,
-      weeklyHours: 16
-    },
-    {
-      id: '3',
-      firstName: 'Paul',
-      lastName: 'Nguyen',
-      email: 'paul.nguyen@saintfomekong.edu',
-      phone: '+237 6 78 90 12 36',
-      specialization: 'Gestion Financière',
-      department: 'Management',
-      schools: ['sjm'],
-      status: 'active',
-      courses: ['Finance d\'Entreprise', 'Comptabilité', 'Audit'],
-      joinDate: '2021-08-20',
-      qualifications: ['MBA Finance', 'CPA', 'Master Comptabilité'],
-      totalStudents: 156,
-      weeklyHours: 20
-    },
-    {
-      id: '4',
-      firstName: 'Sophie',
-      lastName: 'Bernard',
-      email: 'sophie.bernard@saintfomekong.edu',
-      phone: '+237 6 78 90 12 37',
-      specialization: 'Mathématiques',
-      department: 'Sciences Fondamentales',
-      schools: ['prepa', 'cpge'],
-      status: 'active',
-      courses: ['Mathématiques Supérieures', 'Analyse', 'Algèbre'],
-      joinDate: '2018-09-10',
-      qualifications: ['PhD Mathématiques', 'Agrégation', 'Master Recherche'],
-      totalStudents: 98,
-      weeklyHours: 22
-    },
-    {
-      id: '5',
-      firstName: 'fomekong',
-      lastName: 'Moreau',
-      email: 'fomekong.moreau@saintfomekong.edu',
-      phone: '+237 6 78 90 12 38',
-      specialization: 'Physique',
-      department: 'Sciences Fondamentales',
-      schools: ['prepa', 'cpge'],
-      status: 'on-leave',
-      courses: ['Physique Générale', 'Mécanique', 'Thermodynamique'],
-      joinDate: '2017-01-15',
-      qualifications: ['PhD Physique', 'Agrégation', 'Master Recherche'],
-      totalStudents: 0,
-      weeklyHours: 0
-    },
-    {
-      id: '6',
-      firstName: 'Anne',
-      lastName: 'miguel',
-      email: 'anne.miguel@saintfomekong.edu',
-      phone: '+237 6 78 90 12 39',
-      specialization: 'Marketing',
-      department: 'Management',
-      schools: ['sjm'],
-      status: 'inactive',
-      courses: [],
-      joinDate: '2022-03-01',
-      qualifications: ['Master Marketing', 'MBA', 'Certification Google Ads'],
-      totalStudents: 0,
-      weeklyHours: 0
-    }
-  ]);
+  protected readonly teachers = signal<Teacher[]>([]);
+  protected readonly isLoading = signal<boolean>(false);
+  protected readonly error = signal<string | null>(null);
+
+  ngOnInit() {
+    this.loadTeachers();
+  }
+
+  private loadTeachers() {
+    this.isLoading.set(true);
+    this.error.set(null);
+    
+    this.professeurService.getAllProfesseurs().subscribe({
+      next: (teachers) => {
+        this.teachers.set(teachers);
+        this.isLoading.set(false);
+      },
+      error: (err) => {
+        console.error('Erreur lors du chargement des professeurs:', err);
+        this.error.set('Impossible de charger les professeurs. Veuillez réessayer.');
+        this.isLoading.set(false);
+      }
+    });
+  }
 
   getSchoolInfo(schoolId: string) {
     return this.schools().find(s => s.id === schoolId);
@@ -231,7 +141,18 @@ export class Professeurs {
 
   deleteTeacher(teacherId: string) {
     if (confirm('Êtes-vous sûr de vouloir supprimer ce professeur ?')) {
-      this.teachers.update(teachers => teachers.filter(t => t.id !== teacherId));
+      this.isLoading.set(true);
+      this.professeurService.deleteProfesseur(teacherId).subscribe({
+        next: () => {
+          this.teachers.update(teachers => teachers.filter(t => t.id !== teacherId));
+          this.isLoading.set(false);
+        },
+        error: (err) => {
+          console.error('Erreur lors de la suppression:', err);
+          alert('Erreur lors de la suppression du professeur');
+          this.isLoading.set(false);
+        }
+      });
     }
   }
 
