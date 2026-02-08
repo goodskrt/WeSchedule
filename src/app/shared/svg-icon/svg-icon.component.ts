@@ -107,6 +107,9 @@ import { CommonModule } from '@angular/common';
         
         <!-- Activity Icon -->
         <path *ngSwitchCase="'activity'" d="M22,12h-4l-3,9L9,3l-3,9H2"/>
+        
+        <!-- Alert Triangle Icon -->
+        <path *ngSwitchCase="'alert-triangle'" d="M1,21h22L12,2L1,21z M13,18h-2v-2h2V18z M13,14h-2v-4h2V14z"/>
       </ng-container>
     </svg>
   `

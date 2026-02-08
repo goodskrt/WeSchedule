@@ -402,7 +402,19 @@ export class Cours implements OnInit {
         classes: ['7'], // Gestion L1
         duree: 25,
         description: 'Cours magistral de gestion',
-        statut: 'planifie',
+        statut: 'actif',
+        createdAt: new Date('2024-01-15'),
+        updatedAt: new Date('2024-01-15')
+      },
+      {
+        id: '6',
+        ueId: '5',
+        typeId: '1', // CM
+        professeurId: '3',
+        classes: ['9'], // Marketing L2
+        duree: 30,
+        description: 'Cours magistral de marketing digital',
+        statut: 'actif',
         createdAt: new Date('2024-01-15'),
         updatedAt: new Date('2024-01-15')
       }

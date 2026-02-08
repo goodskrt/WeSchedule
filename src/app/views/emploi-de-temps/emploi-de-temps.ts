@@ -35,16 +35,41 @@ interface CalendarEvent {
   color: string;
 }
 
+interface TypeCours {
+  id: string;
+  nom: string;
+  code: string;
+  description: string;
+  couleur: string;
+  dureeDefaut: number;
+}
+
+interface CoursModel {
+  id: string;
+  ueId: string; // Référence vers l'UE
+  typeId: string; // Référence vers le type de cours
+  professeurId?: string;
+  classes: string[]; // IDs des classes associées
+  duree: number; // en heures
+  description?: string;
+  statut: 'actif' | 'annule' | 'termine' | 'planifie';
+  createdAt: Date;
+  updatedAt: Date;
+  // Propriétés enrichies pour le modal
+  nom?: string;
+  ue?: UEModel;
+  type?: TypeCours;
+  ecole?: string;
+  professeur?: Professeur;
+}
+
 interface ClasseModel {
   id: string;
   nom: string;
-  niveau: string;
   ecole: string;
-  semestre: number;
   effectif: number;
   effectifMax: number;
-  professeurs: string[];
-  specialite?: string;
+  description?: string;
   ues: string[];
 }
 
@@ -88,78 +113,54 @@ export class EmploiDeTemps {
   protected readonly searchQuery = signal<string>('');
   protected readonly showAdvancedFilters = signal(false);
 
-  // Données des classes et UE
+  // Données des classes, UE et cours
   protected readonly classes = signal<ClasseModel[]>([
     {
       id: '1',
       nom: 'Informatique L1A',
-      niveau: 'L1',
       ecole: 'sji',
-      semestre: 1,
       effectif: 45,
       effectifMax: 50,
-      professeurs: ['1', '2'],
-      specialite: 'Informatique',
       ues: ['1', '2'] // INF101, MAT101
     },
     {
       id: '2',
       nom: 'Informatique L1B',
-      niveau: 'L1',
       ecole: 'sji',
-      semestre: 1,
       effectif: 42,
       effectifMax: 50,
-      professeurs: ['1'],
-      specialite: 'Informatique',
       ues: ['1', '2'] // INF101, MAT101
     },
     {
       id: '3',
       nom: 'Gestion L1',
-      niveau: 'L1',
       ecole: 'sjm',
-      semestre: 1,
       effectif: 50,
       effectifMax: 55,
-      professeurs: ['3'],
-      specialite: 'Gestion',
       ues: ['4'] // GES101
     },
     {
       id: '4',
       nom: 'Marketing L2',
-      niveau: 'L2',
       ecole: 'sjm',
-      semestre: 3,
       effectif: 35,
       effectifMax: 40,
-      professeurs: ['3'],
-      specialite: 'Marketing',
       ues: ['5'] // MKT201
     },
     {
       id: '5',
       nom: 'Prépa Scientifique 1A',
-      niveau: 'Prépa',
       ecole: 'prepa',
-      semestre: 1,
       effectif: 30,
       effectifMax: 35,
-      professeurs: ['4', '6'],
-      specialite: 'Sciences',
       ues: ['6', '8'] // MAT201, CHI101
     },
     {
       id: '6',
       nom: 'MPSI',
-      niveau: 'CPGE',
       ecole: 'cpge',
-      semestre: 1,
       effectif: 35,
       effectifMax: 40,
-      professeurs: ['4', '5'],
-      specialite: 'Mathématiques-Physique',
       ues: ['6', '7'] // MAT201, PHY101
     }
   ]);
@@ -182,6 +183,126 @@ export class EmploiDeTemps {
     { id: '4', nom: 'Bernard', prenom: 'Sophie', email: 'sophie.bernard@saintfomekong.edu', specialites: ['Mathématiques'], ecoles: ['prepa', 'cpge'] },
     { id: '5', nom: 'Moreau', prenom: 'Jean', email: 'jean.moreau@saintfomekong.edu', specialites: ['Physique'], ecoles: ['cpge'] },
     { id: '6', nom: 'Leroy', prenom: 'Pierre', email: 'pierre.leroy@saintfomekong.edu', specialites: ['Chimie'], ecoles: ['prepa'] }
+  ]);
+
+  // Types de cours disponibles
+  protected readonly typesCours = signal<TypeCours[]>([
+    {
+      id: '1',
+      nom: 'Cours Magistral',
+      code: 'CM',
+      description: 'Cours théorique en amphithéâtre',
+      couleur: 'bg-blue-500',
+      dureeDefaut: 30
+    },
+    {
+      id: '2',
+      nom: 'Travaux Dirigés',
+      code: 'TD',
+      description: 'Exercices dirigés en petits groupes',
+      couleur: 'bg-green-500',
+      dureeDefaut: 20
+    },
+    {
+      id: '3',
+      nom: 'Travaux Pratiques',
+      code: 'TP',
+      description: 'Travaux pratiques en laboratoire',
+      couleur: 'bg-orange-500',
+      dureeDefaut: 40
+    },
+    {
+      id: '4',
+      nom: 'Projet',
+      code: 'PROJ',
+      description: 'Projet encadré',
+      couleur: 'bg-purple-500',
+      dureeDefaut: 60
+    },
+    {
+      id: '5',
+      nom: 'Séminaire',
+      code: 'SEM',
+      description: 'Séminaire spécialisé',
+      couleur: 'bg-indigo-500',
+      dureeDefaut: 15
+    }
+  ]);
+
+  // Cours disponibles (synchronisés avec la section cours)
+  protected readonly cours = signal<CoursModel[]>([
+    {
+      id: '1',
+      ueId: '1',
+      typeId: '1', // CM
+      professeurId: '1',
+      classes: ['1', '2'], // Informatique L1A et L1B
+      duree: 30,
+      description: 'Cours magistral d\'introduction à la programmation',
+      statut: 'actif',
+      createdAt: new Date('2024-01-15'),
+      updatedAt: new Date('2024-01-15')
+    },
+    {
+      id: '2',
+      ueId: '1',
+      typeId: '2', // TD
+      professeurId: '1',
+      classes: ['1'], // Informatique L1A
+      duree: 20,
+      description: 'Travaux dirigés de programmation',
+      statut: 'actif',
+      createdAt: new Date('2024-01-15'),
+      updatedAt: new Date('2024-01-15')
+    },
+    {
+      id: '3',
+      ueId: '1',
+      typeId: '3', // TP
+      professeurId: '1',
+      classes: ['2'], // Informatique L1B
+      duree: 40,
+      description: 'Travaux pratiques de programmation',
+      statut: 'actif',
+      createdAt: new Date('2024-01-15'),
+      updatedAt: new Date('2024-01-15')
+    },
+    {
+      id: '4',
+      ueId: '2',
+      typeId: '1', // CM
+      professeurId: '2',
+      classes: ['1', '2'], // Informatique L1A et L1B
+      duree: 30,
+      description: 'Cours magistral de mathématiques',
+      statut: 'actif',
+      createdAt: new Date('2024-01-15'),
+      updatedAt: new Date('2024-01-15')
+    },
+    {
+      id: '5',
+      ueId: '4',
+      typeId: '1', // CM
+      professeurId: '3',
+      classes: ['3'], // Gestion L1
+      duree: 25,
+      description: 'Cours magistral de gestion',
+      statut: 'actif',
+      createdAt: new Date('2024-01-15'),
+      updatedAt: new Date('2024-01-15')
+    },
+    {
+      id: '6',
+      ueId: '5',
+      typeId: '1', // CM
+      professeurId: '3',
+      classes: ['4'], // Marketing L2
+      duree: 30,
+      description: 'Cours magistral de marketing digital',
+      statut: 'actif',
+      createdAt: new Date('2024-01-15'),
+      updatedAt: new Date('2024-01-15')
+    }
   ]);
 
   // Liste des salles disponibles
@@ -481,11 +602,82 @@ export class EmploiDeTemps {
     return this.ues().filter(ue => selectedClass.ues.includes(ue.id));
   }
 
+  // Get courses for selected school and class
+  getCoursesForSelectedClass(): CoursModel[] {
+    const selectedClass = this.getSelectedClass();
+    if (!selectedClass) {
+      console.log('❌ Aucune classe sélectionnée');
+      return [];
+    }
+    
+    console.log('✅ Classe sélectionnée:', selectedClass);
+    console.log('📚 Tous les cours disponibles:', this.cours());
+    
+    // Filter courses that are associated with the selected class
+    const coursesForClass = this.cours().filter(cours => {
+      const isInClass = cours.classes.includes(selectedClass.id);
+      const isActive = cours.statut === 'actif';
+      console.log(`Cours ${cours.id}: isInClass=${isInClass}, isActive=${isActive}, classes=${cours.classes.join(',')}`);
+      return isInClass && isActive;
+    });
+
+    console.log('🎯 Cours filtrés pour la classe:', coursesForClass);
+
+    // Enrich courses with UE and type information for the modal
+    const enrichedCourses = coursesForClass.map(cours => {
+      const ue = this.getUE(cours.ueId);
+      const type = this.getTypeCours(cours.typeId);
+      const professor = this.professeurs().find(p => p.id === cours.professeurId);
+      
+      const enriched = {
+        ...cours,
+        nom: this.getCoursName(cours),
+        ue: ue,
+        type: type,
+        ecole: ue?.ecole || selectedClass.ecole,
+        professeur: professor
+      };
+      
+      console.log('📖 Cours enrichi:', enriched);
+      return enriched;
+    });
+    
+    console.log('✨ Total cours enrichis:', enrichedCourses.length);
+    return enrichedCourses;
+  }
+
+  // Get course by ID
+  getCours(coursId: string): CoursModel | undefined {
+    return this.cours().find(cours => cours.id === coursId);
+  }
+
+  // Get UE by ID
+  getUE(ueId: string): UEModel | undefined {
+    return this.ues().find(ue => ue.id === ueId);
+  }
+
+  // Get course type by ID
+  getTypeCours(typeId: string): TypeCours | undefined {
+    return this.typesCours().find(type => type.id === typeId);
+  }
+
+  // Get course name (UE + Type)
+  getCoursName(cours: CoursModel): string {
+    const ue = this.getUE(cours.ueId);
+    const type = this.getTypeCours(cours.typeId);
+    return `${ue?.nom || 'UE inconnue'} (${type?.code || 'Type inconnu'})`;
+  }
+
   // Get professors for selected class
   getProfesseursForSelectedClass(): Professeur[] {
     const selectedClass = this.getSelectedClass();
     if (!selectedClass) return [];
-    return this.professeurs().filter(prof => selectedClass.professeurs.includes(prof.id));
+    
+    // Get all professors that teach UEs associated with this class
+    const uesForClass = this.getUEsForSelectedClass();
+    const professeurIds = uesForClass.map(ue => ue.professeurId).filter(id => id);
+    
+    return this.professeurs().filter(prof => professeurIds.includes(prof.id));
   }
 
   // Get class name

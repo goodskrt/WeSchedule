@@ -4,49 +4,44 @@ import { FormsModule } from '@angular/forms';
 import { SvgIconComponent } from '../../shared/svg-icon/svg-icon.component';
 
 interface ScheduleForm {
-  ueId: string;
+  coursId: string;
   subject: string;
   teacher: string;
   teacherId: string;
-  type: 'CM' | 'TD' | 'TP' | 'Exam';
+  type: 'CM' | 'TD' | 'TP' | 'PROJ' | 'SEM';
   school: string;
   duration: number; // Duration in hours (1-8)
   description: string;
   color: string;
+  selectedTypes: string[]; // Selected course types for filtering
 }
 
-interface Subject {
+interface CoursModel {
   id: string;
-  name: string;
-  code: string;
-  school: string;
-  type: 'CM' | 'TD' | 'TP';
+  ueId: string;
+  typeId: string;
+  professeurId?: string;
+  classes: string[];
+  duree: number;
+  description?: string;
+  statut: 'actif' | 'annule' | 'termine' | 'planifie';
+  createdAt: Date;
+  updatedAt: Date;
+  // Additional properties for display (enriched data)
+  nom?: string;
+  ue?: any;
+  type?: any;
+  ecole?: string;
+  professeur?: any;
 }
 
-interface Teacher {
+interface TypeCours {
   id: string;
-  name: string;
-  speciality: string;
-  school: string;
-}
-
-interface Room {
-  id: string;
-  name: string;
-  capacity: number;
-  type: string;
-  equipment: string[];
-}
-
-interface UEModel {
-  id: string;
-  code: string;
   nom: string;
-  credits: number;
-  semestre: number;
-  ecole: string;
-  type: 'CM' | 'TD' | 'TP';
-  professeurId: string; // Professor assigned to this UE
+  code: string;
+  description: string;
+  couleur: string;
+  dureeDefaut: number;
 }
 
 interface Professeur {
@@ -68,14 +63,16 @@ export class ModalSchedule implements OnInit, OnDestroy {
   @Input() existingEvent: any = null;
   @Input() selectedTimeSlot: {day: string, time: string} | null = null;
   @Input() selectedClass: any = null;
-  @Input() availableUEs: UEModel[] = [];
+  @Input() availableCours: CoursModel[] = [];
+  @Input() availableTypesCours: TypeCours[] = [];
   @Input() availableProfesseurs: Professeur[] = [];
+  @Input() existingSchedule: any = {}; // Pour vérifier les conflits
   @Output() close = new EventEmitter<void>();
   @Output() eventAdded = new EventEmitter<any>();
   @Output() eventUpdated = new EventEmitter<any>();
 
   protected readonly scheduleForm = signal<ScheduleForm>({
-    ueId: '',
+    coursId: '',
     subject: '',
     teacher: '',
     teacherId: '',
@@ -83,57 +80,14 @@ export class ModalSchedule implements OnInit, OnDestroy {
     school: '',
     duration: 1, // Duration in hours
     description: '',
-    color: 'bg-blue-100 border-blue-300 text-blue-800'
+    color: 'bg-blue-100 border-blue-300 text-blue-800',
+    selectedTypes: [] // No filter by default
   });
 
   protected readonly isLoading = signal(false);
   protected readonly errors = signal<{[key: string]: string}>({});
+  protected readonly warnings = signal<{[key: string]: string}>({});
   protected readonly isEditMode = signal(false);
-
-  // Données disponibles
-  protected readonly availableSubjects = signal<Subject[]>([
-    { id: '1', name: 'Algorithmique', code: 'ALG101', school: 'sji', type: 'CM' },
-    { id: '2', name: 'Base de Données', code: 'BDD201', school: 'sji', type: 'TP' },
-    { id: '3', name: 'Gestion Financière', code: 'GF301', school: 'sjm', type: 'CM' },
-    { id: '4', name: 'Mathématiques', code: 'MATH101', school: 'prepa', type: 'TD' },
-    { id: '5', name: 'Physique Quantique', code: 'PHY401', school: 'cpge', type: 'CM' },
-    { id: '6', name: 'Réseaux', code: 'RES301', school: 'sji', type: 'TP' },
-    { id: '7', name: 'Marketing Digital', code: 'MKT201', school: 'sjm', type: 'CM' },
-    { id: '8', name: 'Chimie Organique', code: 'CHI301', school: 'prepa', type: 'TP' },
-    { id: '9', name: 'Intelligence Artificielle', code: 'IA401', school: 'sji', type: 'CM' },
-    { id: '10', name: 'Comptabilité', code: 'CPT101', school: 'sjm', type: 'TD' },
-    { id: '11', name: 'Programmation Web', code: 'WEB201', school: 'sji', type: 'TP' },
-    { id: '12', name: 'Économie', code: 'ECO101', school: 'sjm', type: 'CM' },
-    { id: '13', name: 'Statistiques', code: 'STAT201', school: 'prepa', type: 'TD' },
-    { id: '14', name: 'Électronique', code: 'ELEC301', school: 'cpge', type: 'TP' },
-    { id: '15', name: 'Droit des Affaires', code: 'DRT201', school: 'sjm', type: 'CM' }
-  ]);
-
-  protected readonly availableTeachers = signal<Teacher[]>([
-    { id: '1', name: 'Dr. Martin', speciality: 'Informatique', school: 'sji' },
-    { id: '2', name: 'Prof. Dubois', speciality: 'Base de Données', school: 'sji' },
-    { id: '3', name: 'Dr. Nguyen', speciality: 'Gestion', school: 'sjm' },
-    { id: '4', name: 'Prof. Bernard', speciality: 'Mathématiques', school: 'prepa' },
-    { id: '5', name: 'Dr. Laurent', speciality: 'Physique', school: 'cpge' },
-    { id: '6', name: 'Prof. Moreau', speciality: 'Chimie', school: 'prepa' },
-    { id: '7', name: 'Dr. Patel', speciality: 'Marketing', school: 'sjm' },
-    { id: '8', name: 'Dr. Smith', speciality: 'Intelligence Artificielle', school: 'sji' },
-    { id: '9', name: 'Prof. Leroy', speciality: 'Économie', school: 'sjm' },
-    { id: '10', name: 'Dr. Garcia', speciality: 'Électronique', school: 'cpge' }
-  ]);
-
-  protected readonly availableRooms = signal<Room[]>([
-    { id: '1', name: 'Salle 101', capacity: 40, type: 'Cours', equipment: ['Projecteur', 'Tableau'] },
-    { id: '2', name: 'Salle 102', capacity: 35, type: 'Cours', equipment: ['Projecteur', 'Tableau'] },
-    { id: '3', name: 'Salle 205', capacity: 30, type: 'Cours', equipment: ['Projecteur', 'Tableau'] },
-    { id: '4', name: 'Salle 301', capacity: 25, type: 'Cours', equipment: ['Projecteur', 'Tableau'] },
-    { id: '5', name: 'Lab Info 1', capacity: 20, type: 'Informatique', equipment: ['Ordinateurs', 'Projecteur'] },
-    { id: '6', name: 'Lab Info 2', capacity: 25, type: 'Informatique', equipment: ['Ordinateurs', 'Projecteur'] },
-    { id: '7', name: 'Lab Réseau', capacity: 15, type: 'Réseau', equipment: ['Équipements réseau', 'Ordinateurs'] },
-    { id: '8', name: 'Lab Chimie', capacity: 20, type: 'Laboratoire', equipment: ['Équipements chimie', 'Hotte'] },
-    { id: '9', name: 'Amphi A', capacity: 100, type: 'Amphithéâtre', equipment: ['Sono', 'Projecteur', 'Écran géant'] },
-    { id: '10', name: 'Amphi B', capacity: 80, type: 'Amphithéâtre', equipment: ['Sono', 'Projecteur', 'Écran géant'] }
-  ]);
 
   protected readonly schools = [
     { id: 'sji', name: 'Saint Jean Ingénieur (SJI)', color: 'bg-blue-500' },
@@ -146,14 +100,15 @@ export class ModalSchedule implements OnInit, OnDestroy {
     { id: 'CM', name: 'Cours Magistral', icon: 'book', color: 'bg-blue-100 border-blue-300 text-blue-800' },
     { id: 'TD', name: 'Travaux Dirigés', icon: 'edit', color: 'bg-green-100 border-green-300 text-green-800' },
     { id: 'TP', name: 'Travaux Pratiques', icon: 'flask', color: 'bg-purple-100 border-purple-300 text-purple-800' },
-    { id: 'Exam', name: 'Examen', icon: 'clipboard', color: 'bg-red-100 border-red-300 text-red-800' }
+    { id: 'PROJ', name: 'Projet', icon: 'briefcase', color: 'bg-orange-100 border-orange-300 text-orange-800' },
+    { id: 'SEM', name: 'Séminaire', icon: 'users', color: 'bg-indigo-100 border-indigo-300 text-indigo-800' }
   ];
 
   ngOnInit() {
     if (this.existingEvent) {
       this.isEditMode.set(true);
       this.scheduleForm.set({
-        ueId: this.existingEvent.ueId || '',
+        coursId: this.existingEvent.coursId || '',
         subject: this.existingEvent.subject || '',
         teacher: this.existingEvent.teacher || '',
         teacherId: this.existingEvent.teacherId || '',
@@ -161,7 +116,8 @@ export class ModalSchedule implements OnInit, OnDestroy {
         school: this.existingEvent.school || '',
         duration: this.existingEvent.duration || 1,
         description: this.existingEvent.description || '',
-        color: this.existingEvent.color || 'bg-blue-100 border-blue-300 text-blue-800'
+        color: this.existingEvent.color || 'bg-blue-100 border-blue-300 text-blue-800',
+        selectedTypes: []
       });
     } else if (this.selectedClass) {
       // Set default values from selected class
@@ -176,44 +132,152 @@ export class ModalSchedule implements OnInit, OnDestroy {
     // Component cleanup
   }
 
-  // UE Selection
-  onUEChange(event: Event) {
+  // Course Selection
+  onCoursChange(event: Event) {
     const target = event.target as HTMLSelectElement;
-    const ueId = target.value;
-    if (ueId) {
-      const selectedUE = this.getAvailableUEs().find(ue => ue.id === ueId);
-      if (selectedUE) {
-        this.selectUE(selectedUE);
+    const coursId = target.value;
+    if (coursId) {
+      const selectedCours = this.getAvailableCours().find(cours => cours.id === coursId);
+      if (selectedCours) {
+        this.selectCours(selectedCours);
       }
     }
   }
 
-  selectUE(ue: UEModel) {
-    // Find the professor for this UE
-    const professor = this.availableProfesseurs.find(prof => prof.id === ue.professeurId);
+  selectCours(cours: CoursModel) {
+    // Find the professor for this course
+    const professor = this.availableProfesseurs.find(prof => prof.id === cours.professeurId);
+    
+    // Get UE and type information
+    const ue = cours.ue; // UE should be included in course data
+    const type = cours.type; // Type should be included in course data
     
     this.scheduleForm.update(form => ({
       ...form,
-      ueId: ue.id,
-      subject: ue.nom,
+      coursId: cours.id,
+      subject: cours.nom || `${ue?.nom} (${type?.code})`,
       teacher: professor ? `${professor.prenom} ${professor.nom}` : 'Professeur non assigné',
-      teacherId: ue.professeurId,
-      type: ue.type,
-      school: ue.ecole,
-      color: this.getColorForType(ue.type)
+      teacherId: cours.professeurId || '',
+      type: type?.code || 'CM',
+      school: cours.ecole || this.selectedClass?.ecole || '',
+      duration: Math.ceil((cours.duree || 30) / 60), // Convert minutes to hours
+      color: this.getColorForType(type?.code || 'CM')
     }));
+    
+    // Vérifier la disponibilité du professeur
+    this.checkProfesseurAvailability();
     
     this.validateForm();
   }
 
-  // Get available UEs for the selected class
-  getAvailableUEs(): UEModel[] {
-    return this.availableUEs || [];
+  // Vérifier la disponibilité du professeur
+  checkProfesseurAvailability() {
+    const form = this.scheduleForm();
+    const warnings: {[key: string]: string} = {};
+    
+    if (!form.teacherId || !this.selectedTimeSlot || !this.existingSchedule) {
+      this.warnings.set(warnings);
+      return;
+    }
+
+    const { day, time } = this.selectedTimeSlot;
+    
+    // Vérifier tous les créneaux qui seront occupés par ce cours
+    const timeSlots = this.getTimeSlots();
+    const timeSlotIndex = timeSlots.indexOf(time);
+    
+    if (timeSlotIndex === -1) {
+      this.warnings.set(warnings);
+      return;
+    }
+
+    // Vérifier chaque créneau que le cours va occuper
+    for (let i = 0; i < form.duration; i++) {
+      const slotTime = timeSlots[timeSlotIndex + i];
+      if (!slotTime) continue;
+
+      // Vérifier si le professeur a déjà un cours à ce créneau
+      for (const dayKey of Object.keys(this.existingSchedule)) {
+        const slots = this.existingSchedule[dayKey];
+        if (!slots) continue;
+
+        for (const slotKey of Object.keys(slots)) {
+          const slot = slots[slotKey];
+          if (slot && 
+              slot.teacherId === form.teacherId && 
+              dayKey === day && 
+              slotKey === slotTime &&
+              slot.id !== this.existingEvent?.id) {
+            warnings['professeur'] = `⚠️ Le professeur ${form.teacher} a déjà un cours "${slot.subject}" à ce créneau (${this.getDayName(dayKey)} ${slotTime})`;
+            break;
+          }
+        }
+        if (warnings['professeur']) break;
+      }
+      if (warnings['professeur']) break;
+    }
+    
+    this.warnings.set(warnings);
   }
 
-  // Check if UEs are available
-  hasAvailableUEs(): boolean {
-    return this.availableUEs && this.availableUEs.length > 0;
+  // Obtenir les créneaux horaires
+  private getTimeSlots(): string[] {
+    return [
+      '08:00-09:00', '09:00-10:00', '10:00-11:00', '11:00-12:00',
+      '13:00-14:00', '14:00-15:00', '15:00-16:00', '16:00-17:00'
+    ];
+  }
+
+  // Obtenir le nom du jour en français
+  private getDayName(dayKey: string): string {
+    const days: {[key: string]: string} = {
+      'monday': 'Lundi',
+      'tuesday': 'Mardi',
+      'wednesday': 'Mercredi',
+      'thursday': 'Jeudi',
+      'friday': 'Vendredi',
+      'saturday': 'Samedi'
+    };
+    return days[dayKey] || dayKey;
+  }
+
+  // Get available courses filtered by selected types
+  getAvailableCours(): CoursModel[] {
+    if (!this.availableCours) return [];
+    
+    let filtered = this.availableCours;
+    
+    // Filter by selected course types if any are selected
+    const selectedTypes = this.scheduleForm().selectedTypes;
+    if (selectedTypes.length > 0) {
+      filtered = filtered.filter(cours => {
+        const type = cours.type;
+        return selectedTypes.includes(type?.code || type?.id || '');
+      });
+    }
+    
+    return filtered;
+  }
+
+  // Check if courses are available
+  hasAvailableCours(): boolean {
+    return this.getAvailableCours().length > 0;
+  }
+
+  // Toggle course type filter
+  toggleCourseType(typeId: string) {
+    this.scheduleForm.update(form => {
+      const selectedTypes = [...form.selectedTypes];
+      const index = selectedTypes.indexOf(typeId);
+      
+      if (index > -1) {
+        selectedTypes.splice(index, 1);
+      } else {
+        selectedTypes.push(typeId);
+      }
+      
+      return { ...form, selectedTypes };
+    });
   }
 
   // Validation
@@ -221,8 +285,8 @@ export class ModalSchedule implements OnInit, OnDestroy {
     const form = this.scheduleForm();
     const newErrors: {[key: string]: string} = {};
 
-    if (!form.ueId) {
-      newErrors['ue'] = 'Veuillez sélectionner une UE';
+    if (!form.coursId) {
+      newErrors['cours'] = 'Veuillez sélectionner un cours';
     }
 
     if (form.duration < 1 || form.duration > 8) {
@@ -231,11 +295,6 @@ export class ModalSchedule implements OnInit, OnDestroy {
 
     this.errors.set(newErrors);
     return Object.keys(newErrors).length === 0;
-  }
-
-  checkConflicts() {
-    // Simplified conflict detection since we removed complex validation
-    // In a real application, this would check for teacher/room conflicts
   }
 
   // Utilitaires
@@ -260,6 +319,8 @@ export class ModalSchedule implements OnInit, OnDestroy {
       ...form,
       duration: duration
     }));
+    // Revérifier la disponibilité du professeur avec la nouvelle durée
+    this.checkProfesseurAvailability();
     this.validateForm();
   }
 
@@ -297,7 +358,7 @@ export class ModalSchedule implements OnInit, OnDestroy {
         id: this.existingEvent?.id || Date.now().toString(),
         startTime: this.selectedTimeSlot?.time.split('-')[0] || '08:00',
         endTime: this.selectedTimeSlot?.time.split('-')[1] || '09:00',
-        ueId: form.ueId,
+        coursId: form.coursId,
         subject: form.subject,
         teacher: form.teacher,
         teacherId: form.teacherId,

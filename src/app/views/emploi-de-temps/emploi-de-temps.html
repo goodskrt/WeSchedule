@@ -261,7 +261,7 @@
   <div class="flex items-center justify-between">
     <div>
       <h3 class="text-lg font-semibold text-gray-900">{{ getSelectedClass()!.nom }}</h3>
-      <p class="text-gray-600">{{ getSelectedClass()!.effectif }} étudiants • {{ getSelectedClass()!.specialite }}</p>
+      <p class="text-gray-600">{{ getSelectedClass()!.effectif }} étudiants</p>
     </div>
     <div class="flex items-center gap-4">
       <div class="text-right">
@@ -624,8 +624,10 @@
     [existingEvent]="currentEditingCourse()"
     [selectedTimeSlot]="selectedTimeSlot()"
     [selectedClass]="getSelectedClass()"
-    [availableUEs]="getUEsForSelectedClass()"
-    [availableProfesseurs]="getProfesseursForSelectedClass()"
+    [availableCours]="getCoursesForSelectedClass()"
+    [availableTypesCours]="typesCours()"
+    [availableProfesseurs]="professeurs()"
+    [existingSchedule]="schedule()"
     (close)="closeScheduleModal()"
     (eventAdded)="onScheduleSave($event)"
     (eventUpdated)="onScheduleSave($event)"
