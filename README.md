@@ -332,7 +332,7 @@ Redirection basée sur rôle
 
 ## 📝 Licence
 
-Projet académique - IUSJC 2024
+Projet académique - IUSJC 2026
 
 ---
 

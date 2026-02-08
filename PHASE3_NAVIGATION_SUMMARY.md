@@ -360,7 +360,7 @@ curl http://localhost:8080/register
 
 ## 📝 Notes de Version
 
-### Version 2.1 (24 Novembre 2024)
+### Version 2.1 (24 Novembre 2026)
 - ✅ Phase 1 ✅ 2 ✅ 3 : Complètement implémentée
   - ✅ Suppression du rôle ETUDIANT
   - ✅ Redesign UI professionnel
@@ -396,6 +396,6 @@ curl http://localhost:8080/register
 
 ---
 
-**Dernier update**: 24 Novembre 2024  
+**Dernier update**: 24 Novembre 2026  
 **Auteur**: GitHub Copilot  
 **Statut**: ✅ COMPLET ET VALIDÉ

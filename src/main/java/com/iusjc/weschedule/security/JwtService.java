@@ -19,7 +19,7 @@ import java.util.function.Function;
 @Service
 public class JwtService {
 
-    private static final String SECRET_KEY = "secret-au-groupe-babana-airline-weschedule-2024"; // Clé secrète sécurisée (256+ bits)
+    private static final String SECRET_KEY = "secret-au-groupe-babana-airline-weschedule-2026"; // Clé secrète sécurisée (256+ bits)
 
     /**
      * Générer un token JWT pour un UserDetails

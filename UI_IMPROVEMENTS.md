@@ -192,6 +192,6 @@ public String home(Authentication auth) {
 
 ---
 
-**Date** : 24 Novembre 2024
+**Date** : 24 Novembre 2026
 **Statut** : ✅ Production-Ready
 **Version** : 2.1

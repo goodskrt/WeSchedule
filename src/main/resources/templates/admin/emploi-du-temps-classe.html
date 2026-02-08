@@ -54,10 +54,10 @@
                             <h2 class="page-title" th:text="'Emploi du Temps - ' + ${classe.nom}">Emploi du Temps</h2>
                             <p class="page-subtitle">
                                 <i class="fas fa-calendar-week me-2"></i>
-                                Semaine <span th:text="${semaine}">1</span> / <span th:text="${annee}">2024</span>
+                                Semaine <span th:text="${semaine}">1</span> / <span th:text="${annee}">2026</span>
                                 <span class="mx-2">•</span>
-                                <strong>Du <span th:text="${#temporals.format(lundi, 'dd/MM/yyyy')}">01/01/2024</span> 
-                                au <span th:text="${#temporals.format(dimanche, 'dd/MM/yyyy')}">07/01/2024</span></strong>
+                                <strong>Du <span th:text="${#temporals.format(lundi, 'dd/MM/yyyy')}">01/01/2026</span> 
+                                au <span th:text="${#temporals.format(dimanche, 'dd/MM/yyyy')}">07/01/2026</span></strong>
                             </p>
                         </div>
                         <a th:href="@{/admin/emplois-du-temps}" class="btn btn-secondary">
@@ -77,12 +77,12 @@
                             <div class="col-md-4 text-center">
                                 <h5 class="mb-1">
                                     <i class="fas fa-calendar-week me-2"></i>
-                                    Semaine <span th:text="${semaine}">1</span> - <span th:text="${annee}">2024</span>
+                                    Semaine <span th:text="${semaine}">1</span> - <span th:text="${annee}">2026</span>
                                 </h5>
                                 <small class="text-muted">
-                                    <span th:text="${#temporals.format(lundi, 'dd/MM/yyyy')}">01/01/2024</span> 
+                                    <span th:text="${#temporals.format(lundi, 'dd/MM/yyyy')}">01/01/2026</span> 
                                     au 
-                                    <span th:text="${#temporals.format(dimanche, 'dd/MM/yyyy')}">07/01/2024</span>
+                                    <span th:text="${#temporals.format(dimanche, 'dd/MM/yyyy')}">07/01/2026</span>
                                 </small>
                             </div>
                             <div class="col-md-4 text-end">
@@ -324,7 +324,7 @@
     <script th:inline="javascript">
         const classeId = /*[[${classe.idClasse}]]*/ '';
         const semaine = /*[[${semaine}]]*/ 1;
-        const annee = /*[[${annee}]]*/ 2024;
+        const annee = /*[[${annee}]]*/ 2026;
         const emploiDuTempsId = /*[[${emploiDuTemps != null ? emploiDuTemps.id : null}]]*/ null;
         
         let manualModal, autoModal, addSeanceModal;

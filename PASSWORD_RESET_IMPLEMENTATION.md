@@ -433,6 +433,6 @@ java -jar target/weschedule.jar
 
 ---
 
-**Date**: 24 Novembre 2024  
+**Date**: 24 Novembre 2026  
 **Status**: ✅ Production Ready  
 **Version**: 2.3

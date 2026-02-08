@@ -22,6 +22,13 @@ public class Ecole {
     private UUID idEcole;
 
     private String nomEcole;
+    
+    @Column(unique = true, length = 50)
+    private String code;
+    
+    @Column(length = 50)
+    private String couleur;
+    
     private String adresse;
     private String telephone;
     private String email;

@@ -31,6 +31,17 @@ public class Classe {
     private String niveau;
     private Integer effectif;
     
+    private Integer semestre;
+    
+    private Integer effectifMax;
+    
+    private String responsable;
+    
+    @Column(columnDefinition = "TEXT")
+    private String description;
+    
+    private String specialite;
+    
     @ManyToMany(mappedBy = "classes", fetch = FetchType.LAZY)
     private Set<UE> ues;
 }

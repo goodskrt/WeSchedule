@@ -166,6 +166,6 @@ Pour toute question :
 
 ---
 
-**Dernière mise à jour** : 24 Novembre 2024
+**Dernière mise à jour** : 24 Novembre 2026
 **Version** : 2.1
 **Statut** : Production

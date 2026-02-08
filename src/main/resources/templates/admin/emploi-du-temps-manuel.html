@@ -63,11 +63,11 @@
                     <div class="week-info">
                         <h5 class="mb-1">
                             <i class="fas fa-calendar-week me-2"></i>
-                            Semaine <span th:text="${semaine}">1</span> - <span th:text="${annee}">2024</span>
+                            Semaine <span th:text="${semaine}">1</span> - <span th:text="${annee}">2026</span>
                         </h5>
                         <small class="text-muted">
-                            Du <span th:text="${#temporals.format(lundi, 'EEEE dd/MM/yyyy')}">Lundi 01/01/2024</span> 
-                            au <span th:text="${#temporals.format(dimanche, 'EEEE dd/MM/yyyy')}">Dimanche 07/01/2024</span>
+                            Du <span th:text="${#temporals.format(lundi, 'EEEE dd/MM/yyyy')}">Lundi 01/01/2026</span> 
+                            au <span th:text="${#temporals.format(dimanche, 'EEEE dd/MM/yyyy')}">Dimanche 07/01/2026</span>
                         </small>
                     </div>
 
@@ -191,7 +191,7 @@
     <script th:inline="javascript">
         const classeId = /*[[${classe.idClasse}]]*/ '';
         const semaine = /*[[${semaine}]]*/ 1;
-        const annee = /*[[${annee}]]*/ 2024;
+        const annee = /*[[${annee}]]*/ 2026;
         const lundiStr = /*[[${lundi}]]*/ '';
         
         const timeSlots = ['08:00-09:00','09:00-10:00','10:00-11:00','11:00-12:00','12:00-13:00','13:00-14:00','14:00-15:00','15:00-16:00','16:00-17:00','17:00-18:00','18:00-19:00','19:00-20:00'];

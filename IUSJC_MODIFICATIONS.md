@@ -1,6 +1,6 @@
 # 📋 Résumé des Modifications - Phase IUSJC
 
-## ✅ Changements Effectués (24 Novembre 2024)
+## ✅ Changements Effectués (24 Novembre 2026)
 
 ### 1. **Suppression de la Page d'Accueil**
 - **Fichier**: `AuthController.java`
@@ -80,8 +80,8 @@ return "redirect:/login";
   - ✅ "WeSchedule est la plateforme de gestion d'emploi du temps de l'Institut Universitaire Saint-Jean-Chrysostome (IUSJC)"
 
 - **Footer**:
-  - ❌ "© 2024 WeSchedule - Plateforme Professionnelle de Gestion d'Emploi du Temps"
-  - ✅ "© 2024 IUSJC - Institut Universitaire Saint-Jean-Chrysostome"
+  - ❌ "© 2026 WeSchedule - Plateforme Professionnelle de Gestion d'Emploi du Temps"
+  - ✅ "© 2026 IUSJC - Institut Universitaire Saint-Jean-Chrysostome"
 
 - **Boutons**: 
   - ❌ "Retour à l'Accueil" → ✅ "Retour"
@@ -215,6 +215,6 @@ Pour appliquer les modifications:
 
 ---
 
-**Date**: 24 Novembre 2024  
+**Date**: 24 Novembre 2026  
 **Statut**: ✅ COMPLET  
 **Version**: 2.2 (Post-IUSJC Update)

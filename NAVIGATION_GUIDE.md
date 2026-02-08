@@ -89,7 +89,7 @@ Une barre de navigation rapide permettant un accès direct aux sections principa
 6. **🔒 Sécurité des Données** - Validation serveur, CSRF, sessions
 
 ### 5. Footer
-- Copyright 2024
+- Copyright 2026
 - Date de dernière mise à jour
 - Version 2.1
 
@@ -241,6 +241,6 @@ Pour les questions sur la navigation:
 
 ---
 
-**Dernière mise à jour**: 24 Novembre 2024  
+**Dernière mise à jour**: 24 Novembre 2026  
 **Version**: 2.1  
 **Statut**: ✅ Production Ready

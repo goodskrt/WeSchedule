@@ -8,10 +8,18 @@ import java.util.Set;
 @Entity
 @Table(name = "enseignants")
 @Data
-@EqualsAndHashCode(callSuper = false, exclude = {"uesEnseignees", "disponibilites"})
-@ToString(exclude = {"uesEnseignees", "disponibilites"})
+@EqualsAndHashCode(callSuper = false, exclude = {"uesEnseignees", "disponibilites", "ecoles"})
+@ToString(exclude = {"uesEnseignees", "disponibilites", "ecoles"})
 public class Enseignant extends Utilisateur {
     private String grade;
+    
+    @ElementCollection(fetch = FetchType.LAZY)
+    @CollectionTable(
+        name = "enseignant_specialites",
+        joinColumns = @JoinColumn(name = "enseignant_id")
+    )
+    @Column(name = "specialite")
+    private Set<String> specialites;
     
     @ManyToMany(fetch = FetchType.LAZY)
     @JoinTable(
@@ -20,6 +28,14 @@ public class Enseignant extends Utilisateur {
         inverseJoinColumns = @JoinColumn(name = "ue_id")
     )
     private Set<UE> uesEnseignees;
+    
+    @ManyToMany(fetch = FetchType.LAZY)
+    @JoinTable(
+        name = "enseignant_ecole",
+        joinColumns = @JoinColumn(name = "enseignant_id"),
+        inverseJoinColumns = @JoinColumn(name = "ecole_id")
+    )
+    private Set<Ecole> ecoles;
     
     @OneToMany(mappedBy = "enseignant", cascade = CascadeType.ALL, fetch = FetchType.LAZY)
     private Set<DisponibiliteEnseignant> disponibilites;
