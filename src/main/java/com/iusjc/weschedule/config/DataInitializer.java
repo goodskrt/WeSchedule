@@ -45,12 +45,16 @@ public class DataInitializer {
             PlageHoraireRepository plageHoraireRepo,
             PasswordResetTokenRepository passwordResetTokenRepo,
             SeanceClasseRepository seanceClasseRepo,
-            EmploiDuTempsClasseRepository emploiDuTempsClasseRepo) {
+            EmploiDuTempsClasseRepository emploiDuTempsClasseRepo,
+            EquipmentRepository equipmentRepo,
+            EquipmentAssignmentRepository equipmentAssignmentRepo) {
         return args -> {
             log.info("=== INITIALISATION COMPLETE DE LA BASE DE DONNEES AVEC DONNEES FRONTEND ===");
             
             // VIDER COMPLETEMENT LA BASE DE DONNEES
             log.info("Suppression de toutes les donnees existantes...");
+            equipmentAssignmentRepo.deleteAll();
+            equipmentRepo.deleteAll();
             plageHoraireRepo.deleteAll();
             creneauDispoRepo.deleteAll();
             disponibiliteRepo.deleteAll();
@@ -679,12 +683,225 @@ public class DataInitializer {
 
             log.info("Disponibilites creees pour la semaine du {} au {}", debutSemaine, finSemaine);
 
+            // ========== 12. CREATION DES EQUIPEMENTS (depuis frontend) ==========
+            log.info("Creation des equipements...");
+            
+            Equipment projecteur = new Equipment();
+            projecteur.setName("Projecteur");
+            projecteur.setCategory("audiovisuel");
+            projecteur.setIcon("📽️");
+            projecteur.setDescription("Projecteur haute définition pour présentations");
+            projecteur.setTotalQuantity(25);
+            projecteur.setAvailableQuantity(18);
+            projecteur.setStatus("active");
+            equipmentRepo.save(projecteur);
+
+            Equipment ordinateurs = new Equipment();
+            ordinateurs.setName("Ordinateurs");
+            ordinateurs.setCategory("informatique");
+            ordinateurs.setIcon("💻");
+            ordinateurs.setDescription("Ordinateurs de bureau pour salles informatiques");
+            ordinateurs.setTotalQuantity(120);
+            ordinateurs.setAvailableQuantity(90);
+            ordinateurs.setStatus("active");
+            equipmentRepo.save(ordinateurs);
+
+            Equipment tableauBlanc = new Equipment();
+            tableauBlanc.setName("Tableau blanc");
+            tableauBlanc.setCategory("ecriture");
+            tableauBlanc.setIcon("📋");
+            tableauBlanc.setDescription("Tableau blanc effaçable pour écriture");
+            tableauBlanc.setTotalQuantity(45);
+            tableauBlanc.setAvailableQuantity(32);
+            tableauBlanc.setStatus("active");
+            equipmentRepo.save(tableauBlanc);
+
+            Equipment tableauInteractif = new Equipment();
+            tableauInteractif.setName("Tableau interactif");
+            tableauInteractif.setCategory("ecriture");
+            tableauInteractif.setIcon("📱");
+            tableauInteractif.setDescription("Tableau numérique interactif tactile");
+            tableauInteractif.setTotalQuantity(15);
+            tableauInteractif.setAvailableQuantity(12);
+            tableauInteractif.setStatus("active");
+            equipmentRepo.save(tableauInteractif);
+
+            Equipment hautParleurs = new Equipment();
+            hautParleurs.setName("Haut-parleurs");
+            hautParleurs.setCategory("audiovisuel");
+            hautParleurs.setIcon("🔊");
+            hautParleurs.setDescription("Système audio pour amplification sonore");
+            hautParleurs.setTotalQuantity(30);
+            hautParleurs.setAvailableQuantity(28);
+            hautParleurs.setStatus("active");
+            equipmentRepo.save(hautParleurs);
+
+            Equipment microphone = new Equipment();
+            microphone.setName("Microphone");
+            microphone.setCategory("audiovisuel");
+            microphone.setIcon("🎤");
+            microphone.setDescription("Microphone sans fil pour présentations");
+            microphone.setTotalQuantity(20);
+            microphone.setAvailableQuantity(19);
+            microphone.setStatus("active");
+            equipmentRepo.save(microphone);
+
+            Equipment camera = new Equipment();
+            camera.setName("Caméra");
+            camera.setCategory("audiovisuel");
+            camera.setIcon("📹");
+            camera.setDescription("Caméra pour enregistrement et visioconférence");
+            camera.setTotalQuantity(10);
+            camera.setAvailableQuantity(8);
+            camera.setStatus("active");
+            equipmentRepo.save(camera);
+
+            Equipment imprimante = new Equipment();
+            imprimante.setName("Imprimante");
+            imprimante.setCategory("informatique");
+            imprimante.setIcon("🖨️");
+            imprimante.setDescription("Imprimante laser couleur");
+            imprimante.setTotalQuantity(12);
+            imprimante.setAvailableQuantity(9);
+            imprimante.setStatus("active");
+            equipmentRepo.save(imprimante);
+
+            Equipment scanner = new Equipment();
+            scanner.setName("Scanner");
+            scanner.setCategory("informatique");
+            scanner.setIcon("📄");
+            scanner.setDescription("Scanner de documents haute résolution");
+            scanner.setTotalQuantity(8);
+            scanner.setAvailableQuantity(6);
+            scanner.setStatus("active");
+            equipmentRepo.save(scanner);
+
+            Equipment climatisation = new Equipment();
+            climatisation.setName("Climatisation");
+            climatisation.setCategory("confort");
+            climatisation.setIcon("❄️");
+            climatisation.setDescription("Système de climatisation réversible");
+            climatisation.setTotalQuantity(35);
+            climatisation.setAvailableQuantity(28);
+            climatisation.setStatus("active");
+            equipmentRepo.save(climatisation);
+
+            Equipment wifi = new Equipment();
+            wifi.setName("WiFi");
+            wifi.setCategory("connectivite");
+            wifi.setIcon("📶");
+            wifi.setDescription("Point d'accès WiFi haute performance");
+            wifi.setTotalQuantity(50);
+            wifi.setAvailableQuantity(42);
+            wifi.setStatus("active");
+            equipmentRepo.save(wifi);
+
+            Equipment ethernet = new Equipment();
+            ethernet.setName("Ethernet");
+            ethernet.setCategory("connectivite");
+            ethernet.setIcon("🔌");
+            ethernet.setDescription("Prises réseau Ethernet gigabit");
+            ethernet.setTotalQuantity(200);
+            ethernet.setAvailableQuantity(170);
+            ethernet.setStatus("active");
+            equipmentRepo.save(ethernet);
+
+            log.info("Equipements crees : 12 equipements");
+
+            // ========== 13. CREATION DES AFFECTATIONS D'EQUIPEMENTS ==========
+            log.info("Creation des affectations d'equipements...");
+
+            // Affectation 1: Projecteur à Salle 101
+            EquipmentAssignment affectation1 = new EquipmentAssignment();
+            affectation1.setEquipment(projecteur);
+            affectation1.setAssignmentType("room");
+            affectation1.setTargetId(salleCours1.getIdSalle());
+            affectation1.setQuantity(1);
+            affectation1.setStartDate(LocalDate.of(2024, 1, 15));
+            affectation1.setDuration("permanent");
+            affectation1.setReason("Équipement fixe de la salle");
+            affectation1.setStatus("active");
+            affectation1.setAssignedBy("Admin");
+            affectation1.setNotes("Projecteur installé au plafond");
+            equipmentAssignmentRepo.save(affectation1);
+
+            // Affectation 2: Ordinateurs à Lab Info 1
+            EquipmentAssignment affectation2 = new EquipmentAssignment();
+            affectation2.setEquipment(ordinateurs);
+            affectation2.setAssignmentType("room");
+            affectation2.setTargetId(salleInfo1.getIdSalle());
+            affectation2.setQuantity(30);
+            affectation2.setStartDate(LocalDate.of(2024, 1, 15));
+            affectation2.setDuration("permanent");
+            affectation2.setReason("Équipement de laboratoire informatique");
+            affectation2.setStatus("active");
+            affectation2.setAssignedBy("Admin");
+            equipmentAssignmentRepo.save(affectation2);
+
+            // Affectation 3: Haut-parleurs à Informatique L1A (temporaire)
+            EquipmentAssignment affectation3 = new EquipmentAssignment();
+            affectation3.setEquipment(hautParleurs);
+            affectation3.setAssignmentType("class");
+            affectation3.setTargetId(infoL1A.getIdClasse());
+            affectation3.setQuantity(2);
+            affectation3.setStartDate(LocalDate.of(2024, 1, 20));
+            affectation3.setEndDate(LocalDate.of(2024, 6, 30));
+            affectation3.setDuration("temporary");
+            affectation3.setReason("Présentation de projet de fin de semestre");
+            affectation3.setStatus("active");
+            affectation3.setAssignedBy("Prof. Martin");
+            affectation3.setNotes("Pour les soutenances de projets");
+            equipmentAssignmentRepo.save(affectation3);
+
+            // Affectation 4: Microphone à Gestion L1 (temporaire)
+            EquipmentAssignment affectation4 = new EquipmentAssignment();
+            affectation4.setEquipment(microphone);
+            affectation4.setAssignmentType("class");
+            affectation4.setTargetId(gestionL1.getIdClasse());
+            affectation4.setQuantity(1);
+            affectation4.setStartDate(LocalDate.of(2024, 2, 1));
+            affectation4.setEndDate(LocalDate.of(2024, 2, 15));
+            affectation4.setDuration("temporary");
+            affectation4.setReason("Cours de communication orale");
+            affectation4.setStatus("active");
+            affectation4.setAssignedBy("Prof. Sophie");
+            equipmentAssignmentRepo.save(affectation4);
+
+            // Affectation 5: Projecteur à Amphithéâtre A
+            EquipmentAssignment affectation5 = new EquipmentAssignment();
+            affectation5.setEquipment(projecteur);
+            affectation5.setAssignmentType("room");
+            affectation5.setTargetId(amphiA.getIdSalle());
+            affectation5.setQuantity(2);
+            affectation5.setStartDate(LocalDate.of(2024, 1, 15));
+            affectation5.setDuration("permanent");
+            affectation5.setReason("Équipement fixe de l'amphithéâtre");
+            affectation5.setStatus("active");
+            affectation5.setAssignedBy("Admin");
+            equipmentAssignmentRepo.save(affectation5);
+
+            // Affectation 6: Tableau blanc à Salle TD 1
+            EquipmentAssignment affectation6 = new EquipmentAssignment();
+            affectation6.setEquipment(tableauBlanc);
+            affectation6.setAssignmentType("room");
+            affectation6.setTargetId(salleTD1.getIdSalle());
+            affectation6.setQuantity(3);
+            affectation6.setStartDate(LocalDate.of(2024, 1, 15));
+            affectation6.setDuration("permanent");
+            affectation6.setReason("Équipement fixe de la salle");
+            affectation6.setStatus("active");
+            affectation6.setAssignedBy("Admin");
+            equipmentAssignmentRepo.save(affectation6);
+
+            log.info("Affectations d'equipements creees : 6 affectations");
+
             // ========== RESUME ==========
             log.info("");
             log.info("=== BASE DE DONNEES INITIALISEE AVEC SUCCES ===");
             log.info("Ecoles: 4 | Filieres: 4 | Classes: 7 | Groupes: 2");
             log.info("Enseignants: 6 | Etudiants: 2 | Administrateurs: 1");
             log.info("UEs: 8 | Cours: 6 | Salles: 10");
+            log.info("Equipements: 12 | Affectations: 6");
             log.info("Disponibilites: Semaine complete avec creneaux detailles");
             log.info("");
             log.info("=== IDENTIFIANTS DE CONNEXION ===");
