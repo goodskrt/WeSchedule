@@ -15,7 +15,6 @@ import org.springframework.context.annotation.Configuration;
 import org.springframework.security.crypto.password.PasswordEncoder;
 
 import java.time.LocalDate;
-import java.time.LocalDateTime;
 import java.time.LocalTime;
 import java.util.HashSet;
 import java.util.Set;
@@ -50,33 +49,60 @@ public class DataInitializer {
             EquipmentAssignmentRepository equipmentAssignmentRepo) {
         return args -> {
             log.info("=== INITIALISATION COMPLETE DE LA BASE DE DONNEES AVEC DONNEES FRONTEND ===");
-            
-            // VIDER COMPLETEMENT LA BASE DE DONNEES
+
+            // VIDER COMPLETEMENT LA BASE DE DONNEES DANS LE BON ORDRE
             log.info("Suppression de toutes les donnees existantes...");
+
+            // 1. Supprimer d'abord les dépendances les plus faibles (sans FK vers d'autres tables)
             equipmentAssignmentRepo.deleteAll();
             equipmentRepo.deleteAll();
             plageHoraireRepo.deleteAll();
             creneauDispoRepo.deleteAll();
             disponibiliteRepo.deleteAll();
             passwordResetTokenRepo.deleteAll();
-            etudiantRepo.deleteAll();
-            enseignantRepo.deleteAll();
-            adminRepo.deleteAll();
-            utilisateurRepo.deleteAll();
+
+            // 2. Supprimer les cours AVANT les enseignants (car cours a FK vers enseignants)
+            coursRepo.deleteAll();
+
+            // 3. Supprimer les UEs (peuvent avoir FK vers enseignants via cours, mais cours déjà supprimés)
+            ueRepo.deleteAll();
+
+            // 4. Supprimer les séances et emplois du temps
             seanceClasseRepo.deleteAll();
             emploiDuTempsClasseRepo.deleteAll();
-            coursRepo.deleteAll();
+
+            // 5. Supprimer les étudiants (a FK vers classes et groupes)
+            etudiantRepo.deleteAll();
+
+            // 6. Supprimer les enseignants (maintenant que cours et UEs sont supprimés)
+            enseignantRepo.deleteAll();
+
+            // 7. Supprimer les administrateurs
+            adminRepo.deleteAll();
+
+            // 8. Supprimer les utilisateurs (maintenant que enseignants, étudiants et admin sont supprimés)
+            utilisateurRepo.deleteAll();
+
+            // 9. Supprimer les salles
             salleRepo.deleteAll();
-            ueRepo.deleteAll();
+
+            // 10. Supprimer les classes (a FK vers ecoles et filieres)
             classeRepo.deleteAll();
+
+            // 11. Supprimer les groupes
             groupeRepo.deleteAll();
+
+            // 12. Supprimer les filières
             filiereRepo.deleteAll();
+
+            // 13. Supprimer les écoles en dernier
             ecoleRepo.deleteAll();
+
             log.info("Base de donnees videe avec succes !");
 
             // ========== 1. CREATION DES ECOLES (depuis frontend) ==========
             log.info("Creation des ecoles...");
-            
+
             Ecole sji = new Ecole();
             sji.setNomEcole("Saint Jean Ingénieur");
             sji.setCode("SJI");
@@ -115,10 +141,9 @@ public class DataInitializer {
 
             log.info("Ecoles creees : 4 ecoles");
 
-
             // ========== 2. CREATION DES FILIERES ==========
             log.info("Creation des filieres...");
-            
+
             Filiere filiereInfo = new Filiere();
             filiereInfo.setNomFiliere("Informatique");
             filiereInfo.setDescription("Formation en développement logiciel et systèmes d'information");
@@ -143,7 +168,7 @@ public class DataInitializer {
 
             // ========== 3. CREATION DES GROUPES ==========
             log.info("Creation des groupes...");
-            
+
             Groupe groupeA = new Groupe();
             groupeA.setNomGroupe("Groupe A");
             groupeA.setEffectif(25);
@@ -156,10 +181,9 @@ public class DataInitializer {
 
             log.info("Groupes crees : 2 groupes");
 
-
             // ========== 4. CREATION DES CLASSES (depuis frontend) ==========
             log.info("Creation des classes...");
-            
+
             Classe infoL1A = new Classe();
             infoL1A.setNom("Informatique L1A");
             infoL1A.setNiveau("L1");
@@ -232,10 +256,9 @@ public class DataInitializer {
 
             log.info("Classes creees : 7 classes");
 
-
             // ========== 5. CREATION DES ENSEIGNANTS (depuis frontend) ==========
             log.info("Creation des enseignants...");
-            
+
             Enseignant dupont = new Enseignant();
             dupont.setNom("Dupont");
             dupont.setPrenom("Martin");
@@ -339,10 +362,9 @@ public class DataInitializer {
 
             log.info("Enseignants crees : 6 enseignants");
 
-
             // ========== 6. CREATION DES UEs (depuis frontend) ==========
             log.info("Creation des UEs...");
-            
+
             UE inf101 = new UE();
             inf101.setCode("INF101");
             inf101.setIntitule("Introduction à la Programmation");
@@ -452,10 +474,9 @@ public class DataInitializer {
 
             log.info("UEs creees : 8 UEs");
 
-
             // ========== 7. CREATION DES COURS (depuis frontend) ==========
             log.info("Creation des cours...");
-            
+
             Cours cours1 = new Cours();
             cours1.setIntitule("CM - Introduction à la Programmation");
             cours1.setTypeCours(TypeCours.CM);
@@ -538,10 +559,8 @@ public class DataInitializer {
 
             log.info("Cours crees : 6 cours");
 
-
             // ========== 8. CREATION DES SALLES ==========
             log.info("Creation des salles...");
-
 
             Salle salleCours1 = new Salle();
             salleCours1.setNomSalle("Salle de Cours 101");
@@ -591,11 +610,18 @@ public class DataInitializer {
             labo2.setCapacite(20);
             salleRepo.save(labo2);
 
-            log.info("Salles creees : 10 salles");
+            // Création de l'amphithéâtre A pour l'affectation 5
+            Salle amphitheatreA = new Salle();
+            amphitheatreA.setNomSalle("Amphithéâtre A");
+            amphitheatreA.setTypeSalle(TypeSalle.SALLE_DE_COURS);
+            amphitheatreA.setCapacite(200);
+            salleRepo.save(amphitheatreA);
+
+            log.info("Salles creees : 9 salles");
 
             // ========== 9. CREATION DE L'ADMINISTRATEUR ==========
             log.info("Creation de l'administrateur...");
-            
+
             Administrateur admin = new Administrateur();
             admin.setNom("Admin");
             admin.setPrenom("Système");
@@ -609,7 +635,7 @@ public class DataInitializer {
 
             // ========== 10. CREATION DES ETUDIANTS ==========
             log.info("Creation des etudiants...");
-            
+
             Etudiant etudiant1 = new Etudiant();
             etudiant1.setNom("Dupont");
             etudiant1.setPrenom("Jean");
@@ -634,10 +660,9 @@ public class DataInitializer {
 
             log.info("Etudiants crees : 2 etudiants");
 
-
             // ========== 11. CREATION DES DISPONIBILITES ==========
             log.info("Creation des disponibilites pour les enseignants...");
-            
+
             LocalDate debutSemaine = LocalDate.now().with(java.time.DayOfWeek.MONDAY);
             LocalDate finSemaine = debutSemaine.plusDays(6);
 
@@ -650,7 +675,7 @@ public class DataInitializer {
 
             for (int i = 0; i < 5; i++) {
                 LocalDate jour = debutSemaine.plusDays(i);
-                
+
                 CreneauDisponibilite creneau = new CreneauDisponibilite();
                 creneau.setDisponibilite(dispoDupont);
                 creneau.setDate(jour);
@@ -685,7 +710,7 @@ public class DataInitializer {
 
             // ========== 12. CREATION DES EQUIPEMENTS (depuis frontend) ==========
             log.info("Creation des equipements...");
-            
+
             Equipment projecteur = new Equipment();
             projecteur.setName("Projecteur");
             projecteur.setCategory("audiovisuel");
@@ -815,7 +840,7 @@ public class DataInitializer {
             EquipmentAssignment affectation1 = new EquipmentAssignment();
             affectation1.setEquipment(projecteur);
             affectation1.setAssignmentType("room");
-            affectation1.setTargetId(salleCours1.getIdSalle());
+            affectation1.setTargetId(salleCours1.getIdSalle()); // ✅ targetId défini
             affectation1.setQuantity(1);
             affectation1.setStartDate(LocalDate.of(2024, 1, 15));
             affectation1.setDuration("permanent");
@@ -829,7 +854,7 @@ public class DataInitializer {
             EquipmentAssignment affectation2 = new EquipmentAssignment();
             affectation2.setEquipment(ordinateurs);
             affectation2.setAssignmentType("room");
-            affectation2.setTargetId(salleInfo1.getIdSalle());
+            affectation2.setTargetId(salleInfo1.getIdSalle()); // ✅ targetId défini
             affectation2.setQuantity(30);
             affectation2.setStartDate(LocalDate.of(2024, 1, 15));
             affectation2.setDuration("permanent");
@@ -842,7 +867,7 @@ public class DataInitializer {
             EquipmentAssignment affectation3 = new EquipmentAssignment();
             affectation3.setEquipment(hautParleurs);
             affectation3.setAssignmentType("class");
-            affectation3.setTargetId(infoL1A.getIdClasse());
+            affectation3.setTargetId(infoL1A.getIdClasse()); // ✅ targetId défini
             affectation3.setQuantity(2);
             affectation3.setStartDate(LocalDate.of(2024, 1, 20));
             affectation3.setEndDate(LocalDate.of(2024, 6, 30));
@@ -857,7 +882,7 @@ public class DataInitializer {
             EquipmentAssignment affectation4 = new EquipmentAssignment();
             affectation4.setEquipment(microphone);
             affectation4.setAssignmentType("class");
-            affectation4.setTargetId(gestionL1.getIdClasse());
+            affectation4.setTargetId(gestionL1.getIdClasse()); // ✅ targetId défini
             affectation4.setQuantity(1);
             affectation4.setStartDate(LocalDate.of(2024, 2, 1));
             affectation4.setEndDate(LocalDate.of(2024, 2, 15));
@@ -867,11 +892,11 @@ public class DataInitializer {
             affectation4.setAssignedBy("Prof. Sophie");
             equipmentAssignmentRepo.save(affectation4);
 
-            // Affectation 5: Projecteur à Amphithéâtre A
+            // Affectation 5: Projecteur à Amphithéâtre A - CORRIGÉ
             EquipmentAssignment affectation5 = new EquipmentAssignment();
             affectation5.setEquipment(projecteur);
             affectation5.setAssignmentType("room");
-            affectation5.setTargetId(amphiA.getIdSalle());
+            affectation5.setTargetId(amphitheatreA.getIdSalle()); // ✅ AJOUT DU targetId
             affectation5.setQuantity(2);
             affectation5.setStartDate(LocalDate.of(2024, 1, 15));
             affectation5.setDuration("permanent");
@@ -884,7 +909,7 @@ public class DataInitializer {
             EquipmentAssignment affectation6 = new EquipmentAssignment();
             affectation6.setEquipment(tableauBlanc);
             affectation6.setAssignmentType("room");
-            affectation6.setTargetId(salleTD1.getIdSalle());
+            affectation6.setTargetId(salleTD1.getIdSalle()); // ✅ targetId défini
             affectation6.setQuantity(3);
             affectation6.setStartDate(LocalDate.of(2024, 1, 15));
             affectation6.setDuration("permanent");
@@ -900,7 +925,7 @@ public class DataInitializer {
             log.info("=== BASE DE DONNEES INITIALISEE AVEC SUCCES ===");
             log.info("Ecoles: 4 | Filieres: 4 | Classes: 7 | Groupes: 2");
             log.info("Enseignants: 6 | Etudiants: 2 | Administrateurs: 1");
-            log.info("UEs: 8 | Cours: 6 | Salles: 10");
+            log.info("UEs: 8 | Cours: 6 | Salles: 9");
             log.info("Equipements: 12 | Affectations: 6");
             log.info("Disponibilites: Semaine complete avec creneaux detailles");
             log.info("");
