@@ -12,7 +12,7 @@ import org.springframework.transaction.annotation.Transactional;
 
 import java.time.LocalDateTime;
 import java.util.Optional;
-import java.util.UUID;
+import java.util.Random;
 
 @Service
 @Slf4j
@@ -33,8 +33,8 @@ public class PasswordResetService {
     private static final long RESET_TOKEN_EXPIRY_MINUTES = 15;
 
     /**
-     * Initie une réinitialisation de mot de passe avec token UUID
-     * Génère un token unique et l'envoie par email
+     * Initie une réinitialisation de mot de passe avec code à 6 chiffres
+     * Génère un code et l'envoie par email
      */
     @Transactional
     public void initiatePasswordReset(String email) {
@@ -43,16 +43,14 @@ public class PasswordResetService {
         // Valider le format de l'email
         if (!isValidEmail(email)) {
             log.warn("Format d'email invalide: {}", email);
-            // On ne révèle pas l'erreur pour des raisons de sécurité
-            return;
+            throw new RuntimeException("Format d'email invalide");
         }
         
         Optional<Utilisateur> userOptional = utilisateurRepository.findByEmail(email);
         
         if (userOptional.isEmpty()) {
             log.warn("Email non trouvé en base: {}", email);
-            // On ne révèle pas si l'email existe ou non pour des raisons de sécurité
-            return;
+            throw new RuntimeException("Aucun compte associé à cet email");
         }
 
         Utilisateur utilisateur = userOptional.get();
@@ -62,26 +60,26 @@ public class PasswordResetService {
         resetTokenRepository.deleteByUtilisateur(utilisateur);
         log.info("Anciens tokens supprimés pour: {}", email);
         
-        // Générer un nouveau token UUID
-        String resetToken = generateUniqueToken();
-        log.info("Nouveau token généré: {}", resetToken);
+        // Générer un code à 6 chiffres
+        String resetCode = generateRandomCode();
+        log.info("Nouveau code généré: {}", resetCode);
         
         // Créer et sauvegarder le token
         PasswordResetToken token = new PasswordResetToken();
-        token.setToken(resetToken);
+        token.setToken(resetCode);
         token.setUtilisateur(utilisateur);
         token.setExpiryDate(LocalDateTime.now().plusMinutes(RESET_TOKEN_EXPIRY_MINUTES));
         token.setUsed(false);
         token.setCreatedAt(LocalDateTime.now());
         
         PasswordResetToken savedToken = resetTokenRepository.save(token);
-        log.info("Token sauvegardé avec ID: {}, expire le: {}", savedToken.getId(), savedToken.getExpiryDate());
+        log.info("Code sauvegardé avec ID: {}, expire le: {}", savedToken.getId(), savedToken.getExpiryDate());
         
-        // Envoyer l'email avec le lien
+        // Envoyer l'email avec le code
         try {
             String fullName = utilisateur.getPrenom() + " " + utilisateur.getNom();
-            emailService.sendPasswordResetEmail(utilisateur.getEmail(), fullName, resetToken);
-            log.info("Email de réinitialisation envoyé à: {}", email);
+            emailService.sendPasswordResetCode(utilisateur.getEmail(), fullName, resetCode);
+            log.info("Email avec code envoyé à: {}", email);
         } catch (Exception e) {
             log.error("Erreur lors de l'envoi de l'email à {}: {}", email, e.getMessage(), e);
             throw new RuntimeException("Erreur lors de l'envoi de l'email de réinitialisation");
@@ -145,12 +143,79 @@ public class PasswordResetService {
     }
 
     /**
-     * Réinitialise le mot de passe via le token UUID
+     * Réinitialise le mot de passe via le code à 6 chiffres
+     * Retourne l'email pour la connexion automatique
+     */
+    @Transactional
+    public String resetPassword(String email, String resetCode, String newPassword) {
+        log.info("Réinitialisation de mot de passe demandée pour: {}", email);
+        
+        // Validation des paramètres
+        if (email == null || email.trim().isEmpty()) {
+            throw new RuntimeException("Email requis");
+        }
+        
+        if (resetCode == null || resetCode.trim().isEmpty()) {
+            throw new RuntimeException("Code de réinitialisation requis");
+        }
+        
+        if (newPassword == null || newPassword.length() < 8) {
+            throw new RuntimeException("Le mot de passe doit contenir au moins 8 caractères");
+        }
+        
+        // Rechercher l'utilisateur
+        Optional<Utilisateur> userOptional = utilisateurRepository.findByEmail(email);
+        if (userOptional.isEmpty()) {
+            throw new RuntimeException("Email invalide");
+        }
+        
+        Utilisateur utilisateur = userOptional.get();
+        
+        // Rechercher le token
+        Optional<PasswordResetToken> tokenOptional = resetTokenRepository.findByToken(resetCode);
+        
+        if (tokenOptional.isEmpty()) {
+            throw new RuntimeException("Code invalide");
+        }
+
+        PasswordResetToken token = tokenOptional.get();
+        
+        // Vérifier que le token appartient bien à cet utilisateur
+        if (!token.getUtilisateur().getIdUser().equals(utilisateur.getIdUser())) {
+            throw new RuntimeException("Code invalide pour cet email");
+        }
+        
+        // Vérifications du token
+        if (token.isExpired()) {
+            throw new RuntimeException("Le code a expiré (valide 15 minutes)");
+        }
+        
+        if (token.isUsed()) {
+            throw new RuntimeException("Ce code a déjà été utilisé");
+        }
+        
+        // Encoder et mettre à jour le mot de passe
+        String encodedPassword = passwordEncoder.encode(newPassword);
+        utilisateur.setMotDePasse(encodedPassword);
+        utilisateurRepository.save(utilisateur);
+        
+        // Marquer le token comme utilisé
+        token.setUsed(true);
+        resetTokenRepository.save(token);
+        
+        log.info("Mot de passe réinitialisé avec succès pour: {}", utilisateur.getEmail());
+        
+        // Retourner l'email
+        return utilisateur.getEmail();
+    }
+
+    /**
+     * Réinitialise le mot de passe via le token (ancienne méthode pour compatibilité)
      * Retourne l'email pour la connexion automatique
      */
     @Transactional
     public String resetPassword(String resetToken, String newPassword) {
-        log.info("Réinitialisation de mot de passe demandée");
+        log.info("Réinitialisation de mot de passe demandée avec token");
         
         // Validation des paramètres
         if (resetToken == null || resetToken.trim().isEmpty()) {
@@ -198,15 +263,12 @@ public class PasswordResetService {
     }
 
     /**
-     * Génère un token UUID unique
+     * Génère un code aléatoire à 6 chiffres
      */
-    private String generateUniqueToken() {
-        String token;
-        do {
-            token = UUID.randomUUID().toString();
-        } while (resetTokenRepository.findByToken(token).isPresent());
-        
-        return token;
+    private String generateRandomCode() {
+        Random random = new Random();
+        int code = 100000 + random.nextInt(900000);
+        return String.valueOf(code);
     }
     
     /**

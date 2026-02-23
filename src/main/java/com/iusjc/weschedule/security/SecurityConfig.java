@@ -57,9 +57,9 @@ public class SecurityConfig {
                                 "/css/**", "/js/**", "/images/**", "/error").permitAll()
                         
                         // Pages et API endpoints pour mot de passe oublié/réinitialisation
-                        .requestMatchers("/reset-password-request", "/reset-password", "/reset-password-error", 
+                        .requestMatchers("/reset-password-request", "/reset-with-email", "/reset-password", "/reset-password-error", 
                                 "/reset-password-success", "/api/forgot-password", "/api/reset-password-with-token", 
-                                "/api/auto-login", "/api/validate-new-password").permitAll()
+                                "/api/simple-reset-password", "/api/auto-login", "/api/validate-new-password").permitAll()
 
                         // Toutes les autres pages → authentication requise
                         .anyRequest().authenticated()

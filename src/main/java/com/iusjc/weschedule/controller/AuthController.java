@@ -370,8 +370,9 @@ public class AuthController {
     }
 
     /**
-     * Endpoint pour initier la réinitialisation de mot de passe
+     * Endpoint pour initier la réinitialisation de mot de passe (avec email)
      * POST /api/forgot-password
+     * Envoie le code par email
      */
     @PostMapping("/api/forgot-password")
     @ResponseBody
@@ -380,7 +381,7 @@ public class AuthController {
             passwordResetService.initiatePasswordReset(request.getEmail());
             return AuthResponse.builder()
                     .success(true)
-                    .message("Un lien de réinitialisation a été envoyé à votre email si le compte existe")
+                    .message("Un code de réinitialisation a été envoyé à votre email")
                     .build();
         } catch (RuntimeException e) {
             log.error("Erreur lors de la demande de réinitialisation: {}", e.getMessage());
@@ -392,9 +393,97 @@ public class AuthController {
             log.error("Erreur lors de la demande de réinitialisation: {}", e.getMessage());
             return AuthResponse.builder()
                     .success(false)
-                    .message("Erreur lors de l'envoi du lien de réinitialisation")
+                    .message("Erreur lors de l'envoi du code")
                     .build();
         }
+    }
+
+    /**
+     * Endpoint pour réinitialiser le mot de passe avec code (utilise Map au lieu d'un DTO)
+     * POST /api/simple-reset-password
+     */
+    @PostMapping("/api/simple-reset-password")
+    @ResponseBody
+    public AuthResponse simpleResetPassword(@RequestBody Map<String, String> request,
+                                          HttpServletRequest httpRequest) {
+        try {
+            String email = request.get("email");
+            String code = request.get("code");
+            String newPassword = request.get("newPassword");
+            String confirmPassword = request.get("confirmPassword");
+            
+            log.info("Tentative de réinitialisation pour: {}", email);
+            
+            // Vérifier que les mots de passe correspondent
+            if (!newPassword.equals(confirmPassword)) {
+                return AuthResponse.builder()
+                        .success(false)
+                        .message("Les mots de passe ne correspondent pas")
+                        .build();
+            }
+
+            // Réinitialiser le mot de passe
+            String userEmail = passwordResetService.resetPassword(email, code, newPassword);
+            
+            log.info("Mot de passe réinitialisé avec succès pour: {}", userEmail);
+            
+            // Connexion automatique
+            Optional<Utilisateur> userOptional = authService.findByEmail(userEmail);
+            if (userOptional.isPresent()) {
+                Utilisateur utilisateur = userOptional.get();
+                
+                // Créer le UserPrincipal et l'authentification
+                UserPrincipal userPrincipal = new UserPrincipal(utilisateur);
+                UsernamePasswordAuthenticationToken authToken = 
+                    new UsernamePasswordAuthenticationToken(
+                        userPrincipal, null, userPrincipal.getAuthorities());
+                
+                // Définir l'authentification dans le contexte
+                SecurityContextHolder.getContext().setAuthentication(authToken);
+                
+                // Sauvegarder la session
+                HttpSession session = httpRequest.getSession(true);
+                session.setAttribute(HttpSessionSecurityContextRepository.SPRING_SECURITY_CONTEXT_KEY, 
+                                   SecurityContextHolder.getContext());
+                
+                log.info("Connexion automatique réussie pour: {}", userEmail);
+                
+                return AuthResponse.builder()
+                        .success(true)
+                        .message("Mot de passe réinitialisé avec succès")
+                        .email(userEmail)
+                        .role(utilisateur.getRole())
+                        .build();
+            }
+            
+            return AuthResponse.builder()
+                    .success(true)
+                    .message("Mot de passe réinitialisé avec succès")
+                    .email(userEmail)
+                    .build();
+            
+        } catch (RuntimeException e) {
+            log.error("Erreur lors de la réinitialisation: {}", e.getMessage());
+            return AuthResponse.builder()
+                    .success(false)
+                    .message(e.getMessage())
+                    .build();
+        } catch (Exception e) {
+            log.error("Erreur lors de la réinitialisation: {}", e.getMessage(), e);
+            return AuthResponse.builder()
+                    .success(false)
+                    .message("Erreur lors de la réinitialisation du mot de passe")
+                    .build();
+        }
+    }
+
+    /**
+     * Page de réinitialisation avec envoi par email
+     * GET /reset-with-email
+     */
+    @GetMapping("/reset-with-email")
+    public String resetWithEmailPage() {
+        return "reinitialisation_du_mdp";
     }
 
     /**

@@ -18,6 +18,27 @@ public class EmailService {
     private String fromEmail;
 
     /**
+     * Envoie un email de réinitialisation de mot de passe avec un code à 6 chiffres
+     */
+    public void sendPasswordResetCode(String toEmail, String recipientName, String resetCode) {
+        try {
+            SimpleMailMessage message = new SimpleMailMessage();
+            message.setFrom(fromEmail);
+            message.setTo(toEmail);
+            message.setSubject("IUSJC WeSchedule - Code de réinitialisation");
+            
+            String emailContent = buildPasswordResetCodeContent(recipientName, resetCode);
+            message.setText(emailContent);
+            
+            mailSender.send(message);
+            log.info("Email avec code de réinitialisation envoyé à: {}", toEmail);
+        } catch (Exception e) {
+            log.error("Erreur lors de l'envoi de l'email à {}: {}", toEmail, e.getMessage(), e);
+            throw new RuntimeException("Erreur lors de l'envoi de l'email", e);
+        }
+    }
+
+    /**
      * Envoie un email de réinitialisation de mot de passe avec un lien d'accès direct
      */
     public void sendPasswordResetEmail(String toEmail, String recipientName, String resetToken) {
@@ -55,6 +76,28 @@ public class EmailService {
             log.error("Erreur lors de l'envoi de l'email à {}: {}", toEmail, e.getMessage(), e);
             throw new RuntimeException("Erreur lors de l'envoi de l'email", e);
         }
+    }
+
+    /**
+     * Construit le contenu du mail avec code à 6 chiffres
+     */
+    private String buildPasswordResetCodeContent(String recipientName, String resetCode) {
+        return "Bonjour " + recipientName + ",\n\n" +
+                "Vous avez demandé la réinitialisation de votre mot de passe pour IUSJC WeSchedule.\n\n" +
+                "Voici votre code de réinitialisation :\n\n" +
+                "==========================================\n" +
+                "         " + resetCode + "\n" +
+                "==========================================\n\n" +
+                "Ce code est valable pendant 15 minutes.\n\n" +
+                "Instructions :\n" +
+                "1. Retournez sur la page de réinitialisation\n" +
+                "2. Entrez ce code\n" +
+                "3. Créez votre nouveau mot de passe\n\n" +
+                "Si vous n'avez pas demandé cette réinitialisation, ignorez cet email.\n\n" +
+                "Cordialement,\n" +
+                "L'équipe IUSJC WeSchedule\n\n" +
+                "---\n" +
+                "Message automatique - Veuillez ne pas répondre à cet email.";
     }
 
     /**

@@ -1,0 +1,271 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Réinitialisation du mot de passe - WeSchedule</title>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
+    <link rel="stylesheet" href="/css/auth-professional.css">
+</head>
+<body>
+    <div class="auth-container fade-in">
+        <!-- En-tête de la page -->
+        <div class="auth-header">
+            <div class="auth-logo">
+                <img src="/images/logo.jpeg" alt="Logo WeSchedule">
+            </div>
+            <h1 class="auth-title">Mot de passe oublié ?</h1>
+            
+        </div>
+
+        <div id="messageZone" class="alert" style="display: none;"></div>
+
+        <!-- PREMIÈRE ÉTAPE : Demander l'email -->
+        <div id="etapeEmail" class="auth-form">
+            <div class="info-box">
+                <i class="info-box-icon fas fa-envelope"></i>
+                Entrez votre adresse email et nous vous enverrons un code de vérification.
+            </div>
+
+            <div class="form-group">
+                <label for="emailUtilisateur" class="form-label">Votre email</label>
+                <div class="input-group">
+                    <i class="input-icon fas fa-envelope"></i>
+                    <input 
+                        type="email" 
+                        id="emailUtilisateur" 
+                        class="form-input" 
+                        placeholder="exemple@email.com"
+                        autofocus>
+                </div>
+            </div>
+
+            <button onclick="demanderCode()" class="btn btn-primary btn-full" id="btnEnvoyer">
+                <i class="fas fa-paper-plane"></i> Recevoir le code
+            </button>
+        </div>
+
+    
+
+
+
+
+
+        <div id="etapeReinitialisation" class="auth-form" style="display: none;">
+            <div class="info-box">
+                <i class="info-box-icon fas fa-check-circle"></i>
+                Un code a été envoyé à <strong id="emailAffiche"></strong>
+            </div>
+
+            <div class="form-group">
+                <label for="codeVerification" class="form-label">Code reçu par email</label>
+                <div class="input-group">
+                    <i class="input-icon fas fa-key"></i>
+                    <input 
+                        type="text" 
+                        id="codeVerification" 
+                        class="form-input" 
+                        placeholder="123456"
+                        maxlength="6">
+                </div>
+                <small style="color: #666; font-size: 0.85em;">Le code contient 6 chiffres</small>
+            </div>
+
+            <div class="form-group">
+                <label for="nouveauMdp" class="form-label">Nouveau mot de passe</label>
+                <div class="input-group">
+                    <i class="input-icon fas fa-lock"></i>
+                    <input 
+                        type="password" 
+                        id="nouveauMdp" 
+                        class="form-input" 
+                        placeholder="Au moins 8 caractères">
+                </div>
+            </div>
+
+            <div class="form-group">
+                <label for="confirmationMdp" class="form-label">Confirmer le mot de passe</label>
+                <div class="input-group">
+                    <i class="input-icon fas fa-lock"></i>
+                    <input 
+                        type="password" 
+                        id="confirmationMdp" 
+                        class="form-input" 
+                        placeholder="Retapez le mot de passe">
+                </div>
+            </div>
+
+            <button onclick="changerMotDePasse()" class="btn btn-primary btn-full" id="btnReinitialiser">
+                <i class="fas fa-check"></i> Changer mon mot de passe
+            </button>
+
+            <button onclick="retourEtapeEmail()" class="btn btn-secondary btn-full" style="margin-top: 10px;">
+                <i class="fas fa-arrow-left"></i> Retour
+            </button>
+        </div>
+
+        <div class="divider">ou</div>
+
+        <a href="/login" class="auth-link-muted">
+            <i class="fas fa-arrow-left"></i> Retour à la connexion
+        </a>
+    </div>
+
+    <script>
+        // Variable pour stocker l'email de l'utilisateur
+        let emailSauvegarde = '';
+
+        // Fonction appelée quand l'utilisateur clique sur "Recevoir le code"
+        async function demanderCode() {
+            const champEmail = document.getElementById('emailUtilisateur');
+            const email = champEmail.value.trim();
+            const bouton = document.getElementById('btnEnvoyer');
+
+            // Vérifier que l'email n'est pas vide
+            if (!email) {
+                afficherMessage('Veuillez entrer votre adresse email', 'danger');
+                return;
+            }
+
+            // Vérifier que l'email a un format valide
+            if (!emailValide(email)) {
+                afficherMessage('L\'adresse email n\'est pas valide', 'danger');
+                return;
+            }
+
+            // Désactiver le bouton pendant l'envoi
+            bouton.disabled = true;
+            bouton.innerHTML = '<span class="spinner"></span> Envoi en cours...';
+
+            try {
+                // Envoyer la demande au serveur
+                const reponse = await fetch('/api/forgot-password', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ email: email })
+                });
+
+                const resultat = await reponse.json();
+
+                if (resultat.success) {
+                    // Succès : passer à l'étape suivante
+                    emailSauvegarde = email;
+                    document.getElementById('emailAffiche').textContent = email;
+                    document.getElementById('etapeEmail').style.display = 'none';
+                    document.getElementById('etapeReinitialisation').style.display = 'block';
+                    afficherMessage('Code envoyé ! Vérifiez votre boîte email.', 'success');
+                } else {
+                    // Erreur : afficher le message d'erreur
+                    afficherMessage(resultat.message || 'Une erreur est survenue', 'danger');
+                    bouton.disabled = false;
+                    bouton.innerHTML = '<i class="fas fa-paper-plane"></i> Recevoir le code';
+                }
+            } catch (erreur) {
+                console.error('Erreur:', erreur);
+                afficherMessage('Impossible de contacter le serveur', 'danger');
+                bouton.disabled = false;
+                bouton.innerHTML = '<i class="fas fa-paper-plane"></i> Recevoir le code';
+            }
+        }
+
+        // Fonction appelée quand l'utilisateur clique sur "Changer mon mot de passe"
+        async function changerMotDePasse() {
+            const code = document.getElementById('codeVerification').value.trim();
+            const mdp = document.getElementById('nouveauMdp').value;
+            const confirmation = document.getElementById('confirmationMdp').value;
+            const bouton = document.getElementById('btnReinitialiser');
+
+            // Vérifications de la securité du mot de passe et du code
+            if (!code || code.length !== 6) {
+                afficherMessage('Le code doit contenir exactement 6 chiffres', 'danger');
+                return;
+            }
+
+            if (!mdp || mdp.length < 8) {
+                afficherMessage('Le mot de passe doit contenir au moins 8 caractères', 'danger');
+                return;
+            }
+
+            if (mdp !== confirmation) {
+                afficherMessage('Les deux mots de passe ne correspondent pas', 'danger');
+                return;
+            }
+
+            // Désactiver le bouton pendant le traitement
+            bouton.disabled = true;
+            bouton.innerHTML = '<span class="spinner"></span> Changement en cours...';
+
+            try {
+                // Envoyer la demande de réinitialisation au serveur
+                const reponse = await fetch('/api/simple-reset-password', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({
+                        email: emailSauvegarde,
+                        code: code,
+                        newPassword: mdp,
+                        confirmPassword: confirmation
+                    })
+                });
+
+                const resultat = await reponse.json();
+
+                if (resultat.success) {
+                    // Succès : afficher message et rediriger
+                    afficherMessage('✓ Mot de passe changé ! Redirection...', 'success');
+                    setTimeout(function() {
+                        window.location.href = '/dashboard';
+                    }, 2000);
+                } else {
+                    // Erreur : afficher le message
+                    afficherMessage(resultat.message || 'Échec de la réinitialisation', 'danger');
+                    bouton.disabled = false;
+                    bouton.innerHTML = '<i class="fas fa-check"></i> Changer mon mot de passe';
+                }
+            } catch (erreur) {
+                console.error('Erreur:', erreur);
+                afficherMessage('Impossible de contacter le serveur', 'danger');
+                bouton.disabled = false;
+                bouton.innerHTML = '<i class="fas fa-check"></i> Changer mon mot de passe';
+            }
+        }
+
+        // Fonction pour revenir à la première étape
+        function retourEtapeEmail() {
+            document.getElementById('etapeReinitialisation').style.display = 'none';
+            document.getElementById('etapeEmail').style.display = 'block';
+            
+            // Réactiver le bouton
+            const bouton = document.getElementById('btnEnvoyer');
+            bouton.disabled = false;
+            bouton.innerHTML = ' Recevoir le code';
+            
+            // Effacer les champs
+            document.getElementById('messageZone').style.display = 'none';
+            document.getElementById('codeVerification').value = '';
+            document.getElementById('nouveauMdp').value = '';
+            document.getElementById('confirmationMdp').value = '';
+        }
+
+        // Fonction pour afficher un message à l'utilisateur
+        function afficherMessage(texte, type) {
+            const zone = document.getElementById('messageZone');
+            const icone = type === 'success' ? 'fa-check-circle' : 'fa-exclamation-circle';
+            
+            zone.className = `alert alert-${type}`;
+            zone.innerHTML = `
+                <span class="alert-icon"><i class="fas ${icone}"></i></span>
+                ${texte}
+            `;
+            zone.style.display = 'block';
+        }
+
+        // Fonction pour vérifier si un email est valide
+        function emailValide(email) {
+            const regex = /^[A-Za-z0-9+_.-]+@[A-Za-z0-9.-]+\.[A-Za-z]{2,}$/;
+            return regex.test(email);
+        }
+    </script>
+</body>
+</html>
