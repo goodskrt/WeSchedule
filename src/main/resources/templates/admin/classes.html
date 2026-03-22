@@ -2,20 +2,20 @@
 <html lang="fr" xmlns:th="http://www.thymeleaf.org">
 <head>
     <meta charset="UTF-8">
-    <title>Mes Cours - WeSchedule</title>
+    <title>Classes - WeSchedule</title>
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
     <link rel="stylesheet" href="/css/modern-layout.css">
 </head>
 <body>
-    <div th:replace="~{fragments/sidebar :: enseignant-sidebar('cours')}"></div>
+    <div th:replace="~{fragments/sidebar :: admin-sidebar('classes')}"></div>
     <div class="ws-wrapper">
-        <div th:replace="~{fragments/header :: enseignant-header}"></div>
+        <div th:replace="~{fragments/header :: admin-header}"></div>
         <main class="ws-main-content">
-            <h2 class="page-title">Mes Cours</h2>
-            <p class="page-subtitle">Consulter et gerer mes cours</p>
+            <h2 class="page-title">Classes</h2>
+            <p class="page-subtitle">Gerer les classes et groupes d'etudiants</p>
             <div class="card-custom p-5 text-center mt-4">
-                <div class="empty-state-icon"><i class="fas fa-book"></i></div>
+                <div class="empty-state-icon"><i class="fas fa-users"></i></div>
                 <p class="text-muted">Fonctionnalite en cours de developpement</p>
             </div>
         </main>

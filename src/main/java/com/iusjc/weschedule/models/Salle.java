@@ -25,4 +25,10 @@ public class Salle {
     private TypeSalle typeSalle;
 
     private Integer capacite;
+
+    /** RDC, 1er étage, 2ème étage, 3ème étage */
+    private String etage;
+
+    /** Nouveau bâtiment, Ancien bâtiment */
+    private String batiment;
 }

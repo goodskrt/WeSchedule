@@ -67,7 +67,7 @@
 
 body {
     font-family: 'Inter', 'Segoe UI', -apple-system, BlinkMacSystemFont, sans-serif;
-    background: var(--white);
+    background: #ffffff !important;
     color: var(--gray-900);
     line-height: 1.6;
     min-height: 100vh;
@@ -626,24 +626,10 @@ body {
     }
 }
 
-/* Mode sombre (optionnel) */
+/* Mode sombre désactivé — fond blanc forcé */
 @media (prefers-color-scheme: dark) {
-    :root {
-        --white: #1e293b;
-        --gray-50: #0f172a;
-        --gray-100: #1e293b;
-        --gray-200: #334155;
-        --gray-300: #475569;
-        --gray-400: #64748b;
-        --gray-500: #94a3b8;
-        --gray-600: #cbd5e1;
-        --gray-700: #e2e8f0;
-        --gray-800: #f1f5f9;
-        --gray-900: #f8fafc;
-    }
-    
     body {
-        background-color: var(--gray-50);
-        color: var(--gray-900);
+        background: #ffffff !important;
+        color: #111827;
     }
 }

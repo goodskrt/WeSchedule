@@ -452,6 +452,34 @@ public class AuthController {
     }
 
     /**
+     * Dashboard Admin - Classes
+     */
+    @GetMapping("/dashboard/admin/classes")
+    public String dashboardAdminClasses(Authentication auth, Model model) {
+        if (auth != null && auth.getPrincipal() instanceof UserPrincipal userPrincipal) {
+            model.addAttribute("user", userPrincipal.getUtilisateur());
+            model.addAttribute("nomComplet", userPrincipal.getNomComplet());
+            model.addAttribute("email", userPrincipal.getUtilisateur().getEmail());
+            return "admin/classes";
+        }
+        return "redirect:/login";
+    }
+
+    /**
+     * Dashboard Admin - Équipements
+     */
+    @GetMapping("/dashboard/admin/equipements")
+    public String dashboardAdminEquipements(Authentication auth, Model model) {
+        if (auth != null && auth.getPrincipal() instanceof UserPrincipal userPrincipal) {
+            model.addAttribute("user", userPrincipal.getUtilisateur());
+            model.addAttribute("nomComplet", userPrincipal.getNomComplet());
+            model.addAttribute("email", userPrincipal.getUtilisateur().getEmail());
+            return "admin/equipements";
+        }
+        return "redirect:/login";
+    }
+
+    /**
      * Page d'accueil - redirige vers login
      */
     @GetMapping("/")

@@ -3,248 +3,414 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Détails de la Salle - WeSchedule</title>
+    <title th:text="${salle.nomSalle} + ' — WeSchedule'">Détails Salle</title>
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
     <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css" rel="stylesheet">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
-    <link rel="stylesheet" href="/css/dashboard-professional.css">
-    <link rel="stylesheet" href="/css/modern-dashboard.css">
+    <link rel="stylesheet" href="/css/modern-layout.css">
     <style>
-        .salle-icon-large {
-            width: 120px;
-            height: 120px;
+        /* ── Hero banner ── */
+        .salle-hero {
             border-radius: var(--radius-xl);
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            font-size: 3rem;
-            color: white;
-            margin: 0 auto 1.5rem;
+            overflow: hidden;
+            margin-bottom: 1.5rem;
+            position: relative;
         }
+        .salle-hero-bg {
+            height: 160px;
+            display: flex;
+            align-items: flex-end;
+            padding: 1.5rem;
+        }
+        .salle-hero-icon {
+            width: 80px; height: 80px;
+            border-radius: var(--radius-xl);
+            background: rgba(255,255,255,0.2);
+            backdrop-filter: blur(8px);
+            border: 3px solid rgba(255,255,255,0.4);
+            display: flex; align-items: center; justify-content: center;
+            font-size: 2rem;
+            color: white;
+            margin-right: 1.25rem;
+            flex-shrink: 0;
+        }
+        .salle-hero-info { color: white; }
+        .salle-hero-info h1 {
+            font-size: 1.6rem;
+            font-weight: 700;
+            margin-bottom: 0.25rem;
+            text-shadow: 0 1px 4px rgba(0,0,0,0.2);
+        }
+        .salle-hero-badge {
+            display: inline-flex; align-items: center; gap: 0.35rem;
+            background: rgba(255,255,255,0.25);
+            backdrop-filter: blur(4px);
+            border: 1px solid rgba(255,255,255,0.35);
+            color: white;
+            padding: 0.25rem 0.75rem;
+            border-radius: 2rem;
+            font-size: 0.8rem;
+            font-weight: 600;
+        }
+        .salle-hero-actions {
+            position: absolute;
+            top: 1rem; right: 1rem;
+            display: flex; gap: 0.5rem;
+        }
+        .hero-btn {
+            display: inline-flex; align-items: center; gap: 0.4rem;
+            padding: 0.45rem 1rem;
+            border-radius: var(--radius-md);
+            font-size: 0.82rem;
+            font-weight: 600;
+            border: none;
+            cursor: pointer;
+            text-decoration: none;
+            transition: all 0.15s;
+        }
+        .hero-btn-edit {
+            background: rgba(255,255,255,0.9);
+            color: var(--gray-800);
+        }
+        .hero-btn-edit:hover { background: white; color: var(--gray-900); }
+        .hero-btn-delete {
+            background: rgba(239,68,68,0.85);
+            color: white;
+        }
+        .hero-btn-delete:hover { background: #dc2626; }
+
+        /* ── Stat cards ── */
+        .stat-row {
+            display: grid;
+            grid-template-columns: repeat(3, 1fr);
+            gap: 1rem;
+            margin-bottom: 1.5rem;
+        }
+        @media (max-width: 600px) { .stat-row { grid-template-columns: 1fr; } }
+        .stat-card {
+            background: var(--white);
+            border-radius: var(--radius-xl);
+            border: 1px solid var(--gray-200);
+            padding: 1.25rem 1.5rem;
+            display: flex; align-items: center; gap: 1rem;
+            box-shadow: var(--shadow-sm);
+        }
+        .stat-icon {
+            width: 48px; height: 48px;
+            border-radius: var(--radius-lg);
+            display: flex; align-items: center; justify-content: center;
+            font-size: 1.2rem;
+            flex-shrink: 0;
+        }
+        .stat-value { font-size: 1.6rem; font-weight: 700; line-height: 1; color: var(--gray-900); }
+        .stat-label { font-size: 0.78rem; color: var(--gray-500); margin-top: 0.15rem; }
+
+        /* ── Info grid ── */
+        .details-grid {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 1rem;
+            margin-bottom: 1.5rem;
+        }
+        @media (max-width: 768px) { .details-grid { grid-template-columns: 1fr; } }
+
+        .info-card {
+            background: var(--white);
+            border-radius: var(--radius-xl);
+            border: 1px solid var(--gray-200);
+            box-shadow: var(--shadow-sm);
+            padding: 1.5rem;
+        }
+        .info-card-title {
+            font-size: 0.7rem;
+            font-weight: 700;
+            text-transform: uppercase;
+            letter-spacing: 0.08em;
+            color: var(--gray-400);
+            margin-bottom: 1.25rem;
+            display: flex; align-items: center; gap: 0.5rem;
+        }
+        .info-card-title i { color: var(--primary-color); }
+
+        .info-row {
+            display: flex; align-items: flex-start;
+            padding: 0.65rem 0;
+            border-bottom: 1px solid var(--gray-100);
+        }
+        .info-row:last-child { border-bottom: none; padding-bottom: 0; }
+        .info-row-icon {
+            width: 32px; height: 32px;
+            border-radius: var(--radius-md);
+            background: #f0fdf4;
+            display: flex; align-items: center; justify-content: center;
+            font-size: 0.8rem;
+            color: var(--primary-color);
+            flex-shrink: 0;
+            margin-right: 0.85rem;
+        }
+        .info-row-label { font-size: 0.75rem; color: var(--gray-400); margin-bottom: 0.1rem; }
+        .info-row-value { font-size: 0.9rem; font-weight: 600; color: var(--gray-800); }
+
+        /* ── Localisation map-like ── */
+        .location-card {
+            background: var(--white);
+            border-radius: var(--radius-xl);
+            border: 1px solid var(--gray-200);
+            box-shadow: var(--shadow-sm);
+            overflow: hidden;
+            margin-bottom: 1.5rem;
+        }
+        .location-header {
+            padding: 1rem 1.5rem;
+            border-bottom: 1px solid var(--gray-100);
+            display: flex; align-items: center; gap: 0.5rem;
+        }
+        .location-header-title {
+            font-size: 0.7rem;
+            font-weight: 700;
+            text-transform: uppercase;
+            letter-spacing: 0.08em;
+            color: var(--gray-400);
+        }
+        .location-body {
+            padding: 1.25rem 1.5rem;
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 1rem;
+        }
+        .location-item {
+            display: flex; align-items: center; gap: 0.75rem;
+            padding: 0.85rem 1rem;
+            border-radius: var(--radius-lg);
+            background: var(--gray-50);
+            border: 1px solid var(--gray-100);
+        }
+        .location-item-icon {
+            width: 40px; height: 40px;
+            border-radius: var(--radius-md);
+            display: flex; align-items: center; justify-content: center;
+            font-size: 1rem;
+            flex-shrink: 0;
+        }
+        .location-item-label { font-size: 0.72rem; color: var(--gray-400); }
+        .location-item-value { font-size: 0.9rem; font-weight: 600; color: var(--gray-800); }
+        .location-empty { color: var(--gray-400); font-style: italic; font-size: 0.85rem; }
     </style>
 </head>
 <body>
-    <div th:replace="~{fragments/header :: admin-header}"></div>
+    <div th:replace="~{fragments/sidebar :: admin-sidebar('salles')}"></div>
+    <div class="ws-wrapper">
+        <div th:replace="~{fragments/header :: admin-header}"></div>
+        <main class="ws-main-content">
 
-    <div class="container-fluid">
-        <div class="row">
-            <div th:replace="~{fragments/sidebar :: admin-sidebar('salles')}"></div>
+            <!-- Breadcrumb -->
+            <nav aria-label="breadcrumb" class="mb-3">
+                <ol class="breadcrumb">
+                    <li class="breadcrumb-item"><a th:href="@{/admin/salles}">Salles</a></li>
+                    <li class="breadcrumb-item active" th:text="${salle.nomSalle}"></li>
+                </ol>
+            </nav>
 
-            <div class="col-lg-10 col-md-9">
-                <div class="main-content">
-                    <!-- Breadcrumb -->
-                    <nav aria-label="breadcrumb" class="mb-4">
-                        <ol class="breadcrumb">
-                            <li class="breadcrumb-item"><a th:href="@{/admin/salles}">Salles</a></li>
-                            <li class="breadcrumb-item active">Détails</li>
-                        </ol>
-                    </nav>
+            <!-- Alertes -->
+            <div th:if="${success}" class="alert alert-success alert-dismissible fade show mb-3">
+                <i class="fas fa-check-circle me-2"></i><span th:text="${success}"></span>
+                <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+            </div>
+            <div th:if="${error}" class="alert alert-danger alert-dismissible fade show mb-3">
+                <i class="fas fa-exclamation-circle me-2"></i><span th:text="${error}"></span>
+                <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+            </div>
 
-                    <!-- Header -->
-                    <div class="d-flex justify-content-between align-items-center mb-4">
+            <!-- ── Hero ── -->
+            <div class="salle-hero">
+                <div class="salle-hero-bg"
+                     th:style="'background: linear-gradient(135deg,' +
+                               (${salle.typeSalle.name() == 'SALLE_DE_COURS'}    ? '#3b82f6,#2563eb' :
+                               (${salle.typeSalle.name() == 'SALLE_DE_TD'}       ? '#f59e0b,#d97706' :
+                               (${salle.typeSalle.name() == 'SALLE_INFORMATIQUE'}? '#059669,#10b981' : '#8b5cf6,#7c3aed'))) + ');'">
+
+                    <div class="salle-hero-icon">
+                        <i class="fas"
+                           th:classappend="${salle.typeSalle.name() == 'SALLE_DE_COURS'}    ? 'fa-chalkboard-teacher' :
+                                          (${salle.typeSalle.name() == 'SALLE_DE_TD'}       ? 'fa-chalkboard' :
+                                          (${salle.typeSalle.name() == 'SALLE_INFORMATIQUE'}? 'fa-laptop' : 'fa-flask'))">
+                        </i>
+                    </div>
+                    <div class="salle-hero-info">
+                        <h1 th:text="${salle.nomSalle}">Salle</h1>
+                        <span class="salle-hero-badge">
+                            <i class="fas fa-tag"></i>
+                            <span th:text="${salle.typeSalle}"></span>
+                        </span>
+                    </div>
+                </div>
+
+                <!-- Boutons flottants -->
+                <div class="salle-hero-actions">
+                    <a th:href="@{/admin/salles/modifier/{id}(id=${salle.idSalle})}" class="hero-btn hero-btn-edit">
+                        <i class="fas fa-edit"></i> Modifier
+                    </a>
+                    <button class="hero-btn hero-btn-delete" onclick="confirmSupprimer()">
+                        <i class="fas fa-trash"></i> Supprimer
+                    </button>
+                </div>
+            </div>
+
+            <!-- ── Stats ── -->
+            <div class="stat-row">
+                <div class="stat-card">
+                    <div class="stat-icon" style="background:#dbeafe; color:#2563eb;">
+                        <i class="fas fa-users"></i>
+                    </div>
+                    <div>
+                        <div class="stat-value" th:text="${salle.capacite}">0</div>
+                        <div class="stat-label">Places disponibles</div>
+                    </div>
+                </div>
+                <div class="stat-card">
+                    <div class="stat-icon" style="background:#d1fae5; color:#059669;">
+                        <i class="fas fa-calendar-check"></i>
+                    </div>
+                    <div>
+                        <div class="stat-value">—</div>
+                        <div class="stat-label">Séances planifiées</div>
+                    </div>
+                </div>
+                <div class="stat-card">
+                    <div class="stat-icon" style="background:#fef3c7; color:#d97706;">
+                        <i class="fas fa-chart-pie"></i>
+                    </div>
+                    <div>
+                        <div class="stat-value">—</div>
+                        <div class="stat-label">Taux d'occupation</div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- ── Infos + Localisation ── -->
+            <div class="details-grid">
+
+                <!-- Informations générales -->
+                <div class="info-card">
+                    <div class="info-card-title">
+                        <i class="fas fa-info-circle"></i> Informations générales
+                    </div>
+
+                    <div class="info-row">
+                        <div class="info-row-icon"><i class="fas fa-door-open"></i></div>
                         <div>
-                            <h2 class="page-title" th:text="${salle.nomSalle}">Salle</h2>
-                            <p class="page-subtitle">Informations détaillées de la salle</p>
+                            <div class="info-row-label">Nom de la salle</div>
+                            <div class="info-row-value" th:text="${salle.nomSalle}">—</div>
                         </div>
+                    </div>
+                    <div class="info-row">
+                        <div class="info-row-icon"><i class="fas fa-tag"></i></div>
                         <div>
-                            <a th:href="@{/admin/salles/modifier/{id}(id=${salle.idSalle})}" class="btn btn-primary me-2">
-                                <i class="fas fa-edit"></i> Modifier
-                            </a>
-                            <a th:href="@{/admin/salles}" class="btn btn-secondary">
-                                <i class="fas fa-arrow-left"></i> Retour
-                            </a>
-                        </div>
-                    </div>
-
-                    <!-- Alerts -->
-                    <div th:if="${success}" class="alert alert-success alert-dismissible fade show">
-                        <i class="fas fa-check-circle me-2"></i>
-                        <span th:text="${success}"></span>
-                        <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
-                    </div>
-                    <div th:if="${error}" class="alert alert-danger alert-dismissible fade show">
-                        <i class="fas fa-exclamation-circle me-2"></i>
-                        <span th:text="${error}"></span>
-                        <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
-                    </div>
-
-                    <div class="row">
-                        <!-- Informations générales -->
-                        <div class="col-md-6 mb-4">
-                            <div class="section-card">
-                                <div class="section-header">
-                                    <div class="section-icon">
-                                        <i class="fas fa-info-circle"></i>
-                                    </div>
-                                    <div>
-                                        <h3 class="section-title">Informations générales</h3>
-                                    </div>
-                                </div>
-
-                                <div class="text-center mb-4">
-                                    <div class="salle-icon-large" 
-                                         th:style="'background: linear-gradient(135deg, ' + 
-                                                  (${salle.typeSalle.name() == 'SALLE_DE_COURS'} ? '#3b82f6, #2563eb' : 
-                                                   (${salle.typeSalle.name() == 'SALLE_DE_TD'} ? '#f59e0b, #d97706' : 
-                                                    (${salle.typeSalle.name() == 'SALLE_INFORMATIQUE'} ? '#059669, #10b981' : '#8b5cf6, #7c3aed'))) + ');'">
-                                        <i class="fas" 
-                                           th:classappend="${salle.typeSalle.name() == 'SALLE_DE_COURS'} ? 'fa-chalkboard-teacher' : 
-                                                          (${salle.typeSalle.name() == 'SALLE_DE_TD'} ? 'fa-chalkboard' : 
-                                                           (${salle.typeSalle.name() == 'SALLE_INFORMATIQUE'} ? 'fa-laptop' : 'fa-flask'))">
-                                        </i>
-                                    </div>
-                                </div>
-
-                                <div class="mb-3">
-                                    <label class="text-muted small">Nom de la salle</label>
-                                    <p class="fw-bold mb-0" th:text="${salle.nomSalle}">-</p>
-                                </div>
-
-                                <div class="mb-3">
-                                    <label class="text-muted small">Type de salle</label>
-                                    <p class="mb-0">
-                                        <span class="badge" 
-                                              th:classappend="${salle.typeSalle.name() == 'SALLE_DE_COURS'} ? 'bg-primary' : 
-                                                             (${salle.typeSalle.name() == 'SALLE_DE_TD'} ? 'bg-warning' : 
-                                                              (${salle.typeSalle.name() == 'SALLE_INFORMATIQUE'} ? 'bg-success' : 'bg-info'))"
-                                              th:text="${salle.typeSalle}">-</span>
-                                    </p>
-                                </div>
-
-                                <div class="mb-3">
-                                    <label class="text-muted small">Capacité</label>
-                                    <p class="mb-0">
-                                        <span class="fs-3 fw-bold text-primary" th:text="${salle.capacite}">0</span>
-                                        <span class="text-muted"> places</span>
-                                    </p>
-                                </div>
-                            </div>
-                        </div>
-
-                        <!-- Statistiques d'utilisation -->
-                        <div class="col-md-6 mb-4">
-                            <div class="section-card">
-                                <div class="section-header">
-                                    <div class="section-icon">
-                                        <i class="fas fa-chart-bar"></i>
-                                    </div>
-                                    <div>
-                                        <h3 class="section-title">Statistiques</h3>
-                                        <p class="section-subtitle">Utilisation de la salle</p>
-                                    </div>
-                                </div>
-
-                                <div class="info-note">
-                                    <i class="fas fa-info-circle"></i>
-                                    <div class="info-note-content">
-                                        <p class="mb-0">
-                                            Les statistiques d'utilisation seront disponibles prochainement.
-                                            Elles incluront le nombre de séances planifiées, le taux d'occupation, 
-                                            et les prochaines réservations.
-                                        </p>
-                                    </div>
-                                </div>
-
-                                <!-- Placeholder pour les futures statistiques -->
-                                <div class="row text-center mt-4">
-                                    <div class="col-4">
-                                        <h4 class="mb-0 text-muted">-</h4>
-                                        <small class="text-muted">Séances</small>
-                                    </div>
-                                    <div class="col-4">
-                                        <h4 class="mb-0 text-muted">-</h4>
-                                        <small class="text-muted">Taux d'occupation</small>
-                                    </div>
-                                    <div class="col-4">
-                                        <h4 class="mb-0 text-muted">-</h4>
-                                        <small class="text-muted">Réservations</small>
-                                    </div>
-                                </div>
-                            </div>
-                        </div>
-
-                        <!-- Caractéristiques -->
-                        <div class="col-12 mb-4">
-                            <div class="section-card">
-                                <div class="section-header">
-                                    <div class="section-icon">
-                                        <i class="fas fa-list"></i>
-                                    </div>
-                                    <div>
-                                        <h3 class="section-title">Caractéristiques</h3>
-                                    </div>
-                                </div>
-
-                                <div class="row">
-                                    <div class="col-md-4 mb-3">
-                                        <div class="d-flex align-items-center">
-                                            <div class="me-3" style="width: 40px; height: 40px; background: var(--green-100); border-radius: var(--radius-lg); display: flex; align-items: center; justify-content: center;">
-                                                <i class="fas fa-users text-primary"></i>
-                                            </div>
-                                            <div>
-                                                <small class="text-muted d-block">Capacité</small>
-                                                <strong th:text="${salle.capacite} + ' places'">-</strong>
-                                            </div>
-                                        </div>
-                                    </div>
-                                    <div class="col-md-4 mb-3">
-                                        <div class="d-flex align-items-center">
-                                            <div class="me-3" style="width: 40px; height: 40px; background: var(--green-100); border-radius: var(--radius-lg); display: flex; align-items: center; justify-content: center;">
-                                                <i class="fas fa-tag text-primary"></i>
-                                            </div>
-                                            <div>
-                                                <small class="text-muted d-block">Type</small>
-                                                <strong th:text="${salle.typeSalle}">-</strong>
-                                            </div>
-                                        </div>
-                                    </div>
-                                    <div class="col-md-4 mb-3">
-                                        <div class="d-flex align-items-center">
-                                            <div class="me-3" style="width: 40px; height: 40px; background: var(--green-100); border-radius: var(--radius-lg); display: flex; align-items: center; justify-content: center;">
-                                                <i class="fas fa-door-open text-primary"></i>
-                                            </div>
-                                            <div>
-                                                <small class="text-muted d-block">Nom</small>
-                                                <strong th:text="${salle.nomSalle}">-</strong>
-                                            </div>
-                                        </div>
-                                    </div>
-                                </div>
-                            </div>
-                        </div>
-
-                        <!-- Actions -->
-                        <div class="col-12">
-                            <div class="section-card">
-                                <div class="section-header">
-                                    <div class="section-icon">
-                                        <i class="fas fa-cog"></i>
-                                    </div>
-                                    <div>
-                                        <h3 class="section-title">Actions</h3>
-                                    </div>
-                                </div>
-
-                                <div class="d-flex gap-2 flex-wrap">
-                                    <a th:href="@{/admin/salles/modifier/{id}(id=${salle.idSalle})}" class="btn btn-primary">
-                                        <i class="fas fa-edit"></i> Modifier
-                                    </a>
-                                    <form th:action="@{/admin/salles/supprimer/{id}(id=${salle.idSalle})}" 
-                                          method="post" style="display: inline;">
-                                        <button type="submit" class="btn btn-danger"
-                                                onclick="return confirm('Supprimer définitivement cette salle ?')">
-                                            <i class="fas fa-trash"></i> Supprimer
-                                        </button>
-                                    </form>
-                                </div>
+                            <div class="info-row-label">Type</div>
+                            <div class="info-row-value">
+                                <span class="badge"
+                                      th:classappend="${salle.typeSalle.name() == 'SALLE_DE_COURS'}    ? 'bg-primary' :
+                                                     (${salle.typeSalle.name() == 'SALLE_DE_TD'}       ? 'bg-warning text-dark' :
+                                                     (${salle.typeSalle.name() == 'SALLE_INFORMATIQUE'}? 'bg-success' : 'bg-info text-dark'))"
+                                      th:text="${salle.typeSalle}">—</span>
                             </div>
                         </div>
                     </div>
+                    <div class="info-row">
+                        <div class="info-row-icon"><i class="fas fa-users"></i></div>
+                        <div>
+                            <div class="info-row-label">Capacité</div>
+                            <div class="info-row-value">
+                                <span th:text="${salle.capacite}">0</span>
+                                <span class="text-muted fw-normal"> places</span>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Localisation -->
+                <div class="info-card">
+                    <div class="info-card-title">
+                        <i class="fas fa-map-marker-alt"></i> Localisation
+                    </div>
+
+                    <div class="info-row">
+                        <div class="info-row-icon"><i class="fas fa-layer-group"></i></div>
+                        <div>
+                            <div class="info-row-label">Étage</div>
+                            <div class="info-row-value"
+                                 th:text="${salle.etage != null and !#strings.isEmpty(salle.etage)} ? ${salle.etage} : 'Non précisé'">—</div>
+                        </div>
+                    </div>
+                    <div class="info-row">
+                        <div class="info-row-icon"><i class="fas fa-building"></i></div>
+                        <div>
+                            <div class="info-row-label">Bâtiment</div>
+                            <div class="info-row-value"
+                                 th:text="${salle.batiment != null and !#strings.isEmpty(salle.batiment)} ? ${salle.batiment} : 'Non précisé'">—</div>
+                        </div>
+                    </div>
+                    <div class="info-row">
+                        <div class="info-row-icon"><i class="fas fa-map-pin"></i></div>
+                        <div>
+                            <div class="info-row-label">Adresse complète</div>
+                            <div class="info-row-value" style="font-weight:400; color:var(--gray-500);"
+                                 th:text="${(salle.etage != null and !#strings.isEmpty(salle.etage) ? salle.etage : '') +
+                                           (salle.etage != null and !#strings.isEmpty(salle.etage) and salle.batiment != null and !#strings.isEmpty(salle.batiment) ? ' · ' : '') +
+                                           (salle.batiment != null and !#strings.isEmpty(salle.batiment) ? salle.batiment : '') == '' ? 'Non renseignée' :
+                                           (salle.etage != null and !#strings.isEmpty(salle.etage) ? salle.etage : '') +
+                                           (salle.etage != null and !#strings.isEmpty(salle.etage) and salle.batiment != null and !#strings.isEmpty(salle.batiment) ? ' · ' : '') +
+                                           (salle.batiment != null and !#strings.isEmpty(salle.batiment) ? salle.batiment : '')}">
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- ── Actions ── -->
+            <div class="d-flex gap-2">
+                <a th:href="@{/admin/salles}" class="btn btn-secondary">
+                    <i class="fas fa-arrow-left me-1"></i> Retour à la liste
+                </a>
+                <a th:href="@{/admin/salles/modifier/{id}(id=${salle.idSalle})}" class="btn btn-primary">
+                    <i class="fas fa-edit me-1"></i> Modifier
+                </a>
+            </div>
+
+            <!-- Form suppression caché -->
+            <form id="deleteForm" th:action="@{/admin/salles/supprimer/{id}(id=${salle.idSalle})}" method="post" style="display:none;"></form>
+
+        </main>
+    </div>
+
+    <!-- Modal confirmation suppression -->
+    <div class="modal fade" id="deleteModal" tabindex="-1">
+        <div class="modal-dialog modal-sm">
+            <div class="modal-content">
+                <div class="modal-header border-0 pb-0">
+                    <h5 class="modal-title text-danger"><i class="fas fa-exclamation-triangle me-2"></i>Supprimer</h5>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+                </div>
+                <div class="modal-body pt-2">
+                    <p class="mb-0">Supprimer définitivement <strong th:text="${salle.nomSalle}"></strong> ?<br>
+                    <small class="text-muted">Cette action est irréversible.</small></p>
+                </div>
+                <div class="modal-footer border-0 pt-0">
+                    <button type="button" class="btn btn-secondary btn-sm" data-bs-dismiss="modal">Annuler</button>
+                    <button type="button" class="btn btn-danger btn-sm" onclick="document.getElementById('deleteForm').submit()">
+                        <i class="fas fa-trash me-1"></i> Supprimer
+                    </button>
                 </div>
             </div>
         </div>
     </div>
 
     <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js"></script>
+    <script src="/js/modern-layout.js"></script>
+    <script>
+        function confirmSupprimer() {
+            new bootstrap.Modal(document.getElementById('deleteModal')).show();
+        }
+    </script>
 </body>
 </html>

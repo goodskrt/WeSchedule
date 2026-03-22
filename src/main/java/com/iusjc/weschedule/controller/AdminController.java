@@ -1,14 +1,22 @@
 package com.iusjc.weschedule.controller;
 
 import com.iusjc.weschedule.models.*;
+import com.iusjc.weschedule.repositories.SalleRepository;
 import com.iusjc.weschedule.service.DisponibiliteService;
 import com.iusjc.weschedule.service.EnseignantService;
+import com.iusjc.weschedule.service.ExcelEnseignantService;
+import com.iusjc.weschedule.service.ExcelSalleService;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.http.HttpHeaders;
+import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.web.bind.annotation.*;
+import org.springframework.web.multipart.MultipartFile;
 
+import java.time.LocalDate;
+import java.time.format.DateTimeFormatter;
 import java.util.*;
 
 @RestController
@@ -22,6 +30,15 @@ public class AdminController {
 
     @Autowired
     private DisponibiliteService disponibiliteService;
+
+    @Autowired
+    private ExcelEnseignantService excelEnseignantService;
+
+    @Autowired
+    private ExcelSalleService excelSalleService;
+
+    @Autowired
+    private SalleRepository salleRepository;
 
     // ==================== ENSEIGNANTS ====================
 
@@ -230,6 +247,48 @@ public class AdminController {
         }
     }
 
+    // ==================== EXCEL IMPORT / EXPORT ====================
+
+    @GetMapping("/enseignants/export")
+    public ResponseEntity<byte[]> exportEnseignants() {
+        try {
+            byte[] data = excelEnseignantService.exporterEnseignants();
+            String filename = "enseignants_" + LocalDate.now().format(DateTimeFormatter.ofPattern("yyyyMMdd")) + ".xlsx";
+            return ResponseEntity.ok()
+                    .header(HttpHeaders.CONTENT_DISPOSITION, "attachment; filename=\"" + filename + "\"")
+                    .contentType(MediaType.parseMediaType("application/vnd.openxmlformats-officedocument.spreadsheetml.sheet"))
+                    .body(data);
+        } catch (Exception e) {
+            log.error("Erreur export Excel enseignants", e);
+            return ResponseEntity.internalServerError().build();
+        }
+    }
+
+    @PostMapping("/enseignants/import")
+    public ResponseEntity<Map<String, Object>> importEnseignants(@RequestParam("file") MultipartFile file) {
+        Map<String, Object> response = new HashMap<>();
+        try {
+            ExcelEnseignantService.ImportResult result = excelEnseignantService.importerEnseignants(file);
+            response.put("success", true);
+            response.put("succes", result.getSucces());
+            response.put("erreurs", result.getErreurs());
+            response.put("avertissements", result.getAvertissements());
+            response.put("nbErreurs", result.getNbErreurs());
+            response.put("message", result.getSucces() + " enseignant(s) importé(s)" +
+                    (result.hasErreurs() ? ", " + result.getNbErreurs() + " erreur(s)" : " avec succès"));
+            return ResponseEntity.ok(response);
+        } catch (IllegalArgumentException e) {
+            response.put("success", false);
+            response.put("message", e.getMessage());
+            return ResponseEntity.badRequest().body(response);
+        } catch (Exception e) {
+            log.error("Erreur import Excel enseignants", e);
+            response.put("success", false);
+            response.put("message", "Erreur lors de l'import : " + e.getMessage());
+            return ResponseEntity.internalServerError().body(response);
+        }
+    }
+
     // ==================== UES ====================
 
     @GetMapping("/ues")
@@ -347,6 +406,47 @@ public class AdminController {
         } catch (Exception e) {
             log.error("Erreur lors de la récupération des créneaux", e);
             return ResponseEntity.internalServerError().build();
+        }
+    }
+
+    // ==================== SALLES EXCEL ====================
+
+    @GetMapping("/salles/export")
+    public ResponseEntity<byte[]> exportSalles() {
+        try {
+            byte[] data = excelSalleService.exporterSalles();
+            String filename = "salles_" + LocalDate.now().format(DateTimeFormatter.ofPattern("yyyyMMdd")) + ".xlsx";
+            return ResponseEntity.ok()
+                    .header(HttpHeaders.CONTENT_DISPOSITION, "attachment; filename=\"" + filename + "\"")
+                    .contentType(MediaType.parseMediaType("application/vnd.openxmlformats-officedocument.spreadsheetml.sheet"))
+                    .body(data);
+        } catch (Exception e) {
+            log.error("Erreur export Excel salles", e);
+            return ResponseEntity.internalServerError().build();
+        }
+    }
+
+    @PostMapping("/salles/import")
+    public ResponseEntity<Map<String, Object>> importSalles(@RequestParam("file") MultipartFile file) {
+        Map<String, Object> response = new HashMap<>();
+        try {
+            ExcelSalleService.ImportResult result = excelSalleService.importerSalles(file);
+            response.put("success", true);
+            response.put("succes", result.getSucces());
+            response.put("erreurs", result.getErreurs());
+            response.put("nbErreurs", result.getNbErreurs());
+            response.put("message", result.getSucces() + " salle(s) importée(s)" +
+                    (result.hasErreurs() ? ", " + result.getNbErreurs() + " erreur(s)" : " avec succès"));
+            return ResponseEntity.ok(response);
+        } catch (IllegalArgumentException e) {
+            response.put("success", false);
+            response.put("message", e.getMessage());
+            return ResponseEntity.badRequest().body(response);
+        } catch (Exception e) {
+            log.error("Erreur import Excel salles", e);
+            response.put("success", false);
+            response.put("message", "Erreur lors de l'import : " + e.getMessage());
+            return ResponseEntity.internalServerError().body(response);
         }
     }
 }

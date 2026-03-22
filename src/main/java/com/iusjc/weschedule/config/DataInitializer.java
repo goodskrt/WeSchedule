@@ -64,18 +64,18 @@ public class DataInitializer {
             // 2. Supprimer les cours AVANT les enseignants (car cours a FK vers enseignants)
             coursRepo.deleteAll();
 
-            // 3. Supprimer les UEs (peuvent avoir FK vers enseignants via cours, mais cours déjà supprimés)
+            // 3. Supprimer les enseignants AVANT les UEs (car enseignant_ue a FK vers ues)
+            enseignantRepo.deleteAll();
+
+            // 4. Supprimer les UEs (enseignant_ue déjà vidée via cascade enseignants)
             ueRepo.deleteAll();
 
-            // 4. Supprimer les séances et emplois du temps
+            // 5. Supprimer les séances et emplois du temps
             seanceClasseRepo.deleteAll();
             emploiDuTempsClasseRepo.deleteAll();
 
-            // 5. Supprimer les étudiants (a FK vers classes et groupes)
+            // 6. Supprimer les étudiants (a FK vers classes et groupes)
             etudiantRepo.deleteAll();
-
-            // 6. Supprimer les enseignants (maintenant que cours et UEs sont supprimés)
-            enseignantRepo.deleteAll();
 
             // 7. Supprimer les administrateurs
             adminRepo.deleteAll();
@@ -566,55 +566,72 @@ public class DataInitializer {
             salleCours1.setNomSalle("Salle de Cours 101");
             salleCours1.setTypeSalle(TypeSalle.SALLE_DE_COURS);
             salleCours1.setCapacite(60);
+            salleCours1.setEtage("1er étage");
+            salleCours1.setBatiment("Nouveau bâtiment");
             salleRepo.save(salleCours1);
 
             Salle salleCours2 = new Salle();
             salleCours2.setNomSalle("Salle de Cours 102");
             salleCours2.setTypeSalle(TypeSalle.SALLE_DE_COURS);
             salleCours2.setCapacite(55);
+            salleCours2.setEtage("1er étage");
+            salleCours2.setBatiment("Nouveau bâtiment");
             salleRepo.save(salleCours2);
 
             Salle salleTD1 = new Salle();
             salleTD1.setNomSalle("Salle TD 201");
             salleTD1.setTypeSalle(TypeSalle.SALLE_DE_TD);
             salleTD1.setCapacite(40);
+            salleTD1.setEtage("2ème étage");
+            salleTD1.setBatiment("Nouveau bâtiment");
             salleRepo.save(salleTD1);
 
             Salle salleTD2 = new Salle();
             salleTD2.setNomSalle("Salle TD 202");
             salleTD2.setTypeSalle(TypeSalle.SALLE_DE_TD);
             salleTD2.setCapacite(35);
+            salleTD2.setEtage("2ème étage");
+            salleTD2.setBatiment("Ancien bâtiment");
             salleRepo.save(salleTD2);
 
             Salle salleInfo1 = new Salle();
             salleInfo1.setNomSalle("Salle Informatique 301");
             salleInfo1.setTypeSalle(TypeSalle.SALLE_INFORMATIQUE);
             salleInfo1.setCapacite(30);
+            salleInfo1.setEtage("3ème étage");
+            salleInfo1.setBatiment("Nouveau bâtiment");
             salleRepo.save(salleInfo1);
 
             Salle salleInfo2 = new Salle();
             salleInfo2.setNomSalle("Salle Informatique 302");
             salleInfo2.setTypeSalle(TypeSalle.SALLE_INFORMATIQUE);
             salleInfo2.setCapacite(25);
+            salleInfo2.setEtage("3ème étage");
+            salleInfo2.setBatiment("Ancien bâtiment");
             salleRepo.save(salleInfo2);
 
             Salle labo1 = new Salle();
             labo1.setNomSalle("Laboratoire Chimie");
             labo1.setTypeSalle(TypeSalle.LABORATOIRE);
             labo1.setCapacite(20);
+            labo1.setEtage("RDC");
+            labo1.setBatiment("Ancien bâtiment");
             salleRepo.save(labo1);
 
             Salle labo2 = new Salle();
             labo2.setNomSalle("Laboratoire Physique");
             labo2.setTypeSalle(TypeSalle.LABORATOIRE);
             labo2.setCapacite(20);
+            labo2.setEtage("RDC");
+            labo2.setBatiment("Ancien bâtiment");
             salleRepo.save(labo2);
 
-            // Création de l'amphithéâtre A pour l'affectation 5
             Salle amphitheatreA = new Salle();
             amphitheatreA.setNomSalle("Amphithéâtre A");
             amphitheatreA.setTypeSalle(TypeSalle.SALLE_DE_COURS);
             amphitheatreA.setCapacite(200);
+            amphitheatreA.setEtage("RDC");
+            amphitheatreA.setBatiment("Nouveau bâtiment");
             salleRepo.save(amphitheatreA);
 
             log.info("Salles creees : 9 salles");

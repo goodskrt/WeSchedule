@@ -59,21 +59,18 @@ public class SalleController {
             @RequestParam String nomSalle,
             @RequestParam String typeSalle,
             @RequestParam Integer capacite,
+            @RequestParam(required = false) String etage,
+            @RequestParam(required = false) String batiment,
             RedirectAttributes redirectAttributes) {
         
         try {
-            // Vérifier si une salle avec ce nom existe déjà
             Optional<Salle> salleExistante = salleRepository.findByNomSalle(nomSalle);
             if (salleExistante.isPresent()) {
-                redirectAttributes.addFlashAttribute("error", 
-                    "Une salle avec ce nom existe déjà");
+                redirectAttributes.addFlashAttribute("error", "Une salle avec ce nom existe déjà");
                 return "redirect:/admin/salles/nouvelle";
             }
-            
-            // Valider la capacité
             if (capacite <= 0) {
-                redirectAttributes.addFlashAttribute("error", 
-                    "La capacité doit être supérieure à 0");
+                redirectAttributes.addFlashAttribute("error", "La capacité doit être supérieure à 0");
                 return "redirect:/admin/salles/nouvelle";
             }
             
@@ -81,16 +78,14 @@ public class SalleController {
             salle.setNomSalle(nomSalle);
             salle.setTypeSalle(TypeSalle.valueOf(typeSalle));
             salle.setCapacite(capacite);
-            
+            salle.setEtage(etage != null && !etage.isBlank() ? etage : null);
+            salle.setBatiment(batiment != null && !batiment.isBlank() ? batiment : null);
             salleRepository.save(salle);
             
-            redirectAttributes.addFlashAttribute("success", 
-                "Salle créée avec succès");
+            redirectAttributes.addFlashAttribute("success", "Salle créée avec succès");
             return "redirect:/admin/salles";
-            
         } catch (Exception e) {
-            redirectAttributes.addFlashAttribute("error", 
-                "Erreur lors de la création de la salle: " + e.getMessage());
+            redirectAttributes.addFlashAttribute("error", "Erreur lors de la création : " + e.getMessage());
             return "redirect:/admin/salles/nouvelle";
         }
     }
@@ -126,40 +121,35 @@ public class SalleController {
             @RequestParam String nomSalle,
             @RequestParam String typeSalle,
             @RequestParam Integer capacite,
+            @RequestParam(required = false) String etage,
+            @RequestParam(required = false) String batiment,
             RedirectAttributes redirectAttributes) {
         
         try {
             Salle salle = salleRepository.findById(id)
                     .orElseThrow(() -> new RuntimeException("Salle non trouvée"));
             
-            // Vérifier si le nouveau nom existe déjà (sauf pour cette salle)
             Optional<Salle> salleExistante = salleRepository.findByNomSalle(nomSalle);
             if (salleExistante.isPresent() && !salleExistante.get().getIdSalle().equals(id)) {
-                redirectAttributes.addFlashAttribute("error", 
-                    "Une autre salle avec ce nom existe déjà");
+                redirectAttributes.addFlashAttribute("error", "Une autre salle avec ce nom existe déjà");
                 return "redirect:/admin/salles/modifier/" + id;
             }
-            
-            // Valider la capacité
             if (capacite <= 0) {
-                redirectAttributes.addFlashAttribute("error", 
-                    "La capacité doit être supérieure à 0");
+                redirectAttributes.addFlashAttribute("error", "La capacité doit être supérieure à 0");
                 return "redirect:/admin/salles/modifier/" + id;
             }
             
             salle.setNomSalle(nomSalle);
             salle.setTypeSalle(TypeSalle.valueOf(typeSalle));
             salle.setCapacite(capacite);
-            
+            salle.setEtage(etage != null && !etage.isBlank() ? etage : null);
+            salle.setBatiment(batiment != null && !batiment.isBlank() ? batiment : null);
             salleRepository.save(salle);
             
-            redirectAttributes.addFlashAttribute("success", 
-                "Salle modifiée avec succès");
+            redirectAttributes.addFlashAttribute("success", "Salle modifiée avec succès");
             return "redirect:/admin/salles";
-            
         } catch (Exception e) {
-            redirectAttributes.addFlashAttribute("error", 
-                "Erreur lors de la modification: " + e.getMessage());
+            redirectAttributes.addFlashAttribute("error", "Erreur lors de la modification : " + e.getMessage());
             return "redirect:/admin/salles/modifier/" + id;
         }
     }
