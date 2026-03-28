@@ -62,6 +62,26 @@ L'application crée automatiquement 3 comptes de test au démarrage :
 - ✅ MySQL 8.0+
 - ✅ Lombok
 - ✅ Maven
+- ✅ OpenAPI/Swagger pour la documentation API
+
+---
+
+## 📖 Documentation API (OpenAPI/Swagger)
+
+L'application inclut une documentation interactive des API REST via OpenAPI 3.0 (Swagger).
+
+### Accès à la documentation
+Une fois l'application démarrée, accédez à :
+- **Swagger UI** : http://localhost:8080/swagger-ui/index.html
+- **OpenAPI JSON** : http://localhost:8080/v3/api-docs
+
+### Endpoints documentés
+- `/api/auth/login` - Authentification utilisateur
+- `/api/auth/register` - Inscription utilisateur
+- Autres endpoints REST disponibles dans l'application
+
+### Configuration
+La documentation API est automatiquement générée à partir des annotations OpenAPI dans les contrôleurs REST.
 
 ---
 

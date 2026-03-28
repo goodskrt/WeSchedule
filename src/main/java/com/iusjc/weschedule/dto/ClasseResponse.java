@@ -22,13 +22,10 @@ public class ClasseResponse {
     private UUID filiereId;
     private String filiereNom;
     private Integer effectif;
-    private Integer semestre;
-    private Integer effectifMax;
-    private String responsable;
+    private String langue;
     private String description;
-    private String specialite;
     private List<UESimpleResponse> ues;
-    
+
     @Data
     @Builder
     @NoArgsConstructor

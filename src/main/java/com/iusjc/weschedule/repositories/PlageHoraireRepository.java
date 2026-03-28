@@ -19,4 +19,8 @@ public interface PlageHoraireRepository extends JpaRepository<PlageHoraire, UUID
     @Modifying
     @Query("DELETE FROM PlageHoraire p WHERE p.creneauDisponibilite.id = :creneauId")
     void deleteByCreneauDisponibiliteId(@Param("creneauId") UUID creneauId);
+    
+    @Modifying
+    @Query("DELETE FROM PlageHoraire p WHERE p.creneauDisponibilite.id IN (SELECT c.id FROM CreneauDisponibilite c WHERE c.disponibilite.id = :disponibiliteId)")
+    void deleteByDisponibiliteIdViaCreneaux(@Param("disponibiliteId") UUID disponibiliteId);
 }

@@ -1,0 +1,289 @@
+<!DOCTYPE html>
+<html lang="fr" xmlns:th="http://www.thymeleaf.org">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title th:text="${mode == 'creation'} ? 'Nouvelle UE - WeSchedule' : 'Modifier UE - WeSchedule'">UE</title>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <link rel="stylesheet" href="/css/modern-layout.css">
+    <style>
+        .form-layout { display: grid; grid-template-columns: 260px 1fr; gap: 1.5rem; align-items: start; }
+        @media(max-width:900px){ .form-layout{grid-template-columns:1fr;} .form-sidebar{display:none;} }
+
+        .form-sidebar { position: sticky; top: 1.5rem; }
+        .preview-card { background:var(--white); border-radius:var(--radius-xl); border:1px solid var(--gray-200); box-shadow:var(--shadow-sm); overflow:hidden; }
+        .preview-banner {
+            height: 90px; display: flex; flex-direction: column; align-items: center; justify-content: center;
+            font-weight: 800; color: white; background: linear-gradient(135deg,#3b82f6,#2563eb); transition: background 0.3s;
+        }
+        .preview-banner .pv-sem  { font-size: 2rem; font-weight: 800; line-height: 1; }
+        .preview-banner .pv-code { font-size: 0.7rem; opacity: 0.85; letter-spacing: 0.05em; }
+        .preview-body { padding: 1.25rem; }
+        .preview-name { font-size: 0.95rem; font-weight: 700; color: var(--gray-900); margin-bottom: 0.2rem; min-height: 1.4rem; }
+        .preview-meta { display: flex; flex-direction: column; gap: 0.4rem; margin-top: 0.75rem; }
+        .preview-meta-item { display: flex; align-items: center; gap: 0.5rem; font-size: 0.82rem; color: var(--gray-600); }
+        .preview-meta-item i { width: 14px; color: var(--primary-color); font-size: 0.75rem; }
+
+        .form-card { background:var(--white); border-radius:var(--radius-xl); border:1px solid var(--gray-200); box-shadow:var(--shadow-sm); padding:1.75rem; margin-bottom:1rem; }
+        .form-section-title { font-size:0.68rem; font-weight:700; text-transform:uppercase; letter-spacing:0.08em; color:var(--gray-400); margin-bottom:1rem; padding-bottom:0.5rem; border-bottom:1px solid var(--gray-100); }
+        .form-control, .form-select { border-radius:var(--radius-md); border:1.5px solid var(--gray-200); padding:0.6rem 0.9rem; font-size:0.9rem; transition:border-color 0.15s,box-shadow 0.15s; }
+        .form-control:focus, .form-select:focus { border-color:var(--primary-color); box-shadow:0 0 0 3px rgba(5,150,105,0.12); }
+        .input-icon-wrap { position:relative; }
+        .input-icon-wrap .input-icon { position:absolute; left:0.85rem; top:50%; transform:translateY(-50%); color:var(--gray-400); font-size:0.82rem; pointer-events:none; }
+        .input-icon-wrap .form-control, .input-icon-wrap .form-select { padding-left:2.25rem; }
+
+        /* Statut pills */
+        .statut-radio { display:none; }
+        .statut-pill {
+            display:inline-flex; align-items:center; gap:0.35rem;
+            padding:0.35rem 0.9rem; border-radius:2rem; border:1.5px solid var(--gray-200);
+            font-size:0.82rem; font-weight:600; cursor:pointer; transition:all 0.15s;
+            background:var(--white); color:var(--gray-600);
+        }
+        .statut-radio:checked + .statut-pill { background:var(--primary-color); border-color:var(--primary-color); color:white; }
+
+        /* Classes checkboxes */
+        .classe-check { display:none; }
+        .classe-label {
+            display:inline-flex; align-items:center; gap:0.35rem;
+            padding:0.3rem 0.75rem; border-radius:2rem; border:1.5px solid var(--gray-200);
+            font-size:0.8rem; font-weight:600; cursor:pointer; transition:all 0.15s;
+            background:var(--white); color:var(--gray-600); margin:0.2rem;
+        }
+        .classe-label:hover { border-color:var(--primary-color); color:var(--primary-color); }
+        .classe-check:checked + .classe-label { background:#f0fdf4; border-color:#059669; color:#065f46; }
+        .classe-item { display: inline-flex; }
+
+        .actions-bar { display:flex; align-items:center; justify-content:space-between; padding-top:1.25rem; border-top:1px solid var(--gray-100); margin-top:0.5rem; }
+    </style>
+</head>
+<body>
+    <div th:replace="~{fragments/sidebar :: admin-sidebar('ues')}"></div>
+    <div class="ws-wrapper">
+        <div th:replace="~{fragments/header :: admin-header}"></div>
+        <main class="ws-main-content">
+
+            <div class="mb-4">
+                <nav aria-label="breadcrumb">
+                    <ol class="breadcrumb mb-1">
+                        <li class="breadcrumb-item"><a href="/admin/ues">UEs</a></li>
+                        <li class="breadcrumb-item active" th:text="${mode == 'creation'} ? 'Nouvelle UE' : 'Modifier'"></li>
+                    </ol>
+                </nav>
+                <h2 class="page-title mb-0" th:text="${mode == 'creation'} ? 'Nouvelle UE' : 'Modifier UE'"></h2>
+                <p class="page-subtitle" th:text="${mode == 'creation'} ? 'Renseignez les informations de la nouvelle UE' : 'Mettez à jour les informations'"></p>
+            </div>
+
+            <div th:if="${error}" class="alert alert-danger alert-dismissible fade show mb-4">
+                <i class="fas fa-exclamation-circle me-2"></i><span th:text="${error}"></span>
+                <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+            </div>
+
+            <form th:action="${mode == 'creation' ? '/admin/ues/creer' : '/admin/ues/modifier/' + ue.idUE}"
+                  method="post">
+                <div class="form-layout">
+
+                    <!-- Aperçu -->
+                    <div class="form-sidebar">
+                        <p class="form-section-title ms-1">Aperçu</p>
+                        <div class="preview-card">
+                            <div class="preview-banner" id="previewBanner">
+                                <span class="pv-sem" id="previewSem">?</span>
+                                <span class="pv-code" id="previewCode"></span>
+                            </div>
+                            <div class="preview-body">
+                                <div class="preview-name" id="previewIntitule">Intitulé de l'UE</div>
+                                <div class="preview-meta">
+                                    <div class="preview-meta-item"><i class="fas fa-star"></i><span id="previewCredits">— crédits</span></div>
+                                    <div class="preview-meta-item"><i class="fas fa-clock"></i><span id="previewDuree">— heures</span></div>
+                                    <div class="preview-meta-item"><i class="fas fa-toggle-on"></i><span id="previewStatut">—</span></div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Formulaire -->
+                    <div>
+                        <!-- Identité -->
+                        <div class="form-card">
+                            <p class="form-section-title">Identité</p>
+                            <div class="row g-3">
+                                <div class="col-sm-4">
+                                    <label class="form-label fw-semibold">Code <span class="text-danger">*</span></label>
+                                    <div class="input-icon-wrap">
+                                        <i class="fas fa-hashtag input-icon"></i>
+                                        <input type="text" class="form-control" name="code" id="codeInput"
+                                               th:value="${ue.code}" required placeholder="Ex : INF101"
+                                               oninput="updatePreview()" style="text-transform:uppercase;">
+                                    </div>
+                                </div>
+                                <div class="col-sm-8">
+                                    <label class="form-label fw-semibold">Intitulé <span class="text-danger">*</span></label>
+                                    <div class="input-icon-wrap">
+                                        <i class="fas fa-book input-icon"></i>
+                                        <input type="text" class="form-control" name="intitule" id="intituleInput"
+                                               th:value="${ue.intitule}" required placeholder="Ex : Introduction à la Programmation"
+                                               oninput="updatePreview()">
+                                    </div>
+                                </div>
+                                <div class="col-sm-4">
+                                    <label class="form-label fw-semibold">Semestre <span class="text-danger">*</span></label>
+                                    <div class="input-icon-wrap">
+                                        <i class="fas fa-calendar input-icon"></i>
+                                        <select class="form-select" name="semestre" id="semestreSelect" required onchange="updatePreview()">
+                                            <option value="">— Choisir —</option>
+                                            <option th:each="s : ${semestres}" th:value="${s}"
+                                                    th:text="'Semestre ' + ${s}"
+                                                    th:selected="${ue.semestre == s}"></option>
+                                        </select>
+                                    </div>
+                                </div>
+                                <div class="col-sm-4">
+                                    <label class="form-label fw-semibold">Crédits <span class="text-danger">*</span></label>
+                                    <div class="input-icon-wrap">
+                                        <i class="fas fa-star input-icon"></i>
+                                        <input type="number" class="form-control" name="credits" id="creditsInput"
+                                               th:value="${ue.credits}" required min="1" max="30" placeholder="Ex : 6"
+                                               oninput="updatePreview()">
+                                    </div>
+                                </div>
+                                <div class="col-sm-4">
+                                    <label class="form-label fw-semibold">Durée (heures)</label>
+                                    <div class="input-icon-wrap">
+                                        <i class="fas fa-clock input-icon"></i>
+                                        <input type="number" class="form-control" name="duree" id="dureeInput"
+                                               th:value="${ue.duree}" min="1" placeholder="Ex : 60"
+                                               oninput="updatePreview()">
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- Statut -->
+                        <div class="form-card">
+                            <p class="form-section-title">Statut</p>
+                            <div class="d-flex gap-2">
+                                <th:block th:each="s : ${statuts}">
+                                    <input type="radio" class="statut-radio" name="statut"
+                                           th:id="'stat-' + ${s}" th:value="${s}"
+                                           th:checked="${ue.statut == s or (ue.statut == null and s.name() == 'ACTIF')}"
+                                           onchange="updatePreview()">
+                                    <label th:for="'stat-' + ${s}" class="statut-pill">
+                                        <i th:class="${s.name() == 'ACTIF'} ? 'fas fa-check-circle' : 'fas fa-times-circle'"
+                                           style="font-size:0.72rem;"></i>
+                                        <span th:text="${s.name()}"></span>
+                                    </label>
+                                </th:block>
+                            </div>
+                        </div>
+
+                        <!-- Classes associées -->
+                        <div class="form-card">
+                            <p class="form-section-title">Classes associées <span class="text-muted fw-normal">(optionnel)</span></p>
+                            <div th:if="${classes == null or classes.isEmpty()}" class="text-muted small">
+                                <i class="fas fa-info-circle me-1"></i> Aucune classe disponible.
+                            </div>
+                            <div th:if="${classes != null and !classes.isEmpty()}">
+                                <!-- Filtre école -->
+                                <div class="mb-3">
+                                    <label class="form-label fw-semibold" style="font-size:0.82rem;">Filtrer par école</label>
+                                    <select id="ecoleFilterForm" class="form-select form-select-sm" onchange="filterClassesForm()" style="max-width:280px;">
+                                        <option value="">Toutes les écoles</option>
+                                        <option th:each="e : ${ecoles}" th:value="${e.idEcole}" th:text="${e.nomEcole}"></option>
+                                    </select>
+                                </div>
+                                <div class="d-flex flex-wrap" id="classesContainer">
+                                    <th:block th:each="c : ${classes}">
+                                        <div class="classe-item"
+                                             th:data-ecole="${c.ecole != null ? c.ecole.idEcole : ''}">
+                                            <input type="checkbox" class="classe-check"
+                                                   name="classeIds" th:id="'cls-' + ${c.idClasse}"
+                                                   th:value="${c.idClasse}"
+                                                   th:checked="${ue.classes != null and !ue.classes.isEmpty() and ue.classes.contains(c)}">
+                                            <label th:for="'cls-' + ${c.idClasse}" class="classe-label">
+                                                <i class="fas fa-users" style="font-size:0.65rem;"></i>
+                                                <span th:text="${c.nom}"></span>
+                                            </label>
+                                        </div>
+                                    </th:block>
+                                </div>
+                                <div id="noClasseMsg" class="text-muted small d-none mt-2">
+                                    <i class="fas fa-info-circle me-1"></i> Aucune classe pour cette école.
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- Description -->
+                        <div class="form-card">
+                            <p class="form-section-title">Description <span class="text-muted fw-normal">(optionnel)</span></p>
+                            <textarea class="form-control" name="description" rows="3"
+                                      placeholder="Informations complémentaires sur l'UE…"
+                                      th:text="${ue.description}"></textarea>
+                        </div>
+
+                        <div class="actions-bar">
+                            <a href="/admin/ues" class="btn btn-secondary">
+                                <i class="fas fa-arrow-left me-1"></i> Annuler
+                            </a>
+                            <button type="submit" class="btn btn-primary px-4">
+                                <i class="fas fa-save me-1"></i>
+                                <span th:text="${mode == 'creation'} ? 'Créer UE' : 'Enregistrer'"></span>
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            </form>
+        </main>
+    </div>
+
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js"></script>
+    <script src="/js/modern-layout.js"></script>
+    <script>
+        const SEM_COLORS = {
+            1:'linear-gradient(135deg,#3b82f6,#2563eb)',
+            2:'linear-gradient(135deg,#3b82f6,#2563eb)',
+            3:'linear-gradient(135deg,#8b5cf6,#7c3aed)',
+            4:'linear-gradient(135deg,#8b5cf6,#7c3aed)',
+            5:'linear-gradient(135deg,#f59e0b,#d97706)',
+            6:'linear-gradient(135deg,#f59e0b,#d97706)',
+            7:'linear-gradient(135deg,#ef4444,#dc2626)',
+            8:'linear-gradient(135deg,#ef4444,#dc2626)',
+        };
+
+        function updatePreview() {
+            const code     = document.getElementById('codeInput').value.trim().toUpperCase();
+            const intitule = document.getElementById('intituleInput').value.trim();
+            const semEl    = document.getElementById('semestreSelect');
+            const credits  = document.getElementById('creditsInput').value;
+            const duree    = document.getElementById('dureeInput').value;
+            const statutEl = document.querySelector('input[name="statut"]:checked');
+
+            document.getElementById('previewCode').textContent     = code || '';
+            document.getElementById('previewIntitule').textContent = intitule || 'Intitulé de l\'UE';
+            document.getElementById('previewCredits').textContent  = credits ? credits + ' crédits' : '— crédits';
+            document.getElementById('previewDuree').textContent    = duree ? duree + ' heures' : '— heures';
+            document.getElementById('previewStatut').textContent   = statutEl ? statutEl.value : '—';
+
+            const sem = semEl.value ? parseInt(semEl.value) : null;
+            document.getElementById('previewSem').textContent = sem ? 'S' + sem : '?';
+            if (sem) document.getElementById('previewBanner').style.background = SEM_COLORS[sem] || 'linear-gradient(135deg,#059669,#10b981)';
+        }
+
+        document.addEventListener('DOMContentLoaded', updatePreview);
+
+        function filterClassesForm() {
+            const ecoleId = document.getElementById('ecoleFilterForm').value;
+            const items   = document.querySelectorAll('#classesContainer .classe-item');
+            let visible   = 0;
+            items.forEach(item => {
+                const match = !ecoleId || item.dataset.ecole === ecoleId;
+                item.style.display = match ? '' : 'none';
+                if (match) visible++;
+            });
+            document.getElementById('noClasseMsg').classList.toggle('d-none', visible > 0);
+        }
+    </script>
+</body>
+</html>

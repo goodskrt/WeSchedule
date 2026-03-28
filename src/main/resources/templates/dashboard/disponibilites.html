@@ -9,16 +9,105 @@
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
     <link rel="stylesheet" href="/css/modern-layout.css">
     <style>
-        .disponibilite-card { background: var(--white); border-radius: var(--radius-xl); padding: 1.25rem; margin-bottom: 1rem; box-shadow: var(--shadow-sm); border: 1px solid var(--gray-200); transition: all var(--transition-normal); }
-        .disponibilite-card:hover { transform: translateY(-2px); box-shadow: var(--shadow-md); border-color: var(--primary-color); }
-        .empty-state { text-align: center; padding: 4rem 2rem; color: var(--gray-500); background: var(--white); border-radius: var(--radius-xl); }
-        .empty-state i { font-size: 4rem; color: var(--gray-300); margin-bottom: 1.5rem; }
-        .btn-excel { background: #217346; border: none; color: white; }
-        .btn-excel:hover { background: #1e5e3a; color: white; }
-        .excel-card { background: linear-gradient(135deg, #217346 0%, #1e5e3a 100%); color: white; border-radius: var(--radius-xl); padding: 1.25rem; margin-bottom: 1.5rem; }
-        .upload-zone { border: 2px dashed rgba(255,255,255,0.5); border-radius: var(--radius-lg); padding: 1.5rem; text-align: center; cursor: pointer; transition: all var(--transition-normal); }
-        .upload-zone:hover { border-color: white; background: rgba(255,255,255,0.1); }
-        .upload-zone.dragover { border-color: white; background: rgba(255,255,255,0.2); }
+        .page-header {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            padding: 2rem;
+            border-radius: var(--radius-xl);
+            margin-bottom: 2rem;
+            box-shadow: var(--shadow-lg);
+        }
+        .disponibilite-card {
+            background: var(--white);
+            border-radius: var(--radius-xl);
+            padding: 1.5rem;
+            margin-bottom: 1rem;
+            box-shadow: var(--shadow-sm);
+            border: 1px solid var(--gray-200);
+            transition: all var(--transition-normal);
+        }
+        .disponibilite-card:hover {
+            transform: translateY(-2px);
+            box-shadow: var(--shadow-md);
+            border-color: var(--primary-color);
+        }
+        .disponibilite-header {
+            display: flex;
+            align-items: center;
+            gap: 1rem;
+            margin-bottom: 0.75rem;
+        }
+        .disponibilite-icon {
+            width: 48px;
+            height: 48px;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            border-radius: var(--radius-lg);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            color: white;
+            font-size: 1.25rem;
+        }
+        .disponibilite-info {
+            flex: 1;
+        }
+        .disponibilite-title {
+            font-size: 1.1rem;
+            font-weight: 600;
+            color: var(--gray-900);
+            margin: 0;
+        }
+        .disponibilite-dates {
+            font-size: 0.875rem;
+            color: var(--gray-600);
+            margin: 0;
+        }
+        .empty-state {
+            text-align: center;
+            padding: 4rem 2rem;
+            color: var(--gray-500);
+            background: var(--white);
+            border-radius: var(--radius-xl);
+            box-shadow: var(--shadow-sm);
+        }
+        .empty-state i {
+            font-size: 4rem;
+            color: var(--gray-300);
+            margin-bottom: 1.5rem;
+        }
+        .btn-excel {
+            background: #217346;
+            border: none;
+            color: white;
+        }
+        .btn-excel:hover {
+            background: #1e5e3a;
+            color: white;
+        }
+        .excel-card {
+            background: linear-gradient(135deg, #217346 0%, #1e5e3a 100%);
+            color: white;
+            border-radius: var(--radius-xl);
+            padding: 1.5rem;
+            margin-bottom: 1.5rem;
+            box-shadow: var(--shadow-md);
+        }
+        .upload-zone {
+            border: 2px dashed rgba(255,255,255,0.5);
+            border-radius: var(--radius-lg);
+            padding: 1.5rem;
+            text-align: center;
+            cursor: pointer;
+            transition: all var(--transition-normal);
+        }
+        .upload-zone:hover {
+            border-color: white;
+            background: rgba(255,255,255,0.1);
+        }
+        .upload-zone.dragover {
+            border-color: white;
+            background: rgba(255,255,255,0.2);
+        }
     </style>
 </head>
 <body>
@@ -26,26 +115,21 @@
     <div class="ws-wrapper">
         <div th:replace="~{fragments/header :: enseignant-header}"></div>
         <main class="ws-main-content">
-                <div class="d-flex justify-content-between align-items-center mb-4">
-                    <div>
-                        <h2 class="page-title">Mes Disponibilites</h2>
-                        <p class="page-subtitle">Gerez vos creneaux de disponibilite par semaine</p>
-                    </div>
-                    <div class="d-flex gap-2">
-                        <button class="btn btn-excel" data-bs-toggle="modal" data-bs-target="#excelModal"><i class="fas fa-file-excel"></i> Import Excel</button>
-                        <a href="/dashboard/enseignant/disponibilites/nouvelle" class="btn btn-primary"><i class="fas fa-plus"></i> Nouvelle Semaine</a>
-                    </div>
-                </div>
-
-                <div class="excel-card">
-                    <div class="row align-items-center">
-                        <div class="col-md-8">
-                            <h5><i class="fas fa-file-excel me-2"></i>Import via Excel</h5>
-                            <p class="mb-0 opacity-75">Telechargez le modele, remplissez vos disponibilites et importez le fichier</p>
+                <div class="page-header">
+                    <div class="d-flex justify-content-between align-items-center">
+                        <div>
+                            <h2 class="mb-2" style="font-size: 1.75rem; font-weight: 700;">
+                                <i class="fas fa-calendar-check me-2"></i>Mes Disponibilites
+                            </h2>
+                            <p class="mb-0 opacity-90">Gerez vos creneaux de disponibilite par semaine</p>
                         </div>
-                        <div class="col-md-4 text-end">
-                            <button class="btn btn-light btn-sm me-2" onclick="showDownloadModal()"><i class="fas fa-download"></i> Telecharger modele</button>
-                            <button class="btn btn-outline-light btn-sm" data-bs-toggle="modal" data-bs-target="#importModal"><i class="fas fa-upload"></i> Importer</button>
+                        <div class="d-flex gap-2">
+                            <button class="btn btn-light" data-bs-toggle="modal" data-bs-target="#importModal">
+                                <i class="fas fa-file-excel"></i> Import Excel
+                            </button>
+                            <a href="/dashboard/enseignant/disponibilites/nouvelle" class="btn btn-light">
+                                <i class="fas fa-plus"></i> Nouvelle Semaine
+                            </a>
                         </div>
                     </div>
                 </div>
@@ -62,16 +146,38 @@
 
                 <div th:unless="${#lists.isEmpty(disponibilites)}">
                     <div th:each="dispo : ${disponibilites}" class="disponibilite-card">
-                        <div class="d-flex justify-content-between align-items-center">
-                            <div>
-                                <h5 class="mb-1"><i class="fas fa-calendar-week text-primary me-2"></i>Semaine du <span th:text="${#temporals.format(dispo.dateDebut, 'dd MMMM yyyy')}"></span></h5>
-                                <small class="text-muted">Du <span th:text="${#temporals.format(dispo.dateDebut, 'EEEE dd/MM')}"></span> au <span th:text="${#temporals.format(dispo.dateFin, 'EEEE dd/MM/yyyy')}"></span></small>
+                        <div class="disponibilite-header">
+                            <div class="disponibilite-icon">
+                                <i class="fas fa-calendar-week"></i>
+                            </div>
+                            <div class="disponibilite-info">
+                                <h5 class="disponibilite-title">
+                                    Semaine du <span th:text="${#temporals.format(dispo.dateDebut, 'dd MMMM yyyy')}"></span>
+                                </h5>
+                                <p class="disponibilite-dates">
+                                    Du <span th:text="${#temporals.format(dispo.dateDebut, 'EEEE dd/MM')}"></span> 
+                                    au <span th:text="${#temporals.format(dispo.dateFin, 'EEEE dd/MM/yyyy')}"></span>
+                                </p>
                             </div>
                             <div class="d-flex gap-2">
-                                <a th:href="@{/dashboard/enseignant/api/disponibilites/{id}/excel/export(id=${dispo.id})}" class="btn btn-outline-primary btn-sm" title="Telecharger Excel"><i class="fas fa-file-excel"></i></a>
-                                <a th:href="@{/dashboard/enseignant/disponibilites/{id}/voir(id=${dispo.id})}" class="btn btn-outline-primary btn-sm"><i class="fas fa-eye"></i> Consulter</a>
-                                <a th:href="@{/dashboard/enseignant/disponibilites/{id}/modifier(id=${dispo.id})}" class="btn btn-outline-primary btn-sm"><i class="fas fa-edit"></i> Modifier</a>
-                                <button class="btn btn-outline-danger btn-sm" th:data-id="${dispo.id}" onclick="confirmerSuppression(this)"><i class="fas fa-trash"></i></button>
+                                <a th:href="@{/dashboard/enseignant/api/disponibilites/{id}/excel/export(id=${dispo.id})}" 
+                                   class="btn btn-outline-success btn-sm" 
+                                   title="Telecharger Excel">
+                                    <i class="fas fa-file-excel"></i>
+                                </a>
+                                <a th:href="@{/dashboard/enseignant/disponibilites/{id}/voir(id=${dispo.id})}" 
+                                   class="btn btn-outline-primary btn-sm">
+                                    <i class="fas fa-eye"></i> Consulter
+                                </a>
+                                <a th:href="@{/dashboard/enseignant/disponibilites/{id}/modifier(id=${dispo.id})}" 
+                                   class="btn btn-primary btn-sm">
+                                    <i class="fas fa-edit"></i> Modifier
+                                </a>
+                                <button class="btn btn-outline-danger btn-sm" 
+                                        th:data-id="${dispo.id}" 
+                                        onclick="confirmerSuppression(this)">
+                                    <i class="fas fa-trash"></i>
+                                </button>
                             </div>
                         </div>
                     </div>

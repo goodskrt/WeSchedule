@@ -225,15 +225,17 @@
             <div class="salle-hero">
                 <div class="salle-hero-bg"
                      th:style="'background: linear-gradient(135deg,' +
-                               (${salle.typeSalle.name() == 'SALLE_DE_COURS'}    ? '#3b82f6,#2563eb' :
-                               (${salle.typeSalle.name() == 'SALLE_DE_TD'}       ? '#f59e0b,#d97706' :
-                               (${salle.typeSalle.name() == 'SALLE_INFORMATIQUE'}? '#059669,#10b981' : '#8b5cf6,#7c3aed'))) + ');'">
+                               (${salle.typeSalle.name() == 'SALLE_DE_COURS'}      ? '#3b82f6,#2563eb' :
+                               (${salle.typeSalle.name() == 'SALLE_DE_TD'}         ? '#f59e0b,#d97706' :
+                               (${salle.typeSalle.name() == 'SALLE_INFORMATIQUE'}  ? '#059669,#10b981' :
+                               (${salle.typeSalle.name() == 'SALLE_DE_CONFERENCE'} ? '#ec4899,#db2777' : '#8b5cf6,#7c3aed')))) + ');'">
 
                     <div class="salle-hero-icon">
                         <i class="fas"
-                           th:classappend="${salle.typeSalle.name() == 'SALLE_DE_COURS'}    ? 'fa-chalkboard-teacher' :
-                                          (${salle.typeSalle.name() == 'SALLE_DE_TD'}       ? 'fa-chalkboard' :
-                                          (${salle.typeSalle.name() == 'SALLE_INFORMATIQUE'}? 'fa-laptop' : 'fa-flask'))">
+                           th:classappend="${salle.typeSalle.name() == 'SALLE_DE_COURS'}      ? 'fa-chalkboard-teacher' :
+                                          (${salle.typeSalle.name() == 'SALLE_DE_TD'}         ? 'fa-chalkboard' :
+                                          (${salle.typeSalle.name() == 'SALLE_INFORMATIQUE'}  ? 'fa-laptop' :
+                                          (${salle.typeSalle.name() == 'SALLE_DE_CONFERENCE'} ? 'fa-microphone-alt' : 'fa-flask')))">
                         </i>
                     </div>
                     <div class="salle-hero-info">
@@ -309,10 +311,24 @@
                             <div class="info-row-label">Type</div>
                             <div class="info-row-value">
                                 <span class="badge"
-                                      th:classappend="${salle.typeSalle.name() == 'SALLE_DE_COURS'}    ? 'bg-primary' :
-                                                     (${salle.typeSalle.name() == 'SALLE_DE_TD'}       ? 'bg-warning text-dark' :
-                                                     (${salle.typeSalle.name() == 'SALLE_INFORMATIQUE'}? 'bg-success' : 'bg-info text-dark'))"
+                                      th:classappend="${salle.typeSalle.name() == 'SALLE_DE_COURS'}      ? 'bg-primary' :
+                                                     (${salle.typeSalle.name() == 'SALLE_DE_TD'}         ? 'bg-warning text-dark' :
+                                                     (${salle.typeSalle.name() == 'SALLE_INFORMATIQUE'}  ? 'bg-success' :
+                                                     (${salle.typeSalle.name() == 'SALLE_DE_CONFERENCE'} ? 'bg-danger' : 'bg-info text-dark')))"
                                       th:text="${salle.typeSalle}">—</span>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="info-row">
+                        <div class="info-row-icon"><i class="fas fa-circle"></i></div>
+                        <div>
+                            <div class="info-row-label">Statut</div>
+                            <div class="info-row-value">
+                                <span class="badge"
+                                      th:classappend="${salle.statut != null and salle.statut.name() == 'DISPONIBLE'}      ? 'bg-success' :
+                                                     (${salle.statut != null and salle.statut.name() == 'OCCUPE'}          ? 'bg-danger' : 'bg-warning text-dark')"
+                                      th:text="${salle.statut != null and salle.statut.name() == 'DISPONIBLE'} ? 'Disponible' :
+                                               (${salle.statut != null and salle.statut.name() == 'OCCUPE'}    ? 'Occupé' : 'En maintenance')">—</span>
                             </div>
                         </div>
                     </div>

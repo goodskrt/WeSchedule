@@ -132,7 +132,7 @@ public class PlanificationSeanceService {
             for (Cours c : cours) {
                 // Vérifier qu'il reste des heures à planifier
                 if (dureeService.aDesHeuresRestantes(c)) {
-                    int heuresRestantes = c.getDuree();
+                    int heuresRestantes = c.getDureeRestante() != null ? c.getDureeRestante() : 0;
                     double pourcentage = dureeService.calculerPourcentageAvancement(c);
 
                     // Trouver l'enseignant du cours (si assigné)

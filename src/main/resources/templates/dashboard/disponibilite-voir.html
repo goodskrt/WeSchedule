@@ -3,18 +3,155 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Consulter Disponibilite - WeSchedule</title>
+    <title>Consulter Disponibilité - WeSchedule</title>
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
     <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css" rel="stylesheet">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
     <link rel="stylesheet" href="/css/modern-layout.css">
     <style>
-        .day-card { background: white; border-radius: var(--radius-lg); border: 1px solid var(--gray-200); margin-bottom: 1rem; overflow: hidden; }
-        .day-header { background: linear-gradient(135deg, var(--primary-color), var(--green-600)); color: white; padding: 0.75rem 1rem; font-weight: 600; }
-        .day-content { padding: 1rem; }
-        .slot-badge { display: inline-block; background: var(--green-100); color: var(--primary-color); padding: 0.375rem 0.75rem; border-radius: 1.25rem; margin: 0.25rem; font-size: 0.85rem; font-weight: 500; }
-        .no-slots { color: var(--gray-400); font-style: italic; }
-        .week-info { background: var(--green-50); border: 1px solid var(--green-200); padding: 1.25rem; border-radius: var(--radius-xl); margin-bottom: 1.5rem; }
+        .page-header {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            padding: 2rem;
+            border-radius: var(--radius-xl);
+            margin-bottom: 2rem;
+            box-shadow: var(--shadow-lg);
+        }
+        .week-info-card {
+            background: linear-gradient(135deg, #f0f4ff 0%, #e8eaff 100%);
+            border: 2px solid #667eea;
+            border-radius: var(--radius-xl);
+            padding: 1.5rem;
+            margin-bottom: 2rem;
+            text-align: center;
+        }
+        .week-info-title {
+            font-size: 1.3rem;
+            font-weight: 700;
+            color: #667eea;
+            margin-bottom: 0.5rem;
+        }
+        .week-info-dates {
+            font-size: 1rem;
+            color: var(--gray-700);
+        }
+        .timetable-wrap { overflow-x: auto; margin-bottom: 2rem; }
+        .timetable {
+            display: grid;
+            grid-template-columns: 70px repeat(6, 1fr);
+            border-radius: var(--radius-xl);
+            overflow: hidden;
+            border: 1px solid var(--gray-200);
+            background: var(--gray-200);
+            gap: 1px;
+            min-width: 800px;
+            box-shadow: var(--shadow-md);
+        }
+        .tt-head {
+            background: linear-gradient(135deg, #667eea, #764ba2);
+            color: white;
+            padding: 1rem 0.5rem;
+            text-align: center;
+            font-weight: 600;
+            font-size: 0.85rem;
+        }
+        .tt-head.corner {
+            background: #5568d3;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+        .tt-time {
+            background: #f8fafc;
+            padding: 0.75rem 0.5rem;
+            text-align: center;
+            font-size: 0.75rem;
+            color: var(--gray-600);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-weight: 600;
+        }
+        .tt-cell {
+            background: white;
+            min-height: 60px;
+            position: relative;
+            padding: 4px;
+        }
+        .tt-cell.disponible {
+            background: linear-gradient(135deg, rgba(102, 126, 234, 0.2), rgba(118, 75, 162, 0.2));
+            border: 2px solid #667eea;
+        }
+        .tt-cell.disponible::after {
+            content: '✓';
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            color: #667eea;
+            font-weight: bold;
+            font-size: 1.3rem;
+        }
+        .stats-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+            gap: 1rem;
+            margin-bottom: 2rem;
+        }
+        .stat-card {
+            background: white;
+            border-radius: var(--radius-lg);
+            padding: 1.5rem;
+            text-align: center;
+            box-shadow: var(--shadow-sm);
+            border: 1px solid var(--gray-200);
+        }
+        .stat-icon {
+            width: 50px;
+            height: 50px;
+            background: linear-gradient(135deg, #667eea, #764ba2);
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            color: white;
+            font-size: 1.5rem;
+            margin: 0 auto 1rem;
+        }
+        .stat-value {
+            font-size: 2rem;
+            font-weight: 700;
+            color: #667eea;
+            margin-bottom: 0.25rem;
+        }
+        .stat-label {
+            font-size: 0.9rem;
+            color: var(--gray-600);
+        }
+        .legend-card {
+            background: white;
+            border-radius: var(--radius-lg);
+            padding: 1.25rem;
+            box-shadow: var(--shadow-sm);
+            border: 1px solid var(--gray-200);
+            margin-bottom: 1.5rem;
+        }
+        .legend-item {
+            display: flex;
+            align-items: center;
+            gap: 0.75rem;
+            font-size: 0.9rem;
+        }
+        .legend-box {
+            width: 28px;
+            height: 28px;
+            border-radius: 6px;
+            border: 2px solid var(--gray-300);
+        }
+        .legend-box.disponible {
+            background: linear-gradient(135deg, rgba(102, 126, 234, 0.2), rgba(118, 75, 162, 0.2));
+            border-color: #667eea;
+        }
     </style>
 </head>
 <body>
@@ -22,46 +159,188 @@
     <div class="ws-wrapper">
         <div th:replace="~{fragments/header :: enseignant-header}"></div>
         <main class="ws-main-content">
-                <nav aria-label="breadcrumb" class="mb-3">
-                    <ol class="breadcrumb">
-                        <li class="breadcrumb-item"><a href="/dashboard/enseignant/disponibilites">Mes Disponibilites</a></li>
-                        <li class="breadcrumb-item active">Consultation</li>
-                    </ol>
-                </nav>
-
-                <div class="d-flex justify-content-between align-items-center mb-4">
-                    <h2 class="page-title"><i class="fas fa-eye text-primary me-2"></i>Consultation des disponibilites</h2>
+            <!-- Page Header -->
+            <div class="page-header">
+                <div class="d-flex justify-content-between align-items-center">
+                    <div>
+                        <h2 class="mb-2" style="font-size: 1.75rem; font-weight: 700;">
+                            <i class="fas fa-eye me-2"></i>Consultation de disponibilité
+                        </h2>
+                        <p class="mb-0 opacity-90">Visualisez vos créneaux de disponibilité pour la semaine</p>
+                    </div>
                     <div class="d-flex gap-2">
-                        <a th:href="@{/dashboard/enseignant/disponibilites/{id}/modifier(id=${disponibilite.id})}" class="btn btn-primary"><i class="fas fa-edit"></i> Modifier</a>
-                        <a href="/dashboard/enseignant/disponibilites" class="btn btn-secondary"><i class="fas fa-arrow-left"></i> Retour</a>
+                        <a th:href="@{/dashboard/enseignant/disponibilites/{id}/modifier(id=${disponibilite.id})}" class="btn btn-light">
+                            <i class="fas fa-edit me-1"></i> Modifier
+                        </a>
+                        <a href="/dashboard/enseignant/disponibilites" class="btn btn-light">
+                            <i class="fas fa-arrow-left me-1"></i> Retour
+                        </a>
                     </div>
                 </div>
+            </div>
 
-                <div class="week-info">
-                    <h4 class="mb-2"><i class="fas fa-calendar-week me-2"></i>Semaine du <span th:text="${#temporals.format(disponibilite.dateDebut, 'dd MMMM yyyy')}"></span></h4>
-                    <p class="mb-0 text-muted">Du <span th:text="${#temporals.format(disponibilite.dateDebut, 'EEEE dd/MM')}"></span> au <span th:text="${#temporals.format(disponibilite.dateFin, 'EEEE dd/MM/yyyy')}"></span></p>
+            <!-- Info semaine -->
+            <div class="week-info-card">
+                <div class="week-info-title">
+                    <i class="fas fa-calendar-week me-2"></i>
+                    Semaine du <span th:text="${#temporals.format(disponibilite.dateDebut, 'dd MMMM yyyy')}"></span>
                 </div>
+                <div class="week-info-dates">
+                    Du <span th:text="${#temporals.format(disponibilite.dateDebut, 'EEEE dd/MM')}"></span>
+                    au <span th:text="${#temporals.format(disponibilite.dateFin, 'EEEE dd/MM/yyyy')}"></span>
+                </div>
+            </div>
 
-                <div class="row">
-                    <div th:each="entry : ${emploiDuTemps}" class="col-md-6 col-lg-4">
-                        <div class="day-card">
-                            <div class="day-header"><i class="fas fa-calendar-day me-2"></i><span th:text="${#temporals.format(entry.key, 'EEEE dd/MM')}">Jour</span></div>
-                            <div class="day-content">
-                                <div th:if="${entry.value.isEmpty()}" class="no-slots"><i class="fas fa-moon me-1"></i> Aucun creneau</div>
-                                <div th:unless="${entry.value.isEmpty()}">
-                                    <span th:each="plage : ${entry.value}" class="slot-badge"><i class="fas fa-clock me-1"></i><span th:text="${#temporals.format(plage.heureDebut, 'HH:mm')}">08:00</span> - <span th:text="${#temporals.format(plage.heureFin, 'HH:mm')}">10:00</span></span>
-                                </div>
-                            </div>
-                        </div>
+            <!-- Statistiques -->
+            <div class="stats-grid">
+                <div class="stat-card">
+                    <div class="stat-icon">
+                        <i class="fas fa-check-circle"></i>
+                    </div>
+                    <div class="stat-value" id="totalCreneaux">0</div>
+                    <div class="stat-label">Créneaux disponibles</div>
+                </div>
+                <div class="stat-card">
+                    <div class="stat-icon">
+                        <i class="fas fa-clock"></i>
+                    </div>
+                    <div class="stat-value" id="totalHeures">0h</div>
+                    <div class="stat-label">Heures disponibles</div>
+                </div>
+                <div class="stat-card">
+                    <div class="stat-icon">
+                        <i class="fas fa-calendar-day"></i>
+                    </div>
+                    <div class="stat-value" id="joursDisponibles">0</div>
+                    <div class="stat-label">Jours avec disponibilité</div>
+                </div>
+            </div>
+
+            <!-- Légende -->
+            <div class="legend-card">
+                <div class="d-flex gap-4 flex-wrap">
+                    <div class="legend-item">
+                        <div class="legend-box disponible"></div>
+                        <span>Créneau disponible</span>
+                    </div>
+                    <div class="legend-item">
+                        <div class="legend-box"></div>
+                        <span>Créneau non disponible</span>
                     </div>
                 </div>
+            </div>
 
-                <div class="mt-4">
-                    <a href="/dashboard/enseignant/disponibilites" class="btn btn-secondary"><i class="fas fa-arrow-left"></i> Retour a la liste</a>
-                </main>
+            <!-- Grille -->
+            <div class="timetable-wrap">
+                <div class="timetable" id="timetable"></div>
+            </div>
+
+            <!-- Actions -->
+            <div class="d-flex gap-2">
+                <a th:href="@{/dashboard/enseignant/disponibilites/{id}/modifier(id=${disponibilite.id})}" class="btn btn-primary btn-lg">
+                    <i class="fas fa-edit me-2"></i> Modifier cette disponibilité
+                </a>
+                <a href="/dashboard/enseignant/disponibilites" class="btn btn-secondary btn-lg">
+                    <i class="fas fa-arrow-left me-2"></i> Retour à la liste
+                </a>
+            </div>
+        </main>
     </div>
 
     <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js"></script>
     <script src="/js/modern-layout.js"></script>
+    <script th:inline="javascript">
+        // Récupérer les données depuis le serveur
+        const emploiDuTemps = /*[[${emploiDuTempsJson}]]*/ {};
+        const JOURS = ['Lundi', 'Mardi', 'Mercredi', 'Jeudi', 'Vendredi', 'Samedi'];
+        const HEURES = ['08:00','09:00','10:00','11:00','12:00','13:00','14:00','15:00','16:00','17:00','18:00','19:00'];
+
+        console.log('Emploi du temps chargé:', emploiDuTemps);
+
+        document.addEventListener('DOMContentLoaded', function() {
+            buildGrid();
+            calculateStats();
+        });
+
+        function buildGrid() {
+            const grid = document.getElementById('timetable');
+            grid.innerHTML = '';
+            
+            const corner = document.createElement('div');
+            corner.className = 'tt-head corner';
+            corner.innerHTML = '<i class="fas fa-clock"></i>';
+            grid.appendChild(corner);
+
+            const dates = Object.keys(emploiDuTemps).sort();
+            console.log('Dates trouvées:', dates);
+
+            JOURS.forEach((jour, i) => {
+                const h = document.createElement('div');
+                h.className = 'tt-head';
+                if (dates[i]) {
+                    const d = new Date(dates[i] + 'T12:00:00');
+                    h.innerHTML = '<div>' + jour + '</div><small style="opacity:.9;font-weight:400;font-size:.75rem;">' +
+                        d.toLocaleDateString('fr-FR', {day:'2-digit', month:'2-digit'}) + '</small>';
+                } else {
+                    h.innerHTML = '<div>' + jour + '</div>';
+                }
+                grid.appendChild(h);
+            });
+
+            for (let hi = 0; hi < HEURES.length; hi++) {
+                const timeCell = document.createElement('div');
+                timeCell.className = 'tt-time';
+                timeCell.textContent = HEURES[hi];
+                grid.appendChild(timeCell);
+
+                for (let di = 0; di < 6; di++) {
+                    const cell = document.createElement('div');
+                    cell.className = 'tt-cell';
+                    
+                    if (dates[di]) {
+                        const plages = emploiDuTemps[dates[di]] || [];
+                        const heureDebut = hi + 8;
+                        const heureFin = heureDebut + 1;
+                        
+                        const isDisponible = plages.some(plage => {
+                            const plageDebut = parseInt(plage.heureDebut.split(':')[0]);
+                            const plageFin = parseInt(plage.heureFin.split(':')[0]);
+                            return heureDebut >= plageDebut && heureFin <= plageFin;
+                        });
+                        
+                        if (isDisponible) {
+                            cell.classList.add('disponible');
+                        }
+                    }
+                    
+                    grid.appendChild(cell);
+                }
+            }
+        }
+
+        function calculateStats() {
+            const dates = Object.keys(emploiDuTemps);
+            let totalCreneaux = 0;
+            let joursAvecDispo = 0;
+
+            dates.forEach(date => {
+                const plages = emploiDuTemps[date] || [];
+                if (plages.length > 0) {
+                    joursAvecDispo++;
+                    plages.forEach(plage => {
+                        const debut = parseInt(plage.heureDebut.split(':')[0]);
+                        const fin = parseInt(plage.heureFin.split(':')[0]);
+                        totalCreneaux += (fin - debut);
+                    });
+                }
+            });
+
+            console.log('Stats calculées - Créneaux:', totalCreneaux, 'Jours:', joursAvecDispo);
+
+            document.getElementById('totalCreneaux').textContent = totalCreneaux;
+            document.getElementById('totalHeures').textContent = totalCreneaux + 'h';
+            document.getElementById('joursDisponibles').textContent = joursAvecDispo;
+        }
+    </script>
 </body>
 </html>

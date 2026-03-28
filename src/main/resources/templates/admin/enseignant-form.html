@@ -3,266 +3,141 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title th:text="${isEdit != null and isEdit ? 'Modifier' : 'Nouvel'} + ' Enseignant - WeSchedule'">Enseignant - WeSchedule</title>
-    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+    <title th:text="${isEdit != null and isEdit} ? 'Modifier Enseignant - WeSchedule' : 'Nouvel Enseignant - WeSchedule'">Enseignant</title>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
     <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css" rel="stylesheet">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
     <link rel="stylesheet" href="/css/modern-layout.css">
     <style>
-        .ecole-section {
-            margin-bottom: 2rem;
+        /* ── Layout 2 colonnes ── */
+        .form-layout { display: grid; grid-template-columns: 1fr 320px; gap: 1.25rem; align-items: start; }
+        @media (max-width: 992px) { .form-layout { grid-template-columns: 1fr; } }
+
+        /* ── Preview card ── */
+        .preview-card {
+            background: var(--white); border-radius: var(--radius-xl);
+            border: 1px solid var(--gray-200); box-shadow: var(--shadow-sm);
+            position: sticky; top: 1.5rem; overflow: hidden;
         }
-        .ecole-header {
-            background: linear-gradient(135deg, var(--primary-color), var(--green-600));
-            color: white;
-            padding: 1rem 1.5rem;
-            border-radius: var(--radius-lg) var(--radius-lg) 0 0;
-            display: flex;
-            align-items: center;
-            justify-content: space-between;
-            font-weight: 600;
-            font-size: 1.1rem;
+        .preview-hero {
+            background: linear-gradient(135deg, #6366f1, #4f46e5);
+            padding: 1.5rem; color: white; text-align: center;
         }
-        .ecole-body {
-            border: 2px solid var(--gray-200);
-            border-top: none;
-            border-radius: 0 0 var(--radius-lg) var(--radius-lg);
-            padding: 1.5rem;
-            background: white;
+        .preview-avatar {
+            width: 64px; height: 64px; border-radius: 50%;
+            background: rgba(255,255,255,0.2); border: 2px solid rgba(255,255,255,0.4);
+            display: flex; align-items: center; justify-content: center;
+            font-size: 1.4rem; font-weight: 800; margin: 0 auto 0.75rem;
         }
-        .classe-group { 
-            background: var(--gray-50); 
-            border-radius: var(--radius-lg); 
-            padding: 1.25rem; 
-            margin-bottom: 1rem; 
-            border: 2px solid var(--gray-200);
-            transition: all 0.3s ease;
+        .preview-name  { font-size: 1rem; font-weight: 700; }
+        .preview-grade { font-size: 0.78rem; opacity: 0.8; margin-top: 0.2rem; }
+        .preview-body  { padding: 1rem 1.25rem; }
+        .preview-row {
+            display: flex; align-items: flex-start; gap: 0.6rem;
+            padding: 0.5rem 0; border-bottom: 1px solid var(--gray-100); font-size: 0.82rem;
         }
-        .classe-group:hover {
-            border-color: var(--primary-color);
-            box-shadow: 0 4px 12px rgba(5, 150, 105, 0.1);
+        .preview-row:last-child { border-bottom: none; }
+        .preview-row i { color: var(--gray-400); width: 14px; margin-top: 2px; }
+        .preview-row span { color: var(--gray-700); }
+        .preview-ue-count {
+            background: #ede9fe; color: #5b21b6;
+            padding: 0.2rem 0.6rem; border-radius: 1rem;
+            font-size: 0.75rem; font-weight: 700;
         }
-        .classe-header { 
-            display: flex; 
-            align-items: center; 
-            justify-content: space-between;
-            margin-bottom: 1rem; 
-            padding-bottom: 0.75rem;
-            border-bottom: 2px solid var(--gray-200);
+
+        /* ── Form card ── */
+        .form-card {
+            background: var(--white); border-radius: var(--radius-xl);
+            border: 1px solid var(--gray-200); box-shadow: var(--shadow-sm); padding: 1.75rem;
         }
-        .classe-title { 
-            font-weight: 600; 
-            color: var(--gray-900); 
-            font-size: 1rem;
-            display: flex;
-            align-items: center;
-            gap: 0.5rem;
+        .section-title {
+            font-size: 0.78rem; font-weight: 700; text-transform: uppercase;
+            letter-spacing: 0.07em; color: var(--gray-400); margin-bottom: 1rem;
         }
-        .classe-badge {
-            background: var(--primary-color);
-            color: white;
-            padding: 0.25rem 0.75rem;
-            border-radius: 1rem;
-            font-size: 0.75rem;
-            font-weight: 500;
+
+        /* ── UE checkboxes ── */
+        .ue-checkbox { display: inline-block; margin: 0.25rem; }
+        .ue-checkbox input { display: none; }
+        .ue-checkbox label {
+            display: inline-flex; align-items: center; gap: 0.4rem;
+            padding: 0.45rem 1rem; border: 2px solid var(--gray-200);
+            border-radius: 2rem; cursor: pointer; transition: all 0.2s;
+            font-size: 0.82rem; font-weight: 500; background: white;
         }
-        .classe-info-icon {
-            cursor: help;
-            color: var(--gray-400);
-            font-size: 1rem;
-            transition: color 0.2s;
-            position: relative;
+        .ue-checkbox label:hover { border-color: #6366f1; color: #4f46e5; }
+        .ue-checkbox input:checked + label {
+            background: linear-gradient(135deg, #6366f1, #4f46e5);
+            color: white; border-color: transparent;
+            box-shadow: 0 3px 10px rgba(99,102,241,0.3);
         }
-        .classe-info-icon:hover {
-            color: var(--primary-color);
-        }
-        .classe-tooltip {
-            position: absolute;
-            bottom: 100%;
-            right: 0;
-            background: var(--gray-900);
-            color: white;
-            padding: 1rem;
-            border-radius: 0.5rem;
-            font-size: 0.85rem;
-            white-space: nowrap;
-            opacity: 0;
-            pointer-events: none;
-            transition: opacity 0.2s;
-            z-index: 1000;
-            box-shadow: 0 4px 12px rgba(0,0,0,0.3);
-            margin-bottom: 0.5rem;
-        }
-        .classe-tooltip::after {
-            content: '';
-            position: absolute;
-            top: 100%;
-            right: 1rem;
-            border: 6px solid transparent;
-            border-top-color: var(--gray-900);
-        }
-        .classe-info-icon:hover .classe-tooltip {
-            opacity: 1;
-        }
-        .tooltip-line {
-            display: block;
-            margin: 0.25rem 0;
-        }
-        .tooltip-line i {
-            width: 18px;
-            margin-right: 0.5rem;
-        }
-        .ue-checkbox { 
-            display: inline-block; 
-            margin: 0.375rem; 
-            position: relative;
-        }
-        .ue-checkbox input { 
-            display: none; 
-        }
-        .ue-checkbox label { 
-            display: inline-flex;
-            align-items: center;
-            gap: 0.5rem;
-            padding: 0.625rem 1.25rem; 
-            border: 2px solid var(--gray-300); 
-            border-radius: 2rem; 
-            cursor: pointer; 
-            transition: all 0.2s ease; 
-            font-size: 0.9rem;
-            background: white;
-            font-weight: 500;
-            position: relative;
-        }
-        .ue-checkbox.already-assigned label {
-            background: linear-gradient(135deg, #f0fdf4, #dcfce7);
-            border-color: var(--primary-color);
-            padding-left: 2.5rem;
-        }
-        .ue-checkbox.already-assigned label::before {
-            content: '✓';
-            position: absolute;
-            left: 0.75rem;
-            font-weight: bold;
-            color: var(--primary-color);
-            font-size: 1rem;
-        }
-        .ue-checkbox input:checked + label { 
-            background: linear-gradient(135deg, var(--primary-color), var(--green-600)); 
-            color: white; 
-            border-color: transparent;
-            transform: translateY(-2px);
-            box-shadow: 0 4px 12px rgba(5, 150, 105, 0.3);
-        }
-        .ue-checkbox.already-assigned input:checked + label::before {
-            color: white;
-        }
-        .ue-checkbox label:hover { 
-            border-color: var(--primary-color);
-            transform: translateY(-2px);
-            box-shadow: 0 2px 8px rgba(5, 150, 105, 0.2);
-        }
-        .ue-code {
-            font-family: 'Courier New', monospace;
-            font-weight: 600;
-            color: var(--primary-color);
-        }
-        .ue-checkbox input:checked + label .ue-code {
-            color: white;
-        }
-        .info-box { 
-            background: var(--green-50); 
-            border: 1px solid var(--green-200); 
-            border-radius: var(--radius-lg); 
-            padding: 1rem; 
-            margin-bottom: 1.5rem; 
-        }
-        .info-box-edit {
-            background: var(--blue-50);
-            border: 1px solid var(--blue-200);
-            border-radius: var(--radius-lg);
-            padding: 1rem;
-            margin-bottom: 1.5rem;
-        }
-        .no-ues-message {
-            text-align: center;
-            padding: 3rem 2rem;
-            background: var(--gray-50);
-            border-radius: var(--radius-lg);
-            color: var(--gray-500);
-        }
-        .no-ues-message i {
-            font-size: 3rem;
-            color: var(--gray-300);
+        .ue-code { font-family: monospace; font-weight: 700; font-size: 0.78rem; }
+        .ue-checkbox input:checked + label .ue-code { color: rgba(255,255,255,0.85); }
+
+        /* ── Filtres cascade ── */
+        .filter-bar {
+            display: grid; grid-template-columns: 1fr 1fr; gap: 0.75rem;
             margin-bottom: 1rem;
         }
-        .search-ue {
-            margin-bottom: 1.5rem;
-            position: relative;
+        .filter-select {
+            border: 2px solid var(--gray-200); border-radius: var(--radius-lg);
+            padding: 0.5rem 0.85rem; font-size: 0.85rem; background: white;
+            color: var(--gray-700); cursor: pointer; transition: border-color 0.2s;
+            appearance: none; background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='12' viewBox='0 0 24 24' fill='none' stroke='%236b7280' stroke-width='2'%3E%3Cpolyline points='6 9 12 15 18 9'%3E%3C/polyline%3E%3C/svg%3E");
+            background-repeat: no-repeat; background-position: right 0.75rem center;
+            padding-right: 2rem;
         }
-        .search-ue input {
-            border-radius: 2rem;
-            padding: 0.75rem 1.25rem 0.75rem 3rem;
-            border: 2px solid var(--gray-200);
+        .filter-select:focus { outline: none; border-color: #6366f1; box-shadow: 0 0 0 0.15rem rgba(99,102,241,0.15); }
+        .filter-select:disabled { background-color: var(--gray-50); color: var(--gray-400); cursor: not-allowed; }
+
+        /* ── UE grid ── */
+        .ue-grid {
+            display: grid; grid-template-columns: repeat(auto-fill, minmax(200px, 1fr));
+            gap: 0.5rem; min-height: 60px;
         }
-        .search-ue input:focus {
-            border-color: var(--primary-color);
-            box-shadow: 0 0 0 0.2rem rgba(5, 150, 105, 0.1);
+        .ue-item {
+            border: 2px solid var(--gray-200); border-radius: var(--radius-lg);
+            padding: 0.6rem 0.85rem; cursor: pointer; transition: all 0.15s;
+            display: flex; align-items: center; gap: 0.5rem; background: white;
+            user-select: none;
         }
-        .ue-stats {
-            display: flex;
-            gap: 1rem;
-            margin-bottom: 1rem;
-            padding: 1rem;
-            background: var(--gray-50);
-            border-radius: var(--radius-lg);
+        .ue-item:hover { border-color: #6366f1; background: #f5f3ff; }
+        .ue-item.selected {
+            border-color: #6366f1; background: linear-gradient(135deg, #6366f1, #4f46e5);
+            color: white;
         }
-        .ue-stat-item {
-            flex: 1;
-            text-align: center;
-            padding: 0.75rem;
-            background: white;
-            border-radius: var(--radius-md);
-            border: 1px solid var(--gray-200);
+        .ue-item.selected .ue-code { color: rgba(255,255,255,0.8); }
+        .ue-item input[type=checkbox] { display: none; }
+        .ue-item-check {
+            width: 16px; height: 16px; min-width: 16px; border-radius: 4px;
+            border: 2px solid var(--gray-300); display: flex; align-items: center;
+            justify-content: center; font-size: 0.6rem; transition: all 0.15s;
         }
-        .ue-stat-number {
-            font-size: 1.5rem;
-            font-weight: 700;
-            color: var(--primary-color);
+        .ue-item.selected .ue-item-check {
+            background: rgba(255,255,255,0.3); border-color: rgba(255,255,255,0.5); color: white;
         }
-        .ue-stat-label {
-            font-size: 0.85rem;
-            color: var(--gray-600);
-            margin-top: 0.25rem;
+        .ue-code { font-family: monospace; font-weight: 700; font-size: 0.75rem; color: #6366f1; }
+        .ue-name { font-size: 0.8rem; font-weight: 500; flex: 1; }
+        .ue-dur  { font-size: 0.7rem; opacity: 0.6; }
+
+        /* ── Sélection résumé ── */
+        .ue-selected-tags {
+            display: flex; flex-wrap: wrap; gap: 0.35rem;
+            min-height: 32px; padding: 0.5rem;
+            background: var(--gray-50); border-radius: var(--radius-md);
+            border: 1px dashed var(--gray-300); margin-top: 0.75rem;
         }
-        .legend {
-            display: flex;
-            gap: 1.5rem;
-            margin-bottom: 1rem;
-            padding: 0.75rem 1rem;
-            background: var(--gray-50);
-            border-radius: var(--radius-md);
-            font-size: 0.85rem;
+        .ue-tag {
+            display: inline-flex; align-items: center; gap: 0.3rem;
+            background: #ede9fe; color: #5b21b6;
+            padding: 0.2rem 0.6rem; border-radius: 1rem;
+            font-size: 0.75rem; font-weight: 600;
         }
-        .legend-item {
-            display: flex;
-            align-items: center;
-            gap: 0.5rem;
+        .ue-tag button {
+            background: none; border: none; padding: 0; cursor: pointer;
+            color: #7c3aed; font-size: 0.7rem; line-height: 1;
         }
-        .legend-box {
-            width: 20px;
-            height: 20px;
-            border-radius: 0.25rem;
-            border: 2px solid var(--gray-300);
-        }
-        .legend-box.assigned {
-            background: linear-gradient(135deg, #f0fdf4, #dcfce7);
-            border-color: var(--primary-color);
-        }
-        .legend-box.selected {
-            background: linear-gradient(135deg, var(--primary-color), var(--green-600));
-            border-color: transparent;
-        }
+        .ue-tag button:hover { color: #dc2626; }
+        .ue-empty-hint { font-size: 0.78rem; color: var(--gray-400); align-self: center; }
     </style>
 </head>
 <body>
@@ -270,138 +145,211 @@
     <div class="ws-wrapper">
         <div th:replace="~{fragments/header :: admin-header}"></div>
         <main class="ws-main-content">
-                    <nav aria-label="breadcrumb" class="mb-3">
-                        <ol class="breadcrumb">
-                            <li class="breadcrumb-item"><a href="/dashboard/admin/enseignants">Enseignants</a></li>
-                            <li class="breadcrumb-item active" th:text="${isEdit != null and isEdit ? 'Modifier' : 'Nouveau'}">Action</li>
-                        </ol>
-                    </nav>
 
-                    <div class="d-flex justify-content-between align-items-center mb-4">
-                        <h2 class="page-title">
-                            <i th:class="${isEdit != null and isEdit ? 'fas fa-edit text-primary' : 'fas fa-user-plus text-success'}" class="me-2"></i>
-                            <span th:text="${isEdit != null and isEdit ? 'Modifier enseignant' : 'Nouvel enseignant'}">Titre</span>
-                        </h2>
-                        <a href="/dashboard/admin/enseignants" class="btn btn-secondary"><i class="fas fa-arrow-left"></i> Retour</a>
-                    </div>
+            <!-- Breadcrumb -->
+            <nav aria-label="breadcrumb" class="mb-3">
+                <ol class="breadcrumb">
+                    <li class="breadcrumb-item"><a href="/dashboard/admin/enseignants">Enseignants</a></li>
+                    <li class="breadcrumb-item active" th:text="${isEdit != null and isEdit} ? 'Modifier' : 'Nouveau'">Action</li>
+                </ol>
+            </nav>
 
-                    <div th:if="${isEdit == null or !isEdit}" class="info-box">
-                        <i class="fas fa-info-circle text-primary me-2"></i>
-                        <strong>Information :</strong> Un mot de passe sera genere automatiquement et envoye par email.
-                    </div>
+            <!-- Header -->
+            <div class="d-flex justify-content-between align-items-center mb-3">
+                <div>
+                    <h2 class="page-title" th:text="${isEdit != null and isEdit} ? 'Modifier enseignant' : 'Nouvel enseignant'">Titre</h2>
+                    <p class="page-subtitle" th:text="${isEdit != null and isEdit} ? 'Modifier les informations et UEs assignées' : 'Créer un nouveau compte enseignant'">Sous-titre</p>
+                </div>
+                <a href="/dashboard/admin/enseignants" class="btn btn-secondary btn-sm">
+                    <i class="fas fa-arrow-left me-1"></i> Retour
+                </a>
+            </div>
 
-                    <div th:if="${isEdit != null and isEdit}" class="info-box-edit">
-                        <i class="fas fa-edit text-primary me-2"></i>
-                        <strong>Mode modification :</strong> Les UEs deja assignees sont marquees avec ✓. Vous pouvez les desassigner en les decochant.
-                    </div>
+            <!-- Info banner -->
+            <div th:if="${isEdit == null or !isEdit}"
+                 class="alert alert-info py-2 mb-3" style="font-size:0.85rem;">
+                <i class="fas fa-info-circle me-2"></i>
+                Un mot de passe sera généré automatiquement et envoyé par email à l'enseignant.
+            </div>
 
-                    <div class="card-custom p-4">
-                        <form id="enseignantForm">
-                            <h5 class="mb-4"><i class="fas fa-user me-2"></i>Informations personnelles</h5>
-                            
-                            <div class="row">
-                                <div class="col-md-6 mb-3">
+            <div class="form-layout">
+
+                <!-- ── Formulaire ── -->
+                <div>
+                    <form id="enseignantForm">
+
+                        <!-- Infos personnelles -->
+                        <div class="form-card mb-3">
+                            <p class="section-title"><i class="fas fa-user me-2"></i>Informations personnelles</p>
+                            <div class="row g-3">
+                                <div class="col-md-6">
                                     <label class="form-label">Nom <span class="text-danger">*</span></label>
-                                    <input type="text" class="form-control" id="nom" required>
+                                    <input type="text" class="form-control" id="nom" placeholder="Dupont" required oninput="updatePreview()">
                                 </div>
-                                <div class="col-md-6 mb-3">
-                                    <label class="form-label">Prenom <span class="text-danger">*</span></label>
-                                    <input type="text" class="form-control" id="prenom" required>
+                                <div class="col-md-6">
+                                    <label class="form-label">Prénom <span class="text-danger">*</span></label>
+                                    <input type="text" class="form-control" id="prenom" placeholder="Martin" required oninput="updatePreview()">
                                 </div>
-                            </div>
-
-                            <div class="row">
-                                <div class="col-md-6 mb-3">
+                                <div class="col-md-6">
                                     <label class="form-label">Email <span class="text-danger">*</span></label>
-                                    <input type="email" class="form-control" id="email" required>
+                                    <input type="email" class="form-control" id="email" placeholder="m.dupont@univ.fr" required oninput="updatePreview()">
                                 </div>
-                                <div class="col-md-6 mb-3">
-                                    <label class="form-label">Telephone</label>
-                                    <input type="tel" class="form-control" id="phone" placeholder="+33 6 XX XX XX XX">
+                                <div class="col-md-6">
+                                    <label class="form-label">Téléphone</label>
+                                    <input type="tel" class="form-control" id="phone" placeholder="+237 6XX XXX XXX" oninput="updatePreview()">
                                 </div>
-                            </div>
-
-                            <div class="row">
-                                <div class="col-md-6 mb-3">
+                                <div class="col-md-6">
                                     <label class="form-label">Grade</label>
-                                    <select class="form-select" id="grade">
-                                        <option value="">-- Selectionner --</option>
+                                    <select class="form-select" id="grade" onchange="updatePreview()">
+                                        <option value="">— Sélectionner —</option>
                                         <option value="Professeur">Professeur</option>
-                                        <option value="Maitre de conferences">Maitre de conferences</option>
-                                        <option value="Charge de cours">Charge de cours</option>
+                                        <option value="Maître de conférences">Maître de conférences</option>
+                                        <option value="Chargé de cours">Chargé de cours</option>
                                         <option value="Vacataire">Vacataire</option>
                                         <option value="ATER">ATER</option>
                                         <option value="Doctorant">Doctorant</option>
                                     </select>
                                 </div>
                             </div>
+                        </div>
 
-                            <hr class="my-4">
+                        <!-- UEs -->
+                        <div class="form-card mb-3">
+                            <p class="section-title"><i class="fas fa-layer-group me-2"></i>Unités d'Enseignement</p>
+                            <p class="text-muted small mb-3">Filtrez par école puis par classe pour sélectionner les UEs</p>
 
-                            <h5 class="mb-4"><i class="fas fa-book me-2"></i>Unites d'enseignement (UEs)</h5>
-                            <p class="text-muted mb-3">Selectionnez les UEs que cet enseignant peut enseigner</p>
-                            
-                            <div id="legendContainer" style="display: none;"></div>
-                            
-                            <div class="search-ue">
-                                <input type="text" class="form-control" id="searchUE" placeholder="Rechercher une UE, classe ou ecole...">
-                                <i class="fas fa-search" style="position: absolute; left: 1.5rem; top: 50%; transform: translateY(-50%); color: var(--gray-400);"></i>
+                            <!-- Filtres cascade -->
+                            <div class="filter-bar mb-3">
+                                <div>
+                                    <label class="form-label" style="font-size:0.78rem;font-weight:600;color:var(--gray-600);">
+                                        <i class="fas fa-university me-1" style="color:#6366f1;"></i> École
+                                    </label>
+                                    <select class="filter-select w-100" id="filterEcole" onchange="onEcoleChange()">
+                                        <option value="">— Toutes les écoles —</option>
+                                    </select>
+                                </div>
+                                <div>
+                                    <label class="form-label" style="font-size:0.78rem;font-weight:600;color:var(--gray-600);">
+                                        <i class="fas fa-users me-1" style="color:#6366f1;"></i> Classe
+                                    </label>
+                                    <select class="filter-select w-100" id="filterClasse" onchange="onClasseChange()" disabled>
+                                        <option value="">— Sélectionner une école —</option>
+                                    </select>
+                                </div>
                             </div>
-                            
-                            <div id="uesContainer" class="mb-4">
-                                <div class="text-center text-muted py-3"><i class="fas fa-spinner fa-spin"></i> Chargement des UEs...</div>
+
+                            <!-- Compteur + tout sélectionner -->
+                            <div class="d-flex align-items-center justify-content-between mb-2" id="ueToolbar" style="display:none!important;">
+                                <span style="font-size:0.78rem;color:var(--gray-500);" id="ueCountLabel">0 UE(s)</span>
+                                <div class="d-flex gap-2">
+                                    <button type="button" class="btn btn-outline-primary btn-sm" style="font-size:0.75rem;padding:0.2rem 0.65rem;" onclick="selectAllVisible()">
+                                        <i class="fas fa-check-double me-1"></i>Tout sélectionner
+                                    </button>
+                                    <button type="button" class="btn btn-outline-secondary btn-sm" style="font-size:0.75rem;padding:0.2rem 0.65rem;" onclick="deselectAllVisible()">
+                                        <i class="fas fa-times me-1"></i>Tout désélectionner
+                                    </button>
+                                </div>
                             </div>
 
-                            <hr class="my-4">
-
-                            <div class="d-flex justify-content-between">
-                                <a href="/dashboard/admin/enseignants" class="btn btn-secondary"><i class="fas fa-times"></i> Annuler</a>
-                                <button type="submit" class="btn btn-primary">
-                                    <i class="fas fa-save"></i> <span th:text="${isEdit != null and isEdit ? 'Enregistrer' : 'Creer enseignant'}">Enregistrer</span>
-                                </button>
+                            <!-- Grille UEs -->
+                            <div id="uesContainer">
+                                <div class="text-center text-muted py-4" style="font-size:0.85rem;">
+                                    <i class="fas fa-filter fa-2x mb-2 d-block" style="color:var(--gray-300);"></i>
+                                    Sélectionnez une école pour afficher les UEs
+                                </div>
                             </div>
-                        </form>
+
+                            <!-- Tags des UEs sélectionnées -->
+                            <div class="ue-selected-tags mt-2" id="selectedTags">
+                                <span class="ue-empty-hint">Aucune UE sélectionnée</span>
+                            </div>
+                        </div>
+
+                        <!-- Actions -->
+                        <div class="d-flex justify-content-between">
+                            <a href="/dashboard/admin/enseignants" class="btn btn-secondary">
+                                <i class="fas fa-times me-1"></i> Annuler
+                            </a>
+                            <button type="submit" class="btn btn-primary">
+                                <i class="fas fa-save me-1"></i>
+                                <span th:text="${isEdit != null and isEdit} ? 'Enregistrer' : 'Créer enseignant'">Enregistrer</span>
+                            </button>
+                        </div>
+                    </form>
+                </div>
+
+                <!-- ── Preview ── -->
+                <div>
+                    <div class="preview-card">
+                        <div class="preview-hero">
+                            <div class="preview-avatar" id="pvAvatar">?</div>
+                            <div class="preview-name"  id="pvName">Nom Prénom</div>
+                            <div class="preview-grade" id="pvGrade">Grade non défini</div>
+                        </div>
+                        <div class="preview-body">
+                            <div class="preview-row">
+                                <i class="fas fa-envelope"></i>
+                                <span id="pvEmail" style="word-break:break-all;">—</span>
+                            </div>
+                            <div class="preview-row">
+                                <i class="fas fa-phone"></i>
+                                <span id="pvPhone">—</span>
+                            </div>
+                            <div class="preview-row">
+                                <i class="fas fa-layer-group"></i>
+                                <span>UEs sélectionnées : </span>
+                                <span class="preview-ue-count ms-1" id="pvUeCount">0</span>
+                            </div>
+                        </div>
                     </div>
-                </main>
+                </div>
+
+            </div>
+        </main>
     </div>
 
-    <!-- Modals -->
+    <!-- Modal loader -->
     <div class="modal fade" id="loaderModal" tabindex="-1" data-bs-backdrop="static">
         <div class="modal-dialog modal-dialog-centered modal-sm">
             <div class="modal-content">
-                <div class="modal-body text-center p-5">
-                    <div class="spinner spinner-lg"></div>
-                    <p class="mt-3 mb-0" id="loaderText">Creation en cours...</p>
+                <div class="modal-body text-center p-4">
+                    <div class="spinner-border text-primary mb-3" role="status"></div>
+                    <p class="mb-0" id="loaderText">Traitement en cours…</p>
                 </div>
             </div>
         </div>
     </div>
 
+    <!-- Modal succès -->
     <div class="modal fade" id="successModal" tabindex="-1" data-bs-backdrop="static">
-        <div class="modal-dialog modal-dialog-centered">
+        <div class="modal-dialog modal-dialog-centered modal-sm">
             <div class="modal-content">
-                <div class="modal-body text-center p-5">
-                    <div class="stat-icon mx-auto mb-3"><i class="fas fa-check"></i></div>
-                    <h3 id="successTitle">Compte cree avec succes !</h3>
-                    <p id="successMessage" class="text-muted"></p>
-                    <button type="button" class="btn btn-primary mt-3" onclick="window.location.href='/dashboard/admin/enseignants'">
-                        <i class="fas fa-check"></i> Retour a la liste
+                <div class="modal-body text-center p-4">
+                    <div style="width:56px;height:56px;border-radius:50%;background:linear-gradient(135deg,#10b981,#059669);display:flex;align-items:center;justify-content:center;margin:0 auto 1rem;">
+                        <i class="fas fa-check text-white fa-lg"></i>
+                    </div>
+                    <h5 id="successTitle">Succès</h5>
+                    <p class="text-muted small" id="successMessage"></p>
+                    <button class="btn btn-primary btn-sm mt-2"
+                            onclick="window.location.href='/dashboard/admin/enseignants'">
+                        Retour à la liste
                     </button>
                 </div>
             </div>
         </div>
     </div>
 
+    <!-- Modal erreur -->
     <div class="modal fade" id="errorModal" tabindex="-1">
-        <div class="modal-dialog">
+        <div class="modal-dialog modal-sm">
             <div class="modal-content">
-                <div class="modal-header">
-                    <h5 class="modal-title"><i class="fas fa-times-circle text-danger me-2"></i>Erreur</h5>
+                <div class="modal-header border-0 pb-0">
+                    <h5 class="modal-title text-danger"><i class="fas fa-times-circle me-2"></i>Erreur</h5>
                     <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
                 </div>
-                <div class="modal-body" id="errorMessage"></div>
-                <div class="modal-footer">
-                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Fermer</button>
+                <div class="modal-body pt-2" id="errorMessage"></div>
+                <div class="modal-footer border-0 pt-0">
+                    <button class="btn btn-secondary btn-sm" data-bs-dismiss="modal">Fermer</button>
                 </div>
             </div>
         </div>
@@ -411,360 +359,327 @@
     <script src="/js/modern-layout.js"></script>
     <script th:inline="javascript">
         const isEdit = /*[[${isEdit != null ? isEdit : false}]]*/ false;
-        const enseignantId = /*[[${enseignantId != null ? enseignantId : null}]]*/ null;
-        let ues = [];
-        let initiallyAssignedUEs = [];
+        const enseignantId = /*[[${enseignantId}]]*/ null;
+        let ues = [];                  // toutes les UEs
+        let selectedUeIds = new Set(); // IDs cochés
         let loaderModal, successModal, errorModal;
 
-        document.addEventListener('DOMContentLoaded', function() {
-            loaderModal = new bootstrap.Modal(document.getElementById('loaderModal'));
+        // Structure construite après chargement : { ecoleName -> { classeId -> { nom, ues[] } } }
+        let byEcole = {};
+
+        const COLORS = ['#6366f1','#0ea5e9','#d97706','#8b5cf6','#ec4899','#06b6d4','#10b981'];
+
+        document.addEventListener('DOMContentLoaded', () => {
+            loaderModal  = new bootstrap.Modal(document.getElementById('loaderModal'));
             successModal = new bootstrap.Modal(document.getElementById('successModal'));
-            errorModal = new bootstrap.Modal(document.getElementById('errorModal'));
+            errorModal   = new bootstrap.Modal(document.getElementById('errorModal'));
             loadUEs();
             if (isEdit && enseignantId) loadEnseignant();
             document.getElementById('enseignantForm').addEventListener('submit', handleSubmit);
         });
 
+        // ── Preview ──────────────────────────────────────────────────────────
+        function updatePreview() {
+            const nom    = document.getElementById('nom').value.trim();
+            const prenom = document.getElementById('prenom').value.trim();
+            const email  = document.getElementById('email').value.trim();
+            const phone  = document.getElementById('phone').value.trim();
+            const grade  = document.getElementById('grade').value;
+
+            const initials = ((prenom[0]||'?') + (nom[0]||'?')).toUpperCase();
+            const color = nom ? COLORS[nom.charCodeAt(0) % COLORS.length] : '#6366f1';
+
+            document.getElementById('pvAvatar').textContent = initials;
+            document.getElementById('pvAvatar').style.background = color + '55';
+            document.getElementById('pvName').textContent  = (prenom || 'Prénom') + ' ' + (nom || 'Nom');
+            document.getElementById('pvGrade').textContent = grade || 'Grade non défini';
+            document.getElementById('pvEmail').textContent = email || '—';
+            document.getElementById('pvPhone').textContent = phone || '—';
+            updateUeCount();
+        }
+
+        function updateUeCount() {
+            document.getElementById('pvUeCount').textContent = selectedUeIds.size;
+        }
+
+        // ── Chargement données ────────────────────────────────────────────────
         async function loadUEs() {
             try {
                 const res = await fetch('/api/admin/ues');
-                if (res.ok) { 
-                    ues = await res.json();
-                    console.log('UEs chargées:', ues.length);
-                    // En mode ajout, afficher directement
-                    if (!isEdit) {
-                        displayUEs(); 
-                        setupSearch();
-                    }
-                    // En mode édition, attendre que loadEnseignant soit appelé
-                }
-            } catch (e) { 
-                console.error('Erreur chargement UEs:', e); 
-            }
-        }
-
-        function displayUEs(selectedIds = []) {
-            console.log('displayUEs appelé avec:', selectedIds);
-            console.log('Nombre d\'UE disponibles:', ues.length);
-            
-            const container = document.getElementById('uesContainer');
-            if (ues.length === 0) { 
-                console.log('Aucune UE disponible');
-                container.innerHTML = '<div class="no-ues-message"><i class="fas fa-book-open"></i><p>Aucune UE disponible</p></div>'; 
-                return; 
-            }
-            
-            // Afficher la légende si en mode édition
-            if (isEdit) {
-                console.log('Mode édition - affichage de la légende');
-                displayLegend();
-            }
-            
-            // Grouper les UEs par école puis par classe (SANS DUPLICATION)
-            const uesByEcole = {};
-            const uesWithoutEcole = [];
-            const classesTraitees = new Map(); // Map pour tracker les classes déjà traitées avec leurs infos
-            
-            ues.forEach(ue => {
-                if (ue.classes && ue.classes.length > 0) {
-                    ue.classes.forEach(classe => {
-                        const ecoleKey = classe.ecole || 'Autres';
-                        const classeId = classe.idClasse;
-                        
-                        // Créer une clé unique pour cette classe
-                        const classeUniqueKey = `${ecoleKey}_${classeId}`;
-                        
-                        // Si cette classe n'a pas encore été traitée, l'initialiser
-                        if (!classesTraitees.has(classeUniqueKey)) {
-                            if (!uesByEcole[ecoleKey]) {
-                                uesByEcole[ecoleKey] = {};
-                            }
-                            
-                            uesByEcole[ecoleKey][classeId] = {
-                                classe: classe,
-                                ues: [],
-                                ueIds: new Set()
-                            };
-                            
-                            classesTraitees.set(classeUniqueKey, true);
-                        }
-                        
-                        // Ajouter l'UE seulement si elle n'est pas déjà dans cette classe
-                        if (uesByEcole[ecoleKey] && uesByEcole[ecoleKey][classeId]) {
-                            if (!uesByEcole[ecoleKey][classeId].ueIds.has(ue.idUE)) {
-                                uesByEcole[ecoleKey][classeId].ues.push(ue);
-                                uesByEcole[ecoleKey][classeId].ueIds.add(ue.idUE);
-                            }
-                        }
-                    });
-                } else {
-                    // Éviter les doublons dans uesWithoutEcole
-                    if (!uesWithoutEcole.find(u => u.idUE === ue.idUE)) {
-                        uesWithoutEcole.push(ue);
-                    }
-                }
-            });
-            
-            console.log('Nombre de classes uniques traitées:', classesTraitees.size);
-            console.log('Écoles et leurs classes:', Object.keys(uesByEcole).map(ecole => 
-                `${ecole}: ${Object.keys(uesByEcole[ecole]).length} classe(s)`
-            ));
-            
-            let html = '';
-            
-            // Afficher les UEs groupées par école et classe
-            Object.keys(uesByEcole).sort().forEach(ecoleNom => {
-                const classes = uesByEcole[ecoleNom];
-                
-                // Compter les UE uniques par école
-                const ueIdsUniques = new Set();
-                Object.values(classes).forEach(group => {
-                    group.ues.forEach(ue => ueIdsUniques.add(ue.idUE));
-                });
-                const totalUEs = ueIdsUniques.size;
-                
-                html += `
-                    <div class="ecole-section" data-ecole="${ecoleNom.toLowerCase()}">
-                        <div class="ecole-header">
-                            <div>
-                                <i class="fas fa-university me-2"></i>
-                                <span>${ecoleNom}</span>
-                            </div>
-                            <span class="badge bg-light text-dark">${totalUEs} UE${totalUEs > 1 ? 's' : ''}</span>
-                        </div>
-                        <div class="ecole-body">
-                `;
-                
-                Object.values(classes).forEach(group => {
-                    const classe = group.classe;
-                    const tooltipContent = `
-                        <span class="tooltip-line"><i class="fas fa-graduation-cap"></i><strong>Niveau:</strong> ${classe.niveau || 'N/A'}</span>
-                        <span class="tooltip-line"><i class="fas fa-users"></i><strong>Effectif:</strong> ${classe.effectif || 'N/A'} étudiants</span>
-                        ${classe.filiere ? `<span class="tooltip-line"><i class="fas fa-stream"></i><strong>Filière:</strong> ${classe.filiere}</span>` : ''}
-                    `;
-                    
-                    html += `
-                        <div class="classe-group" data-classe="${classe.nom.toLowerCase()}">
-                            <div class="classe-header">
-                                <div class="classe-title">
-                                    <i class="fas fa-users-class text-primary"></i>
-                                    <span>${classe.nom}</span>
-                                    <span class="classe-badge">${group.ues.length} UE${group.ues.length > 1 ? 's' : ''}</span>
-                                </div>
-                                <div class="classe-info-icon">
-                                    <i class="fas fa-info-circle"></i>
-                                    <div class="classe-tooltip">${tooltipContent}</div>
-                                </div>
-                            </div>
-                            <div class="ues-list">
-                                ${group.ues.map(ue => {
-                                    const isSelected = selectedIds.includes(ue.idUE);
-                                    const wasInitiallyAssigned = initiallyAssignedUEs.includes(ue.idUE);
-                                    const checked = isSelected ? 'checked' : '';
-                                    const assignedClass = wasInitiallyAssigned ? 'already-assigned' : '';
-                                    
-                                    return `
-                                        <div class="ue-checkbox ${assignedClass}" data-ue-id="${ue.idUE}">
-                                            <input type="checkbox" id="ue_${ue.idUE}" name="ues" value="${ue.idUE}" ${checked} >
-                                            <label for="ue_${ue.idUE}">
-                                                ${ue.code ? `<span class="ue-code">${ue.code}</span>` : ''}
-                                                <span>${ue.intitule}</span>
-                                                ${ue.duree ? `<small style="opacity: 0.7;">(${ue.duree}min)</small>` : ''}
-                                            </label>
-                                        </div>
-                                    `;
-                                }).join('')}
-                            </div>
-                        </div>
-                    `;
-                });
-                
-                html += `
-                        </div>
-                    </div>
-                `;
-            });
-            
-            // Afficher les UEs sans école/classe
-            if (uesWithoutEcole.length > 0) {
-                html += `
-                    <div class="ecole-section" data-ecole="autres">
-                        <div class="ecole-header">
-                            <div>
-                                <i class="fas fa-book me-2"></i>
-                                <span>Autres UEs</span>
-                            </div>
-                            <span class="badge bg-light text-dark">${uesWithoutEcole.length} UE${uesWithoutEcole.length > 1 ? 's' : ''}</span>
-                        </div>
-                        <div class="ecole-body">
-                            <div class="ues-list">
-                                ${uesWithoutEcole.map(ue => {
-                                    const isSelected = selectedIds.includes(ue.idUE);
-                                    const wasInitiallyAssigned = initiallyAssignedUEs.includes(ue.idUE);
-                                    const checked = isSelected ? 'checked' : '';
-                                    const assignedClass = wasInitiallyAssigned ? 'already-assigned' : '';
-                                    
-                                    return `
-                                        <div class="ue-checkbox ${assignedClass}" data-ue-id="${ue.idUE}">
-                                            <input type="checkbox" id="ue_${ue.idUE}" name="ues" value="${ue.idUE}" ${checked} >
-                                            <label for="ue_${ue.idUE}">
-                                                ${ue.code ? `<span class="ue-code">${ue.code}</span>` : ''}
-                                                <span>${ue.intitule}</span>
-                                                ${ue.duree ? `<small style="opacity: 0.7;">(${ue.duree}min)</small>` : ''}
-                                            </label>
-                                        </div>
-                                    `;
-                                }).join('')}
-                            </div>
-                        </div>
-                    </div>
-                `;
-            }
-            
-            container.innerHTML = html;
-        }
-        
-        
-        function displayLegend() {
-            const legendContainer = document.getElementById('legendContainer');
-            legendContainer.innerHTML = `
-                <div class="legend">
-                    <div class="legend-item">
-                        <div class="legend-box assigned"></div>
-                        <span><i class="fas fa-check-circle text-success me-1"></i>Déjà assignée</span>
-                    </div>
-                    <div class="legend-item">
-                        <div class="legend-box selected"></div>
-                        <span><i class="fas fa-check-square text-white me-1"></i>Sélectionnée</span>
-                    </div>
-                    <div class="legend-item">
-                        <div class="legend-box"></div>
-                        <span><i class="fas fa-square text-muted me-1"></i>Non sélectionnée</span>
-                    </div>
-                </div>
-            `;
-            legendContainer.style.display = 'block';
-        }
-        
-        function setupSearch() {
-            const searchInput = document.getElementById('searchUE');
-            searchInput.addEventListener('input', function() {
-                const searchTerm = this.value.toLowerCase();
-                const ecoleSections = document.querySelectorAll('.ecole-section');
-                
-                ecoleSections.forEach(ecoleSection => {
-                    const ecoleNom = ecoleSection.dataset.ecole;
-                    const groups = ecoleSection.querySelectorAll('.classe-group');
-                    let hasVisibleGroup = false;
-                    
-                    groups.forEach(group => {
-                        const classeName = group.dataset.classe;
-                        const ueLabels = group.querySelectorAll('.ue-checkbox label');
-                        let hasVisibleUE = false;
-                        
-                        ueLabels.forEach(label => {
-                            const text = label.textContent.toLowerCase();
-                            const ueCheckbox = label.closest('.ue-checkbox');
-                            
-                            if (text.includes(searchTerm) || classeName.includes(searchTerm) || ecoleNom.includes(searchTerm)) {
-                                ueCheckbox.style.display = 'inline-block';
-                                hasVisibleUE = true;
-                            } else {
-                                ueCheckbox.style.display = 'none';
-                            }
-                        });
-                        
-                        group.style.display = hasVisibleUE ? 'block' : 'none';
-                        if (hasVisibleUE) hasVisibleGroup = true;
-                    });
-                    
-                    ecoleSection.style.display = hasVisibleGroup ? 'block' : 'none';
-                });
-            });
+                if (!res.ok) return;
+                ues = await res.json();
+                buildIndex();
+                populateEcoleFilter();
+                if (!isEdit) renderSelectedTags();
+            } catch (e) { console.error('Erreur UEs:', e); }
         }
 
         async function loadEnseignant() {
             try {
-                console.log('Chargement enseignant:', enseignantId);
                 const res = await fetch(`/api/admin/enseignants/${enseignantId}`);
-                if (res.ok) {
-                    const data = await res.json();
-                    console.log('Données enseignant:', data);
-                    
-                    document.getElementById('nom').value = data.nom || '';
-                    document.getElementById('prenom').value = data.prenom || '';
-                    document.getElementById('email').value = data.email || '';
-                    document.getElementById('phone').value = data.phone || '';
-                    document.getElementById('grade').value = data.grade || '';
-                    
-                    const selectedIds = data.ues ? data.ues.map(u => u.idUE) : [];
-                    initiallyAssignedUEs = [...selectedIds]; // Sauvegarder les UE initialement assignées
-                    console.log('UE initialement assignées:', initiallyAssignedUEs);
-                    
-                    // Attendre que les UE soient chargées si nécessaire
-                    if (ues.length === 0) {
-                        console.log('Attente du chargement des UE...');
-                        await new Promise(resolve => {
-                            const checkUEs = setInterval(() => {
-                                if (ues.length > 0) {
-                                    clearInterval(checkUEs);
-                                    resolve();
-                                }
-                            }, 100);
-                        });
-                    }
-                    
-                    console.log('Affichage des UE avec sélection:', selectedIds);
-                    displayUEs(selectedIds);
-                    setupSearch();
+                if (!res.ok) return;
+                const data = await res.json();
+                document.getElementById('nom').value    = data.nom    || '';
+                document.getElementById('prenom').value = data.prenom || '';
+                document.getElementById('email').value  = data.email  || '';
+                document.getElementById('phone').value  = data.phone  || '';
+                document.getElementById('grade').value  = data.grade  || '';
+                // Pré-sélectionner les UEs déjà assignées
+                (data.ueIds || []).forEach(id => selectedUeIds.add(id));
+                renderSelectedTags();
+                updatePreview();
+            } catch (e) { console.error('Erreur enseignant:', e); }
+        }
+
+        // ── Index école → classe → UEs ────────────────────────────────────────
+        function buildIndex() {
+            byEcole = {};
+            ues.forEach(ue => {
+                if (ue.classes && ue.classes.length > 0) {
+                    ue.classes.forEach(cl => {
+                        const ecole = cl.ecole || 'Autres';
+                        if (!byEcole[ecole]) byEcole[ecole] = {};
+                        if (!byEcole[ecole][cl.idClasse]) {
+                            byEcole[ecole][cl.idClasse] = { nom: cl.nom, ues: [], ids: new Set() };
+                        }
+                        if (!byEcole[ecole][cl.idClasse].ids.has(ue.idUE)) {
+                            byEcole[ecole][cl.idClasse].ues.push(ue);
+                            byEcole[ecole][cl.idClasse].ids.add(ue.idUE);
+                        }
+                    });
                 } else {
-                    console.error('Erreur HTTP:', res.status);
+                    // UEs sans classe → école "Autres"
+                    if (!byEcole['Autres']) byEcole['Autres'] = {};
+                    if (!byEcole['Autres']['__sans_classe__']) {
+                        byEcole['Autres']['__sans_classe__'] = { nom: 'Sans classe', ues: [], ids: new Set() };
+                    }
+                    if (!byEcole['Autres']['__sans_classe__'].ids.has(ue.idUE)) {
+                        byEcole['Autres']['__sans_classe__'].ues.push(ue);
+                        byEcole['Autres']['__sans_classe__'].ids.add(ue.idUE);
+                    }
                 }
-            } catch (e) { 
-                console.error('Erreur chargement enseignant:', e); 
+            });
+        }
+
+        // ── Filtre École ──────────────────────────────────────────────────────
+        function populateEcoleFilter() {
+            const sel = document.getElementById('filterEcole');
+            sel.innerHTML = '<option value="">— Toutes les écoles —</option>';
+            Object.keys(byEcole).sort().forEach(ecole => {
+                const opt = document.createElement('option');
+                opt.value = ecole;
+                opt.textContent = ecole;
+                sel.appendChild(opt);
+            });
+        }
+
+        function onEcoleChange() {
+            const ecole = document.getElementById('filterEcole').value;
+            const classeSelect = document.getElementById('filterClasse');
+
+            classeSelect.innerHTML = '';
+            classeSelect.disabled = !ecole;
+
+            if (!ecole) {
+                classeSelect.innerHTML = '<option value="">— Sélectionner une école —</option>';
+                showUEsForClasse(null);
+                return;
+            }
+
+            classeSelect.innerHTML = '<option value="">— Toutes les classes —</option>';
+            const classes = byEcole[ecole] || {};
+            Object.entries(classes).sort((a,b) => a[1].nom.localeCompare(b[1].nom)).forEach(([id, cl]) => {
+                const opt = document.createElement('option');
+                opt.value = id;
+                opt.textContent = cl.nom;
+                classeSelect.appendChild(opt);
+            });
+            classeSelect.disabled = false;
+
+            // Afficher toutes les UEs de cette école
+            showUEsForEcole(ecole);
+        }
+
+        function onClasseChange() {
+            const ecole  = document.getElementById('filterEcole').value;
+            const classe = document.getElementById('filterClasse').value;
+            if (!classe) {
+                showUEsForEcole(ecole);
+            } else {
+                showUEsForClasse(classe, ecole);
             }
         }
 
+        // ── Affichage UEs ─────────────────────────────────────────────────────
+        function showUEsForEcole(ecole) {
+            if (!ecole) {
+                document.getElementById('uesContainer').innerHTML = `
+                    <div class="text-center text-muted py-4" style="font-size:0.85rem;">
+                        <i class="fas fa-filter fa-2x mb-2 d-block" style="color:var(--gray-300);"></i>
+                        Sélectionnez une école pour afficher les UEs
+                    </div>`;
+                document.getElementById('ueToolbar').style.display = 'none';
+                return;
+            }
+            // Toutes les UEs de l'école, groupées par classe
+            const classes = byEcole[ecole] || {};
+            let allUes = [];
+            Object.values(classes).forEach(cl => allUes.push(...cl.ues));
+            // Dédupliquer
+            const seen = new Set();
+            allUes = allUes.filter(u => { if (seen.has(u.idUE)) return false; seen.add(u.idUE); return true; });
+            renderUEGrid(allUes);
+        }
+
+        function showUEsForClasse(classeId, ecole) {
+            if (!classeId) { showUEsForEcole(ecole); return; }
+            const classes = byEcole[ecole] || {};
+            const cl = classes[classeId];
+            renderUEGrid(cl ? cl.ues : []);
+        }
+
+        function renderUEGrid(list) {
+            const container = document.getElementById('uesContainer');
+            const toolbar   = document.getElementById('ueToolbar');
+
+            if (!list.length) {
+                container.innerHTML = `<p class="text-muted small text-center py-3">Aucune UE pour cette sélection</p>`;
+                toolbar.style.display = 'none';
+                return;
+            }
+
+            toolbar.style.removeProperty('display');
+            document.getElementById('ueCountLabel').textContent = list.length + ' UE' + (list.length > 1 ? 's' : '');
+
+            container.innerHTML = `<div class="ue-grid">${list.map(ue => {
+                const sel = selectedUeIds.has(ue.idUE);
+                return `<div class="ue-item${sel ? ' selected' : ''}" onclick="toggleUE('${ue.idUE}', this)" data-id="${ue.idUE}">
+                    <input type="checkbox" value="${ue.idUE}" ${sel ? 'checked' : ''}>
+                    <div class="ue-item-check">${sel ? '<i class="fas fa-check"></i>' : ''}</div>
+                    <div style="flex:1;min-width:0;">
+                        ${ue.code ? `<div class="ue-code">${ue.code}</div>` : ''}
+                        <div class="ue-name" style="white-space:nowrap;overflow:hidden;text-overflow:ellipsis;" title="${ue.intitule}">${ue.intitule}</div>
+                        ${ue.duree ? `<div class="ue-dur">${ue.duree} min</div>` : ''}
+                    </div>
+                </div>`;
+            }).join('')}</div>`;
+        }
+
+        function toggleUE(id, el) {
+            if (selectedUeIds.has(id)) {
+                selectedUeIds.delete(id);
+                el.classList.remove('selected');
+                el.querySelector('.ue-item-check').innerHTML = '';
+                el.querySelector('input').checked = false;
+            } else {
+                selectedUeIds.add(id);
+                el.classList.add('selected');
+                el.querySelector('.ue-item-check').innerHTML = '<i class="fas fa-check"></i>';
+                el.querySelector('input').checked = true;
+            }
+            renderSelectedTags();
+            updateUeCount();
+        }
+
+        function selectAllVisible() {
+            document.querySelectorAll('#uesContainer .ue-item').forEach(el => {
+                const id = el.dataset.id;
+                selectedUeIds.add(id);
+                el.classList.add('selected');
+                el.querySelector('.ue-item-check').innerHTML = '<i class="fas fa-check"></i>';
+                el.querySelector('input').checked = true;
+            });
+            renderSelectedTags();
+            updateUeCount();
+        }
+
+        function deselectAllVisible() {
+            document.querySelectorAll('#uesContainer .ue-item').forEach(el => {
+                const id = el.dataset.id;
+                selectedUeIds.delete(id);
+                el.classList.remove('selected');
+                el.querySelector('.ue-item-check').innerHTML = '';
+                el.querySelector('input').checked = false;
+            });
+            renderSelectedTags();
+            updateUeCount();
+        }
+
+        // ── Tags résumé ───────────────────────────────────────────────────────
+        function renderSelectedTags() {
+            const container = document.getElementById('selectedTags');
+            if (!selectedUeIds.size) {
+                container.innerHTML = '<span class="ue-empty-hint">Aucune UE sélectionnée</span>';
+                return;
+            }
+            const tags = [...selectedUeIds].map(id => {
+                const ue = ues.find(u => u.idUE === id);
+                if (!ue) return '';
+                const label = ue.code || ue.intitule.substring(0, 12) + (ue.intitule.length > 12 ? '…' : '');
+                return `<span class="ue-tag" title="${ue.intitule}">
+                    ${label}
+                    <button type="button" onclick="removeTag('${id}')" title="Retirer">×</button>
+                </span>`;
+            }).join('');
+            container.innerHTML = tags;
+            updateUeCount();
+        }
+
+        function removeTag(id) {
+            selectedUeIds.delete(id);
+            // Mettre à jour la grille si l'UE est visible
+            const el = document.querySelector(`#uesContainer .ue-item[data-id="${id}"]`);
+            if (el) {
+                el.classList.remove('selected');
+                el.querySelector('.ue-item-check').innerHTML = '';
+                el.querySelector('input').checked = false;
+            }
+            renderSelectedTags();
+            updateUeCount();
+        }
+
+        // ── Soumission ────────────────────────────────────────────────────────
         async function handleSubmit(e) {
             e.preventDefault();
-            const form = document.getElementById('enseignantForm');
-            if (!form.checkValidity()) { form.reportValidity(); return; }
-            
-            const selectedUEs = Array.from(document.querySelectorAll('input[name="ues"]:checked')).map(cb => cb.value);
-            const data = {
-                nom: document.getElementById('nom').value.trim(),
-                prenom: document.getElementById('prenom').value.trim(),
-                email: document.getElementById('email').value.trim(),
+            const nom    = document.getElementById('nom').value.trim();
+            const prenom = document.getElementById('prenom').value.trim();
+            const email  = document.getElementById('email').value.trim();
+            if (!nom || !prenom || !email) {
+                document.getElementById('errorMessage').textContent = 'Nom, prénom et email sont obligatoires.';
+                errorModal.show(); return;
+            }
+
+            const payload = {
+                nom, prenom, email,
                 phone: document.getElementById('phone').value.trim() || null,
                 grade: document.getElementById('grade').value || null,
-                ueIds: selectedUEs
+                ueIds: [...selectedUeIds]
             };
-            
-            document.getElementById('loaderText').textContent = isEdit ? 'Mise a jour en cours...' : 'Creation en cours...';
+
+            document.getElementById('loaderText').textContent = isEdit ? 'Modification en cours…' : 'Création en cours…';
             loaderModal.show();
-            
+
             try {
-                const url = isEdit ? `/api/admin/enseignants/${enseignantId}` : '/api/admin/enseignants';
+                const url    = isEdit ? `/api/admin/enseignants/${enseignantId}` : '/api/admin/enseignants';
                 const method = isEdit ? 'PUT' : 'POST';
-                const res = await fetch(url, { method: method, headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(data) });
-                const result = await res.json();
+                const res    = await fetch(url, { method, headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(payload) });
+                const data   = await res.json();
                 loaderModal.hide();
-                
-                if (result.success) {
-                    document.getElementById('successTitle').textContent = isEdit ? 'Modifications enregistrees !' : 'Compte cree avec succes !';
-                    document.getElementById('successMessage').textContent = isEdit ? 'Les informations ont ete mises a jour.' : 'Un email avec les identifiants a ete envoye a ' + data.email;
+
+                if (data.success) {
+                    document.getElementById('successTitle').textContent   = isEdit ? 'Enseignant modifié' : 'Enseignant créé';
+                    document.getElementById('successMessage').textContent = data.message;
                     successModal.show();
                 } else {
-                    document.getElementById('errorMessage').textContent = result.message;
+                    document.getElementById('errorMessage').textContent = data.message;
                     errorModal.show();
                 }
-            } catch (e) {
+            } catch {
                 loaderModal.hide();
-                document.getElementById('errorMessage').textContent = 'Erreur de connexion au serveur';
+                document.getElementById('errorMessage').textContent = 'Erreur de connexion.';
                 errorModal.show();
             }
         }
     </script>
 </body>
 </html>
-

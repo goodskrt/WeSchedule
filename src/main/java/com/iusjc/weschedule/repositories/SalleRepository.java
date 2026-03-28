@@ -14,6 +14,7 @@ public interface SalleRepository extends JpaRepository<Salle, UUID> {
     
     // Trouver une salle par nom
     Optional<Salle> findByNomSalle(String nomSalle);
+    Optional<Salle> findByNomSalleIgnoreCase(String nomSalle);
     
     // Trouver les salles par type
     List<Salle> findByTypeSalle(TypeSalle typeSalle);

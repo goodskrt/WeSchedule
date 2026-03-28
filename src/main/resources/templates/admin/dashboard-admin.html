@@ -3,138 +3,464 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Dashboard Admin - WeSchedule</title>
-    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+    <title>Dashboard - WeSchedule</title>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css" rel="stylesheet">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
     <link rel="stylesheet" href="/css/modern-layout.css">
     <style>
+        /* ── Stat cards ── */
         .stat-card {
-            background: white; border-radius: 16px; padding: 24px;
-            border: 1px solid rgba(226,232,240,0.6);
-            box-shadow: 0 2px 12px rgba(0,0,0,0.04);
-            display: flex; align-items: center; gap: 16px;
-            transition: all 0.2s;
+            background: var(--white); border-radius: var(--radius-xl); padding: 1.5rem;
+            border: 1px solid var(--gray-200); box-shadow: var(--shadow-sm);
+            display: flex; align-items: center; gap: 1.25rem;
+            transition: all 0.2s; text-decoration: none; color: inherit;
         }
-        .stat-card:hover { box-shadow: 0 8px 24px rgba(0,0,0,0.08); transform: translateY(-2px); }
+        .stat-card:hover { transform: translateY(-3px); box-shadow: var(--shadow-md); color: inherit; }
         .stat-icon {
-            width: 52px; height: 52px; min-width: 52px;
-            background: linear-gradient(135deg, #6366f1, #4f46e5);
-            border-radius: 14px; display: flex; align-items: center;
-            justify-content: center; color: white; font-size: 20px;
-            box-shadow: 0 4px 12px rgba(99,102,241,0.3);
+            width: 56px; height: 56px; min-width: 56px; border-radius: var(--radius-lg);
+            display: flex; align-items: center; justify-content: center;
+            font-size: 1.4rem; color: white;
         }
-        .stat-number { font-size: 26px; font-weight: 700; color: #1e293b; line-height: 1; }
-        .stat-label { font-size: 13px; color: #64748b; margin-top: 4px; }
+        .stat-number { font-size: 2rem; font-weight: 800; color: var(--gray-900); line-height: 1; }
+        .stat-label  { font-size: 0.82rem; color: var(--gray-500); margin-top: 0.2rem; }
+        .stat-trend  { font-size: 0.75rem; font-weight: 600; margin-top: 0.3rem; }
+        .trend-up    { color: #059669; }
+
+        /* ── Quick access ── */
         .quick-card {
-            background: white; border-radius: 16px; padding: 20px;
-            border: 1px solid rgba(226,232,240,0.6);
-            box-shadow: 0 2px 12px rgba(0,0,0,0.04);
-            text-decoration: none; display: flex; align-items: center; gap: 14px;
+            background: var(--white); border-radius: var(--radius-xl); padding: 1.25rem 1.5rem;
+            border: 1px solid var(--gray-200); box-shadow: var(--shadow-sm);
+            text-decoration: none; display: flex; align-items: center; gap: 1rem;
             transition: all 0.2s; color: inherit;
         }
-        .quick-card:hover { box-shadow: 0 8px 24px rgba(0,0,0,0.08); transform: translateY(-2px); color: inherit; text-decoration: none; }
+        .quick-card:hover { transform: translateY(-2px); box-shadow: var(--shadow-md); border-color: var(--primary-color); color: inherit; }
         .quick-icon {
-            width: 44px; height: 44px; min-width: 44px;
-            background: rgba(99,102,241,0.1); border-radius: 12px;
-            display: flex; align-items: center; justify-content: center;
-            color: #6366f1; font-size: 18px;
+            width: 46px; height: 46px; min-width: 46px; border-radius: var(--radius-lg);
+            display: flex; align-items: center; justify-content: center; font-size: 1.1rem;
         }
-        .quick-title { font-size: 14px; font-weight: 600; color: #1e293b; }
-        .quick-desc { font-size: 12px; color: #64748b; margin: 0; }
-        .page-title { font-size: 22px; font-weight: 700; color: #1e293b; margin: 0 0 4px; }
-        .page-subtitle { font-size: 14px; color: #64748b; margin: 0 0 24px; }
-        .section-title { font-size: 15px; font-weight: 600; color: #1e293b; margin: 0 0 16px; }
-        .grid-4 { display: grid; grid-template-columns: repeat(4, 1fr); gap: 16px; margin-bottom: 28px; }
-        .grid-2 { display: grid; grid-template-columns: repeat(2, 1fr); gap: 16px; }
-        @media (max-width: 1100px) { .grid-4 { grid-template-columns: repeat(2, 1fr); } }
-        @media (max-width: 600px) { .grid-4, .grid-2 { grid-template-columns: 1fr; } }
+        .quick-title { font-size: 0.9rem; font-weight: 600; color: var(--gray-900); }
+        .quick-desc  { font-size: 0.78rem; color: var(--gray-500); margin: 0; }
+
+        /* ── Section title ── */
+        .section-label {
+            font-size: 0.7rem; font-weight: 700; text-transform: uppercase;
+            letter-spacing: 0.08em; color: var(--gray-400); margin-bottom: 1rem;
+        }
+
+        /* ── Activity feed ── */
+        .activity-card {
+            background: var(--white); border-radius: var(--radius-xl);
+            border: 1px solid var(--gray-200); box-shadow: var(--shadow-sm); overflow: hidden;
+        }
+        .activity-header {
+            padding: 1.25rem 1.5rem; border-bottom: 1px solid var(--gray-100);
+            display: flex; align-items: center; justify-content: space-between;
+        }
+        .activity-title { font-size: 0.9rem; font-weight: 700; color: var(--gray-800); }
+        .activity-item {
+            display: flex; align-items: center; gap: 1rem;
+            padding: 0.9rem 1.5rem; border-bottom: 1px solid var(--gray-100);
+            transition: background 0.15s;
+        }
+        .activity-item:last-child { border-bottom: none; }
+        .activity-item:hover { background: var(--gray-50); }
+        .activity-dot {
+            width: 36px; height: 36px; min-width: 36px; border-radius: 50%;
+            display: flex; align-items: center; justify-content: center;
+            font-size: 0.85rem; color: white;
+        }
+        .activity-text { font-size: 0.85rem; color: var(--gray-700); }
+        .activity-time { font-size: 0.75rem; color: var(--gray-400); margin-top: 0.1rem; }
+
+        /* ── Progress bars ── */
+        .progress-card {
+            background: var(--white); border-radius: var(--radius-xl);
+            border: 1px solid var(--gray-200); box-shadow: var(--shadow-sm); padding: 1.5rem;
+        }
+        .progress-item { margin-bottom: 1.25rem; }
+        .progress-item:last-child { margin-bottom: 0; }
+        .progress-label { display: flex; justify-content: space-between; margin-bottom: 0.4rem; }
+        .progress-label span:first-child { font-size: 0.85rem; font-weight: 500; color: var(--gray-700); }
+        .progress-label span:last-child  { font-size: 0.82rem; font-weight: 700; color: var(--gray-900); }
+        .progress-track { height: 8px; border-radius: 4px; background: var(--gray-100); overflow: hidden; }
+        .progress-fill  { height: 100%; border-radius: 4px; transition: width 0.8s ease; }
+
+        /* ── Welcome banner ── */
+        .welcome-banner {
+            background: linear-gradient(135deg, #059669 0%, #0ea5e9 100%);
+            border-radius: var(--radius-xl); padding: 2rem 2.5rem;
+            color: white; margin-bottom: 1.75rem; position: relative; overflow: hidden;
+        }
+        .welcome-banner::before {
+            content: ''; position: absolute; top: -40px; right: -40px;
+            width: 200px; height: 200px; border-radius: 50%;
+            background: rgba(255,255,255,0.08);
+        }
+        .welcome-banner::after {
+            content: ''; position: absolute; bottom: -60px; right: 80px;
+            width: 150px; height: 150px; border-radius: 50%;
+            background: rgba(255,255,255,0.05);
+        }
+        .welcome-title { font-size: 1.5rem; font-weight: 800; margin-bottom: 0.25rem; }
+        .welcome-sub   { font-size: 0.9rem; opacity: 0.85; margin: 0; }
+        .welcome-date  { font-size: 0.8rem; opacity: 0.7; margin-top: 0.5rem; }
+
+        /* ── Grids ── */
+        .grid-4 { display: grid; grid-template-columns: repeat(4,1fr); gap: 1rem; margin-bottom: 1.75rem; }
+        .grid-3 { display: grid; grid-template-columns: repeat(3,1fr); gap: 1rem; margin-bottom: 1.75rem; }
+        .grid-2 { display: grid; grid-template-columns: repeat(2,1fr); gap: 1rem; margin-bottom: 1.75rem; }
+        .grid-7-5 { display: grid; grid-template-columns: 7fr 5fr; gap: 1rem; margin-bottom: 1.75rem; }
+        @media (max-width: 1100px) { .grid-4 { grid-template-columns: repeat(2,1fr); } .grid-7-5 { grid-template-columns: 1fr; } }
+        @media (max-width: 768px)  { .grid-4,.grid-3,.grid-2 { grid-template-columns: 1fr; } }
     </style>
 </head>
 <body>
-
-    <!-- Sidebar -->
     <div th:replace="~{fragments/sidebar :: admin-sidebar('dashboard')}"></div>
-
-    <!-- Wrapper -->
     <div class="ws-wrapper">
-
-        <!-- Header -->
         <div th:replace="~{fragments/header :: admin-header}"></div>
-
-        <!-- Content -->
         <main class="ws-main-content">
 
-            <h2 class="page-title">Tableau de bord</h2>
-            <p class="page-subtitle">Bienvenue sur WeSchedule Admin</p>
+            <!-- Welcome banner -->
+            <div class="welcome-banner">
+                <div class="welcome-title">
+                    Bonjour, <span th:text="${nomComplet != null ? nomComplet : 'Administrateur'}">Admin</span> 👋
+                </div>
+                <p class="welcome-sub">Bienvenue sur le tableau de bord WeSchedule</p>
+                <div class="welcome-date" id="currentDate"></div>
+            </div>
 
-            <!-- Stats -->
-            <div class="grid-4">
-                <div class="stat-card">
-                    <div class="stat-icon"><i class="fas fa-chalkboard-teacher"></i></div>
+            <!-- Stats principales -->
+            <p class="section-label">Vue d'ensemble</p>
+            <div style="display:grid;grid-template-columns:repeat(5,1fr);gap:1rem;margin-bottom:1.75rem;">
+                <a href="/dashboard/admin/enseignants" class="stat-card">
+                    <div class="stat-icon" style="background:linear-gradient(135deg,#6366f1,#4f46e5);">
+                        <i class="fas fa-chalkboard-teacher"></i>
+                    </div>
                     <div>
                         <div class="stat-number" th:text="${totalEnseignants}">0</div>
                         <div class="stat-label">Enseignants</div>
                     </div>
-                </div>
-                <div class="stat-card">
-                    <div class="stat-icon" style="background:linear-gradient(135deg,#06b6d4,#0891b2)"><i class="fas fa-door-open"></i></div>
+                </a>
+                <a href="/admin/salles" class="stat-card">
+                    <div class="stat-icon" style="background:linear-gradient(135deg,#06b6d4,#0891b2);">
+                        <i class="fas fa-door-open"></i>
+                    </div>
                     <div>
                         <div class="stat-number" th:text="${totalSalles}">0</div>
                         <div class="stat-label">Salles</div>
                     </div>
-                </div>
-                <div class="stat-card">
-                    <div class="stat-icon" style="background:linear-gradient(135deg,#10b981,#059669)"><i class="fas fa-book"></i></div>
+                </a>
+                <a href="/admin/cours" class="stat-card">
+                    <div class="stat-icon" style="background:linear-gradient(135deg,#10b981,#059669);">
+                        <i class="fas fa-book-open"></i>
+                    </div>
                     <div>
                         <div class="stat-number" th:text="${totalCours}">0</div>
                         <div class="stat-label">Cours</div>
                     </div>
-                </div>
-                <div class="stat-card">
-                    <div class="stat-icon" style="background:linear-gradient(135deg,#f59e0b,#d97706)"><i class="fas fa-graduation-cap"></i></div>
+                </a>
+                <a href="/admin/classes" class="stat-card">
+                    <div class="stat-icon" style="background:linear-gradient(135deg,#f59e0b,#d97706);">
+                        <i class="fas fa-graduation-cap"></i>
+                    </div>
                     <div>
                         <div class="stat-number" th:text="${totalClasses}">0</div>
                         <div class="stat-label">Classes</div>
                     </div>
+                </a>
+                <a href="/admin/ues" class="stat-card">
+                    <div class="stat-icon" style="background:linear-gradient(135deg,#8b5cf6,#7c3aed);">
+                        <i class="fas fa-layer-group"></i>
+                    </div>
+                    <div>
+                        <div class="stat-number" th:text="${totalUes}">0</div>
+                        <div class="stat-label">UEs</div>
+                    </div>
+                </a>
+            </div>
+
+            <!-- Accès rapide + activité récente -->
+            <div class="grid-7-5">
+
+                <!-- Accès rapide -->
+                <div>
+                    <p class="section-label">Accès rapide</p>
+                    <div class="grid-2" style="margin-bottom:0;">
+                        <a href="/dashboard/admin/enseignants" class="quick-card">
+                            <div class="quick-icon" style="background:rgba(99,102,241,0.1);color:#6366f1;">
+                                <i class="fas fa-users"></i>
+                            </div>
+                            <div>
+                                <div class="quick-title">Enseignants</div>
+                                <p class="quick-desc">Gérer les comptes et affectations</p>
+                            </div>
+                        </a>
+                        <a href="/admin/salles" class="quick-card">
+                            <div class="quick-icon" style="background:rgba(6,182,212,0.1);color:#06b6d4;">
+                                <i class="fas fa-door-open"></i>
+                            </div>
+                            <div>
+                                <div class="quick-title">Salles</div>
+                                <p class="quick-desc">Gérer les salles et disponibilités</p>
+                            </div>
+                        </a>
+                        <a href="/admin/cours" class="quick-card">
+                            <div class="quick-icon" style="background:rgba(16,185,129,0.1);color:#10b981;">
+                                <i class="fas fa-book-open"></i>
+                            </div>
+                            <div>
+                                <div class="quick-title">Cours</div>
+                                <p class="quick-desc">Créer et organiser les cours</p>
+                            </div>
+                        </a>
+                        <a href="/admin/classes" class="quick-card">
+                            <div class="quick-icon" style="background:rgba(245,158,11,0.1);color:#f59e0b;">
+                                <i class="fas fa-graduation-cap"></i>
+                            </div>
+                            <div>
+                                <div class="quick-title">Classes</div>
+                                <p class="quick-desc">Gérer les classes et niveaux</p>
+                            </div>
+                        </a>
+                        <a href="/admin/ues" class="quick-card">
+                            <div class="quick-icon" style="background:rgba(139,92,246,0.1);color:#8b5cf6;">
+                                <i class="fas fa-layer-group"></i>
+                            </div>
+                            <div>
+                                <div class="quick-title">Unités d'Enseignement</div>
+                                <p class="quick-desc">Gérer les UEs et semestres</p>
+                            </div>
+                        </a>
+                        <a href="/admin/emplois-du-temps" class="quick-card">
+                            <div class="quick-icon" style="background:rgba(236,72,153,0.1);color:#ec4899;">
+                                <i class="fas fa-calendar-alt"></i>
+                            </div>
+                            <div>
+                                <div class="quick-title">Emplois du temps</div>
+                                <p class="quick-desc">Planifier et organiser les séances</p>
+                            </div>
+                        </a>
+                    </div>
+                </div>
+
+                <!-- Activité récente -->
+                <div>
+                    <p class="section-label">Activité récente</p>
+                    <div class="activity-card">
+                        <div class="activity-header">
+                            <span class="activity-title"><i class="fas fa-history me-2 text-primary"></i>Dernières actions</span>
+                        </div>
+                        <div class="activity-item">
+                            <div class="activity-dot" style="background:linear-gradient(135deg,#6366f1,#4f46e5);">
+                                <i class="fas fa-user-plus" style="font-size:0.75rem;"></i>
+                            </div>
+                            <div>
+                                <div class="activity-text">Système initialisé</div>
+                                <div class="activity-time">Données chargées depuis la base</div>
+                            </div>
+                        </div>
+                        <div class="activity-item">
+                            <div class="activity-dot" style="background:linear-gradient(135deg,#10b981,#059669);">
+                                <i class="fas fa-book" style="font-size:0.75rem;"></i>
+                            </div>
+                            <div>
+                                <div class="activity-text">
+                                    <span th:text="${totalCours}">0</span> cours disponibles
+                                </div>
+                                <div class="activity-time">Tous semestres confondus</div>
+                            </div>
+                        </div>
+                        <div class="activity-item">
+                            <div class="activity-dot" style="background:linear-gradient(135deg,#06b6d4,#0891b2);">
+                                <i class="fas fa-door-open" style="font-size:0.75rem;"></i>
+                            </div>
+                            <div>
+                                <div class="activity-text">
+                                    <span th:text="${totalSalles}">0</span> salles enregistrées
+                                </div>
+                                <div class="activity-time">Capacités et localisations renseignées</div>
+                            </div>
+                        </div>
+                        <div class="activity-item">
+                            <div class="activity-dot" style="background:linear-gradient(135deg,#f59e0b,#d97706);">
+                                <i class="fas fa-graduation-cap" style="font-size:0.75rem;"></i>
+                            </div>
+                            <div>
+                                <div class="activity-text">
+                                    <span th:text="${totalClasses}">0</span> classes actives
+                                </div>
+                                <div class="activity-time">Niveaux 1 à 5</div>
+                            </div>
+                        </div>
+                        <div class="activity-item">
+                            <div class="activity-dot" style="background:linear-gradient(135deg,#ec4899,#db2777);">
+                                <i class="fas fa-chalkboard-teacher" style="font-size:0.75rem;"></i>
+                            </div>
+                            <div>
+                                <div class="activity-text">
+                                    <span th:text="${totalEnseignants}">0</span> enseignants inscrits
+                                </div>
+                                <div class="activity-time">Francophone &amp; Anglophone</div>
+                            </div>
+                        </div>
+                    </div>
                 </div>
             </div>
 
-            <!-- Accès rapide -->
-            <p class="section-title">Accès rapide</p>
-            <div class="grid-2">
-                <a href="/dashboard/admin/enseignants" class="quick-card">
-                    <div class="quick-icon"><i class="fas fa-users"></i></div>
-                    <div>
-                        <div class="quick-title">Gestion des Enseignants</div>
-                        <p class="quick-desc">Créer, modifier et gérer les comptes enseignants</p>
+            <!-- Répartition des ressources -->
+            <p class="section-label">Répartition des ressources</p>
+            <div class="grid-3">
+                <!-- Cours par type -->
+                <div class="progress-card">
+                    <div class="d-flex align-items-center gap-2 mb-3">
+                        <div style="width:32px;height:32px;border-radius:8px;background:linear-gradient(135deg,#3b82f6,#2563eb);display:flex;align-items:center;justify-content:center;color:white;font-size:0.8rem;">
+                            <i class="fas fa-book-open"></i>
+                        </div>
+                        <span style="font-size:0.88rem;font-weight:700;color:var(--gray-800);">Cours par type</span>
                     </div>
-                </a>
-                <a href="/admin/emplois-du-temps" class="quick-card">
-                    <div class="quick-icon" style="background:rgba(6,182,212,0.1);color:#06b6d4"><i class="fas fa-calendar-alt"></i></div>
-                    <div>
-                        <div class="quick-title">Emplois du temps</div>
-                        <p class="quick-desc">Planifier et organiser les cours</p>
+                    <div class="progress-item" id="prog-cm">
+                        <div class="progress-label"><span>CM</span><span id="pct-cm">—</span></div>
+                        <div class="progress-track"><div class="progress-fill" id="bar-cm" style="width:0%;background:linear-gradient(90deg,#3b82f6,#2563eb);"></div></div>
                     </div>
-                </a>
-                <a href="/admin/salles" class="quick-card">
-                    <div class="quick-icon" style="background:rgba(16,185,129,0.1);color:#10b981"><i class="fas fa-door-open"></i></div>
-                    <div>
-                        <div class="quick-title">Gestion des Salles</div>
-                        <p class="quick-desc">Gérer les salles et leurs disponibilités</p>
+                    <div class="progress-item" id="prog-td">
+                        <div class="progress-label"><span>TD</span><span id="pct-td">—</span></div>
+                        <div class="progress-track"><div class="progress-fill" id="bar-td" style="width:0%;background:linear-gradient(90deg,#f59e0b,#d97706);"></div></div>
                     </div>
-                </a>
-                <a href="/admin/cours" class="quick-card">
-                    <div class="quick-icon" style="background:rgba(245,158,11,0.1);color:#f59e0b"><i class="fas fa-book"></i></div>
-                    <div>
-                        <div class="quick-title">Gestion des Cours</div>
-                        <p class="quick-desc">Créer et organiser les cours et matières</p>
+                    <div class="progress-item" id="prog-tp">
+                        <div class="progress-label"><span>TP</span><span id="pct-tp">—</span></div>
+                        <div class="progress-track"><div class="progress-fill" id="bar-tp" style="width:0%;background:linear-gradient(90deg,#10b981,#059669);"></div></div>
                     </div>
-                </a>
+                </div>
+
+                <!-- Salles par type -->
+                <div class="progress-card">
+                    <div class="d-flex align-items-center gap-2 mb-3">
+                        <div style="width:32px;height:32px;border-radius:8px;background:linear-gradient(135deg,#06b6d4,#0891b2);display:flex;align-items:center;justify-content:center;color:white;font-size:0.8rem;">
+                            <i class="fas fa-door-open"></i>
+                        </div>
+                        <span style="font-size:0.88rem;font-weight:700;color:var(--gray-800);">Salles par type</span>
+                    </div>
+                    <div id="sallesProgress"><p class="text-muted small">Chargement…</p></div>
+                </div>
+
+                <!-- Taux de couverture -->
+                <div class="progress-card">
+                    <div class="d-flex align-items-center gap-2 mb-3">
+                        <div style="width:32px;height:32px;border-radius:8px;background:linear-gradient(135deg,#8b5cf6,#7c3aed);display:flex;align-items:center;justify-content:center;color:white;font-size:0.8rem;">
+                            <i class="fas fa-chart-pie"></i>
+                        </div>
+                        <span style="font-size:0.88rem;font-weight:700;color:var(--gray-800);">Indicateurs clés</span>
+                    </div>
+                    <div class="progress-item">
+                        <div class="progress-label">
+                            <span>Cours avec enseignant</span>
+                            <span id="pct-ens-cours">—</span>
+                        </div>
+                        <div class="progress-track"><div class="progress-fill" id="bar-ens-cours" style="width:0%;background:linear-gradient(90deg,#8b5cf6,#7c3aed);"></div></div>
+                    </div>
+                    <div class="progress-item">
+                        <div class="progress-label">
+                            <span>Cours terminés</span>
+                            <span id="pct-cours-done">—</span>
+                        </div>
+                        <div class="progress-track"><div class="progress-fill" id="bar-cours-done" style="width:0%;background:linear-gradient(90deg,#10b981,#059669);"></div></div>
+                    </div>
+                    <div class="progress-item">
+                        <div class="progress-label">
+                            <span>Salles disponibles</span>
+                            <span id="pct-salles-dispo">—</span>
+                        </div>
+                        <div class="progress-track"><div class="progress-fill" id="bar-salles-dispo" style="width:0%;background:linear-gradient(90deg,#06b6d4,#0891b2);"></div></div>
+                    </div>
+                </div>
             </div>
 
         </main>
     </div>
 
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js"></script>
     <script src="/js/modern-layout.js"></script>
+    <script th:inline="javascript">
+        // Date courante
+        const now = new Date();
+        document.getElementById('currentDate').textContent =
+            now.toLocaleDateString('fr-FR', { weekday:'long', year:'numeric', month:'long', day:'numeric' });
+
+        function setBar(id, pct, label) {
+            const bar = document.getElementById('bar-' + id);
+            const lbl = document.getElementById('pct-' + id);
+            if (bar) setTimeout(() => bar.style.width = Math.min(Math.max(pct, 0), 100) + '%', 100);
+            if (lbl) lbl.textContent = label;
+        }
+
+        async function loadStats() {
+            try {
+                const res   = await fetch('/api/admin/stats');
+                if (!res.ok) throw new Error();
+                const stats = await res.json();
+
+                // ── Cours par type ──────────────────────────────────────
+                const total = stats.cours_total || 1;
+                const pctCM = Math.round((stats.cours_cm / total) * 100);
+                const pctTD = Math.round((stats.cours_td / total) * 100);
+                const pctTP = Math.round((stats.cours_tp / total) * 100);
+                setBar('cm', pctCM, stats.cours_cm + ' (' + pctCM + '%)');
+                setBar('td', pctTD, stats.cours_td + ' (' + pctTD + '%)');
+                setBar('tp', pctTP, stats.cours_tp + ' (' + pctTP + '%)');
+
+                // ── Salles par type ─────────────────────────────────────
+                const sallesTotal = stats.salles_total || 1;
+                const typeConfig = {
+                    'SALLE_DE_COURS':     { label: 'Salle de Cours',    color: 'linear-gradient(90deg,#3b82f6,#2563eb)' },
+                    'SALLE_DE_TD':        { label: 'Salle de TD',        color: 'linear-gradient(90deg,#f59e0b,#d97706)' },
+                    'SALLE_INFORMATIQUE': { label: 'Salle Informatique', color: 'linear-gradient(90deg,#10b981,#059669)' },
+                    'LABORATOIRE':        { label: 'Laboratoire',        color: 'linear-gradient(90deg,#8b5cf6,#7c3aed)' },
+                    'SALLE_DE_CONFERENCE':{ label: 'Conférence',         color: 'linear-gradient(90deg,#ec4899,#db2777)' },
+                };
+                const sallesParType = stats.salles_par_type || {};
+                let sallesHtml = '';
+                for (const [key, cfg] of Object.entries(typeConfig)) {
+                    const nb  = sallesParType[key] || 0;
+                    if (nb === 0) continue;
+                    const pct = Math.round((nb / sallesTotal) * 100);
+                    sallesHtml += `
+                        <div class="progress-item">
+                            <div class="progress-label">
+                                <span>${cfg.label}</span>
+                                <span>${nb} (${pct}%)</span>
+                            </div>
+                            <div class="progress-track">
+                                <div class="progress-fill" style="width:0%;background:${cfg.color};"
+                                     data-target="${pct}"></div>
+                            </div>
+                        </div>`;
+                }
+                if (!sallesHtml) sallesHtml = '<p class="text-muted small">Aucune salle enregistrée</p>';
+                document.getElementById('sallesProgress').innerHTML = sallesHtml;
+                // Animer les barres salles
+                setTimeout(() => {
+                    document.querySelectorAll('#sallesProgress .progress-fill').forEach(b => {
+                        b.style.width = b.dataset.target + '%';
+                    });
+                }, 150);
+
+                // ── Indicateurs clés ────────────────────────────────────
+                const pctEns  = total > 1 ? Math.round((stats.cours_avec_enseignant / (total)) * 100) : 0;
+                const pctDone = total > 1 ? Math.round((stats.cours_termines / (total)) * 100) : 0;
+                const pctDispo= sallesTotal > 1 ? Math.round((stats.salles_disponibles / sallesTotal) * 100) : 0;
+                setBar('ens-cours',    pctEns,  stats.cours_avec_enseignant + ' (' + pctEns + '%)');
+                setBar('cours-done',   pctDone, stats.cours_termines + ' (' + pctDone + '%)');
+                setBar('salles-dispo', pctDispo, stats.salles_disponibles + ' (' + pctDispo + '%)');
+
+            } catch {
+                // Fallback silencieux — les barres restent à 0
+                document.getElementById('sallesProgress').innerHTML =
+                    '<p class="text-muted small">Données non disponibles</p>';
+            }
+        }
+
+        document.addEventListener('DOMContentLoaded', loadStats);
+    </script>
 </body>
 </html>

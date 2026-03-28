@@ -18,25 +18,24 @@ public class UE {
     @Id
     @GeneratedValue
     private UUID idUE;
-    
+
     private String intitule;
     private String code;
-    private Integer duree; // Nombre d'heures TOTAL pour cette UE (ex: 60h)
-    
+    private Integer duree; // Nombre d'heures TOTAL
+
     @Column(nullable = false)
     private Integer credits;
-    
+
     @Column(nullable = false)
     private Integer semestre; // 1 ou 2
-    
+
     @Enumerated(EnumType.STRING)
     @Column(nullable = false)
     private StatutUE statut; // ACTIF ou INACTIF
-    
-    @ManyToOne(fetch = FetchType.LAZY)
-    @JoinColumn(name = "ecole_id")
-    private Ecole ecole;
-    
+
+    @Column(columnDefinition = "TEXT")
+    private String description;
+
     @ManyToMany(fetch = FetchType.LAZY)
     @JoinTable(
         name = "ue_classe",

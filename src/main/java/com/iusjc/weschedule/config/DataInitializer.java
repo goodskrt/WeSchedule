@@ -1,7 +1,6 @@
 package com.iusjc.weschedule.config;
 
 import com.iusjc.weschedule.enums.Role;
-import com.iusjc.weschedule.enums.StatutCours;
 import com.iusjc.weschedule.enums.StatutUE;
 import com.iusjc.weschedule.enums.TypeCours;
 import com.iusjc.weschedule.enums.TypeSalle;
@@ -147,24 +146,39 @@ public class DataInitializer {
             Filiere filiereInfo = new Filiere();
             filiereInfo.setNomFiliere("Informatique");
             filiereInfo.setDescription("Formation en développement logiciel et systèmes d'information");
+            filiereInfo.setEcole(sji);
+            filiereInfo.setNiveaux(java.util.List.of("Niveau 1","Niveau 2","Niveau 3","Niveau 4","Niveau 5"));
             filiereRepo.save(filiereInfo);
 
             Filiere filiereGestion = new Filiere();
             filiereGestion.setNomFiliere("Gestion");
             filiereGestion.setDescription("Formation en management et gestion d'entreprise");
+            filiereGestion.setEcole(sjm);
+            filiereGestion.setNiveaux(java.util.List.of("Niveau 1","Niveau 2","Niveau 3"));
             filiereRepo.save(filiereGestion);
 
             Filiere filiereMarketing = new Filiere();
             filiereMarketing.setNomFiliere("Marketing");
             filiereMarketing.setDescription("Formation en marketing digital et communication");
+            filiereMarketing.setEcole(sjm);
+            filiereMarketing.setNiveaux(java.util.List.of("Niveau 1","Niveau 2","Niveau 3"));
             filiereRepo.save(filiereMarketing);
 
             Filiere filiereSciences = new Filiere();
             filiereSciences.setNomFiliere("Sciences");
             filiereSciences.setDescription("Formation scientifique préparatoire");
+            filiereSciences.setEcole(prepa);
+            filiereSciences.setNiveaux(java.util.List.of("Niveau 1","Niveau 2"));
             filiereRepo.save(filiereSciences);
 
-            log.info("Filieres creees : 4 filieres");
+            Filiere filiereScencesCpge = new Filiere();
+            filiereScencesCpge.setNomFiliere("Sciences CPGE");
+            filiereScencesCpge.setDescription("Classes préparatoires scientifiques");
+            filiereScencesCpge.setEcole(cpge);
+            filiereScencesCpge.setNiveaux(java.util.List.of("Niveau 1","Niveau 2","Niveau 3"));
+            filiereRepo.save(filiereScencesCpge);
+
+            log.info("Filieres creees : 5 filieres");
 
             // ========== 3. CREATION DES GROUPES ==========
             log.info("Creation des groupes...");
@@ -186,72 +200,65 @@ public class DataInitializer {
 
             Classe infoL1A = new Classe();
             infoL1A.setNom("Informatique L1A");
-            infoL1A.setNiveau("L1");
+            infoL1A.setNiveau("Niveau 1");
             infoL1A.setEcole(sji);
             infoL1A.setFiliere(filiereInfo);
-            infoL1A.setSemestre(1);
             infoL1A.setEffectif(45);
-            infoL1A.setEffectifMax(50);
+            infoL1A.setLangue("Francophone");
             classeRepo.save(infoL1A);
 
             Classe infoL1B = new Classe();
             infoL1B.setNom("Informatique L1B");
-            infoL1B.setNiveau("L1");
+            infoL1B.setNiveau("Niveau 1");
             infoL1B.setEcole(sji);
             infoL1B.setFiliere(filiereInfo);
-            infoL1B.setSemestre(1);
             infoL1B.setEffectif(42);
-            infoL1B.setEffectifMax(50);
+            infoL1B.setLangue("Anglophone");
             classeRepo.save(infoL1B);
 
             Classe infoL2 = new Classe();
             infoL2.setNom("Informatique L2");
-            infoL2.setNiveau("L2");
+            infoL2.setNiveau("Niveau 2");
             infoL2.setEcole(sji);
             infoL2.setFiliere(filiereInfo);
-            infoL2.setSemestre(3);
             infoL2.setEffectif(38);
-            infoL2.setEffectifMax(45);
+            infoL2.setLangue("Francophone");
             classeRepo.save(infoL2);
 
             Classe gestionL1 = new Classe();
             gestionL1.setNom("Gestion L1");
-            gestionL1.setNiveau("L1");
+            gestionL1.setNiveau("Niveau 1");
             gestionL1.setEcole(sjm);
             gestionL1.setFiliere(filiereGestion);
-            gestionL1.setSemestre(1);
             gestionL1.setEffectif(50);
-            gestionL1.setEffectifMax(55);
+            gestionL1.setLangue("Francophone");
             classeRepo.save(gestionL1);
 
             Classe marketingL2 = new Classe();
             marketingL2.setNom("Marketing L2");
-            marketingL2.setNiveau("L2");
+            marketingL2.setNiveau("Niveau 2");
             marketingL2.setEcole(sjm);
             marketingL2.setFiliere(filiereMarketing);
-            marketingL2.setSemestre(3);
             marketingL2.setEffectif(35);
-            marketingL2.setEffectifMax(40);
+            marketingL2.setLangue("Anglophone");
             classeRepo.save(marketingL2);
 
             Classe prepaScientifique1A = new Classe();
             prepaScientifique1A.setNom("Prépa Scientifique 1A");
-            prepaScientifique1A.setNiveau("Prépa");
+            prepaScientifique1A.setNiveau("Niveau 1");
             prepaScientifique1A.setEcole(prepa);
             prepaScientifique1A.setFiliere(filiereSciences);
-            prepaScientifique1A.setSemestre(1);
             prepaScientifique1A.setEffectif(30);
-            prepaScientifique1A.setEffectifMax(35);
+            prepaScientifique1A.setLangue("Francophone");
             classeRepo.save(prepaScientifique1A);
 
             Classe mpsi = new Classe();
             mpsi.setNom("MPSI");
-            mpsi.setNiveau("CPGE");
+            mpsi.setNiveau("Niveau 3");
             mpsi.setEcole(cpge);
             mpsi.setFiliere(filiereSciences);
-            mpsi.setSemestre(1);
             mpsi.setEffectif(35);
-            mpsi.setEffectifMax(40);
+            mpsi.setLangue("Francophone");
             classeRepo.save(mpsi);
 
             log.info("Classes creees : 7 classes");
@@ -360,7 +367,59 @@ public class DataInitializer {
             leroy.setEcoles(ecolesLeroy);
             enseignantRepo.save(leroy);
 
-            log.info("Enseignants crees : 6 enseignants");
+            // NOUVEAUX ENSEIGNANTS POUR INFORMATIQUE L1A
+            Enseignant garcia = new Enseignant();
+            garcia.setNom("Garcia");
+            garcia.setPrenom("Carlos");
+            garcia.setEmail("carlos.garcia@iu-saintjean.cm");
+            garcia.setPhone("677789012");
+            garcia.setMotDePasse(passwordEncoder.encode("password123"));
+            garcia.setRole(Role.ENSEIGNANT);
+            garcia.setGrade("Professeur");
+            Set<String> specialitesGarcia = new HashSet<>();
+            specialitesGarcia.add("Bases de données");
+            specialitesGarcia.add("SQL");
+            garcia.setSpecialites(specialitesGarcia);
+            Set<Ecole> ecolesGarcia = new HashSet<>();
+            ecolesGarcia.add(sji);
+            garcia.setEcoles(ecolesGarcia);
+            enseignantRepo.save(garcia);
+
+            Enseignant rousseau = new Enseignant();
+            rousseau.setNom("Rousseau");
+            rousseau.setPrenom("Isabelle");
+            rousseau.setEmail("isabelle.rousseau@iu-saintjean.cm");
+            rousseau.setPhone("677890123");
+            rousseau.setMotDePasse(passwordEncoder.encode("password123"));
+            rousseau.setRole(Role.ENSEIGNANT);
+            rousseau.setGrade("Maître de conférences");
+            Set<String> specialitesRousseau = new HashSet<>();
+            specialitesRousseau.add("Réseaux");
+            specialitesRousseau.add("Systèmes");
+            rousseau.setSpecialites(specialitesRousseau);
+            Set<Ecole> ecolesRousseau = new HashSet<>();
+            ecolesRousseau.add(sji);
+            rousseau.setEcoles(ecolesRousseau);
+            enseignantRepo.save(rousseau);
+
+            Enseignant petit = new Enseignant();
+            petit.setNom("Petit");
+            petit.setPrenom("Thomas");
+            petit.setEmail("thomas.petit@iu-saintjean.cm");
+            petit.setPhone("677901234");
+            petit.setMotDePasse(passwordEncoder.encode("password123"));
+            petit.setRole(Role.ENSEIGNANT);
+            petit.setGrade("Professeur");
+            Set<String> specialitesPetit = new HashSet<>();
+            specialitesPetit.add("Web");
+            specialitesPetit.add("JavaScript");
+            petit.setSpecialites(specialitesPetit);
+            Set<Ecole> ecolesPetit = new HashSet<>();
+            ecolesPetit.add(sji);
+            petit.setEcoles(ecolesPetit);
+            enseignantRepo.save(petit);
+
+            log.info("Enseignants crees : 9 enseignants");
 
             // ========== 6. CREATION DES UEs (depuis frontend) ==========
             log.info("Creation des UEs...");
@@ -370,7 +429,6 @@ public class DataInitializer {
             inf101.setIntitule("Introduction à la Programmation");
             inf101.setCredits(6);
             inf101.setSemestre(1);
-            inf101.setEcole(sji);
             inf101.setDuree(60);
             inf101.setStatut(StatutUE.ACTIF);
             Set<Classe> classesInf101 = new HashSet<>();
@@ -384,7 +442,6 @@ public class DataInitializer {
             mat101.setIntitule("Mathématiques Fondamentales");
             mat101.setCredits(6);
             mat101.setSemestre(1);
-            mat101.setEcole(sji);
             mat101.setDuree(60);
             mat101.setStatut(StatutUE.ACTIF);
             Set<Classe> classesMat101 = new HashSet<>();
@@ -397,8 +454,7 @@ public class DataInitializer {
             inf201.setCode("INF201");
             inf201.setIntitule("Programmation Orientée Objet");
             inf201.setCredits(6);
-            inf201.setSemestre(3);
-            inf201.setEcole(sji);
+            inf201.setSemestre(2);
             inf201.setDuree(60);
             inf201.setStatut(StatutUE.ACTIF);
             Set<Classe> classesInf201 = new HashSet<>();
@@ -411,7 +467,6 @@ public class DataInitializer {
             ges101.setIntitule("Principes de Gestion");
             ges101.setCredits(4);
             ges101.setSemestre(1);
-            ges101.setEcole(sjm);
             ges101.setDuree(50);
             ges101.setStatut(StatutUE.ACTIF);
             Set<Classe> classesGes101 = new HashSet<>();
@@ -423,8 +478,7 @@ public class DataInitializer {
             mkt201.setCode("MKT201");
             mkt201.setIntitule("Marketing Digital");
             mkt201.setCredits(5);
-            mkt201.setSemestre(3);
-            mkt201.setEcole(sjm);
+            mkt201.setSemestre(2);
             mkt201.setDuree(55);
             mkt201.setStatut(StatutUE.ACTIF);
             Set<Classe> classesMkt201 = new HashSet<>();
@@ -437,7 +491,6 @@ public class DataInitializer {
             mat201.setIntitule("Mathématiques Supérieures");
             mat201.setCredits(8);
             mat201.setSemestre(1);
-            mat201.setEcole(prepa);
             mat201.setDuree(80);
             mat201.setStatut(StatutUE.ACTIF);
             Set<Classe> classesMat201 = new HashSet<>();
@@ -451,7 +504,6 @@ public class DataInitializer {
             phy101.setIntitule("Physique Générale");
             phy101.setCredits(6);
             phy101.setSemestre(1);
-            phy101.setEcole(cpge);
             phy101.setDuree(60);
             phy101.setStatut(StatutUE.ACTIF);
             Set<Classe> classesPhy101 = new HashSet<>();
@@ -464,7 +516,6 @@ public class DataInitializer {
             chi101.setIntitule("Chimie Générale");
             chi101.setCredits(6);
             chi101.setSemestre(1);
-            chi101.setEcole(prepa);
             chi101.setDuree(60);
             chi101.setStatut(StatutUE.ACTIF);
             Set<Classe> classesChi101 = new HashSet<>();
@@ -472,92 +523,409 @@ public class DataInitializer {
             chi101.setClasses(classesChi101);
             ueRepo.save(chi101);
 
-            log.info("UEs creees : 8 UEs");
+            // NOUVELLES UEs POUR INFORMATIQUE L1A
+            UE inf102 = new UE();
+            inf102.setCode("INF102");
+            inf102.setIntitule("Bases de Données");
+            inf102.setCredits(5);
+            inf102.setSemestre(1);
+            inf102.setDuree(50);
+            inf102.setStatut(StatutUE.ACTIF);
+            Set<Classe> classesInf102 = new HashSet<>();
+            classesInf102.add(infoL1A);
+            inf102.setClasses(classesInf102);
+            ueRepo.save(inf102);
+
+            UE inf103 = new UE();
+            inf103.setCode("INF103");
+            inf103.setIntitule("Réseaux et Systèmes");
+            inf103.setCredits(5);
+            inf103.setSemestre(1);
+            inf103.setDuree(50);
+            inf103.setStatut(StatutUE.ACTIF);
+            Set<Classe> classesInf103 = new HashSet<>();
+            classesInf103.add(infoL1A);
+            inf103.setClasses(classesInf103);
+            ueRepo.save(inf103);
+
+            UE inf104 = new UE();
+            inf104.setCode("INF104");
+            inf104.setIntitule("Développement Web");
+            inf104.setCredits(6);
+            inf104.setSemestre(1);
+            inf104.setDuree(60);
+            inf104.setStatut(StatutUE.ACTIF);
+            Set<Classe> classesInf104 = new HashSet<>();
+            classesInf104.add(infoL1A);
+            inf104.setClasses(classesInf104);
+            ueRepo.save(inf104);
+
+            log.info("UEs creees : 11 UEs");
+
+            // ========== ASSIGNATION DES UEs AUX ENSEIGNANTS ==========
+            log.info("Assignation des UEs aux enseignants...");
+
+            // Dupont enseigne INF101 et INF201
+            Set<UE> uesDupont = new HashSet<>();
+            uesDupont.add(inf101);
+            uesDupont.add(inf201);
+            dupont.setUesEnseignees(uesDupont);
+            enseignantRepo.save(dupont);
+
+            // Laurent enseigne MAT101 et MAT201
+            Set<UE> uesLaurent = new HashSet<>();
+            uesLaurent.add(mat101);
+            uesLaurent.add(mat201);
+            laurent.setUesEnseignees(uesLaurent);
+            enseignantRepo.save(laurent);
+
+            // Moreau enseigne GES101
+            Set<UE> uesMoreau = new HashSet<>();
+            uesMoreau.add(ges101);
+            moreau.setUesEnseignees(uesMoreau);
+            enseignantRepo.save(moreau);
+
+            // Dubois enseigne MKT201
+            Set<UE> uesDubois = new HashSet<>();
+            uesDubois.add(mkt201);
+            dubois.setUesEnseignees(uesDubois);
+            enseignantRepo.save(dubois);
+
+            // Bernard enseigne MAT201 et PHY101
+            Set<UE> uesBernard = new HashSet<>();
+            uesBernard.add(mat201);
+            uesBernard.add(phy101);
+            bernard.setUesEnseignees(uesBernard);
+            enseignantRepo.save(bernard);
+
+            // Leroy enseigne CHI101 et PHY101
+            Set<UE> uesLeroy = new HashSet<>();
+            uesLeroy.add(chi101);
+            uesLeroy.add(phy101);
+            leroy.setUesEnseignees(uesLeroy);
+            enseignantRepo.save(leroy);
+
+            // Garcia enseigne INF102 (Bases de Données)
+            Set<UE> uesGarcia = new HashSet<>();
+            uesGarcia.add(inf102);
+            garcia.setUesEnseignees(uesGarcia);
+            enseignantRepo.save(garcia);
+
+            // Rousseau enseigne INF103 (Réseaux et Systèmes)
+            Set<UE> uesRousseau = new HashSet<>();
+            uesRousseau.add(inf103);
+            rousseau.setUesEnseignees(uesRousseau);
+            enseignantRepo.save(rousseau);
+
+            // Petit enseigne INF104 (Développement Web)
+            Set<UE> uesPetit = new HashSet<>();
+            uesPetit.add(inf104);
+            petit.setUesEnseignees(uesPetit);
+            enseignantRepo.save(petit);
+
+            log.info("UEs assignees aux enseignants avec succes");
 
             // ========== 7. CREATION DES COURS (depuis frontend) ==========
             log.info("Creation des cours...");
 
+            // INF101 - Introduction à la Programmation (3 types)
             Cours cours1 = new Cours();
             cours1.setIntitule("CM - Introduction à la Programmation");
             cours1.setTypeCours(TypeCours.CM);
             cours1.setUe(inf101);
+            cours1.setClasse(infoL1A);
             cours1.setEnseignant(dupont);
-            Set<Classe> classesCours1 = new HashSet<>();
-            classesCours1.add(infoL1A);
-            classesCours1.add(infoL1B);
-            cours1.setClasses(classesCours1);
-            cours1.setDuree(30);
+            cours1.setDureeTotal(30);
+            cours1.setDureeRestante(30);
             cours1.setDescription("Cours magistral d'introduction à la programmation");
-            cours1.setStatut(StatutCours.ACTIF);
             coursRepo.save(cours1);
 
             Cours cours2 = new Cours();
             cours2.setIntitule("TD - Introduction à la Programmation");
             cours2.setTypeCours(TypeCours.TD);
             cours2.setUe(inf101);
+            cours2.setClasse(infoL1A);
             cours2.setEnseignant(dupont);
-            Set<Classe> classesCours2 = new HashSet<>();
-            classesCours2.add(infoL1A);
-            cours2.setClasses(classesCours2);
-            cours2.setDuree(20);
+            cours2.setDureeTotal(20);
+            cours2.setDureeRestante(20);
             cours2.setDescription("Travaux dirigés de programmation");
-            cours2.setStatut(StatutCours.ACTIF);
             coursRepo.save(cours2);
 
             Cours cours3 = new Cours();
             cours3.setIntitule("TP - Introduction à la Programmation");
             cours3.setTypeCours(TypeCours.TP);
             cours3.setUe(inf101);
+            cours3.setClasse(infoL1A);
             cours3.setEnseignant(dupont);
-            Set<Classe> classesCours3 = new HashSet<>();
-            classesCours3.add(infoL1B);
-            cours3.setClasses(classesCours3);
-            cours3.setDuree(40);
+            cours3.setDureeTotal(30);
+            cours3.setDureeRestante(30);
             cours3.setDescription("Travaux pratiques de programmation");
-            cours3.setStatut(StatutCours.ACTIF);
             coursRepo.save(cours3);
 
+            // MAT101 - Mathématiques Fondamentales (2 types)
             Cours cours4 = new Cours();
             cours4.setIntitule("CM - Mathématiques Fondamentales");
             cours4.setTypeCours(TypeCours.CM);
             cours4.setUe(mat101);
+            cours4.setClasse(infoL1A);
             cours4.setEnseignant(laurent);
-            Set<Classe> classesCours4 = new HashSet<>();
-            classesCours4.add(infoL1A);
-            classesCours4.add(infoL1B);
-            cours4.setClasses(classesCours4);
-            cours4.setDuree(30);
+            cours4.setDureeTotal(40);
+            cours4.setDureeRestante(40);
             cours4.setDescription("Cours magistral de mathématiques");
-            cours4.setStatut(StatutCours.ACTIF);
             coursRepo.save(cours4);
 
             Cours cours5 = new Cours();
-            cours5.setIntitule("CM - Principes de Gestion");
-            cours5.setTypeCours(TypeCours.CM);
-            cours5.setUe(ges101);
-            cours5.setEnseignant(moreau);
-            Set<Classe> classesCours5 = new HashSet<>();
-            classesCours5.add(gestionL1);
-            cours5.setClasses(classesCours5);
-            cours5.setDuree(25);
-            cours5.setDescription("Cours magistral de gestion");
-            cours5.setStatut(StatutCours.ACTIF);
+            cours5.setIntitule("TD - Mathématiques Fondamentales");
+            cours5.setTypeCours(TypeCours.TD);
+            cours5.setUe(mat101);
+            cours5.setClasse(infoL1A);
+            cours5.setEnseignant(laurent);
+            cours5.setDureeTotal(20);
+            cours5.setDureeRestante(20);
+            cours5.setDescription("Travaux dirigés de mathématiques");
             coursRepo.save(cours5);
 
+            // INF201 - Programmation Orientée Objet (2 types)
             Cours cours6 = new Cours();
-            cours6.setIntitule("CM - Marketing Digital");
+            cours6.setIntitule("CM - Programmation Orientée Objet");
             cours6.setTypeCours(TypeCours.CM);
-            cours6.setUe(mkt201);
-            cours6.setEnseignant(moreau);
-            Set<Classe> classesCours6 = new HashSet<>();
-            classesCours6.add(marketingL2);
-            cours6.setClasses(classesCours6);
-            cours6.setDuree(30);
-            cours6.setDescription("Cours magistral de marketing digital");
-            cours6.setStatut(StatutCours.ACTIF);
+            cours6.setUe(inf201);
+            cours6.setClasse(infoL2);
+            cours6.setEnseignant(dupont);
+            cours6.setDureeTotal(30);
+            cours6.setDureeRestante(30);
+            cours6.setDescription("Cours magistral de POO");
             coursRepo.save(cours6);
 
-            log.info("Cours crees : 6 cours");
+            Cours cours7 = new Cours();
+            cours7.setIntitule("TP - Programmation Orientée Objet");
+            cours7.setTypeCours(TypeCours.TP);
+            cours7.setUe(inf201);
+            cours7.setClasse(infoL2);
+            cours7.setEnseignant(dupont);
+            cours7.setDureeTotal(30);
+            cours7.setDureeRestante(30);
+            cours7.setDescription("Travaux pratiques de POO");
+            coursRepo.save(cours7);
+
+            // GES101 - Principes de Gestion (2 types)
+            Cours cours8 = new Cours();
+            cours8.setIntitule("CM - Principes de Gestion");
+            cours8.setTypeCours(TypeCours.CM);
+            cours8.setUe(ges101);
+            cours8.setClasse(gestionL1);
+            cours8.setEnseignant(moreau);
+            cours8.setDureeTotal(30);
+            cours8.setDureeRestante(30);
+            cours8.setDescription("Cours magistral de gestion");
+            coursRepo.save(cours8);
+
+            Cours cours9 = new Cours();
+            cours9.setIntitule("TD - Principes de Gestion");
+            cours9.setTypeCours(TypeCours.TD);
+            cours9.setUe(ges101);
+            cours9.setClasse(gestionL1);
+            cours9.setEnseignant(moreau);
+            cours9.setDureeTotal(20);
+            cours9.setDureeRestante(20);
+            cours9.setDescription("Travaux dirigés de gestion");
+            coursRepo.save(cours9);
+
+            // MKT201 - Marketing Digital (2 types)
+            Cours cours10 = new Cours();
+            cours10.setIntitule("CM - Marketing Digital");
+            cours10.setTypeCours(TypeCours.CM);
+            cours10.setUe(mkt201);
+            cours10.setClasse(marketingL2);
+            cours10.setEnseignant(dubois);
+            cours10.setDureeTotal(35);
+            cours10.setDureeRestante(35);
+            cours10.setDescription("Cours magistral de marketing digital");
+            coursRepo.save(cours10);
+
+            Cours cours11 = new Cours();
+            cours11.setIntitule("TP - Marketing Digital");
+            cours11.setTypeCours(TypeCours.TP);
+            cours11.setUe(mkt201);
+            cours11.setClasse(marketingL2);
+            cours11.setEnseignant(dubois);
+            cours11.setDureeTotal(20);
+            cours11.setDureeRestante(20);
+            cours11.setDescription("Travaux pratiques de marketing digital");
+            coursRepo.save(cours11);
+
+            // MAT201 - Mathématiques Supérieures (2 types)
+            Cours cours12 = new Cours();
+            cours12.setIntitule("CM - Mathématiques Supérieures");
+            cours12.setTypeCours(TypeCours.CM);
+            cours12.setUe(mat201);
+            cours12.setClasse(prepaScientifique1A);
+            cours12.setEnseignant(bernard);
+            cours12.setDureeTotal(50);
+            cours12.setDureeRestante(50);
+            cours12.setDescription("Cours magistral de mathématiques supérieures");
+            coursRepo.save(cours12);
+
+            Cours cours13 = new Cours();
+            cours13.setIntitule("TD - Mathématiques Supérieures");
+            cours13.setTypeCours(TypeCours.TD);
+            cours13.setUe(mat201);
+            cours13.setClasse(prepaScientifique1A);
+            cours13.setEnseignant(bernard);
+            cours13.setDureeTotal(30);
+            cours13.setDureeRestante(30);
+            cours13.setDescription("Travaux dirigés de mathématiques supérieures");
+            coursRepo.save(cours13);
+
+            // PHY101 - Physique Générale (2 types)
+            Cours cours14 = new Cours();
+            cours14.setIntitule("CM - Physique Générale");
+            cours14.setTypeCours(TypeCours.CM);
+            cours14.setUe(phy101);
+            cours14.setClasse(mpsi);
+            cours14.setEnseignant(bernard);
+            cours14.setDureeTotal(40);
+            cours14.setDureeRestante(40);
+            cours14.setDescription("Cours magistral de physique");
+            coursRepo.save(cours14);
+
+            Cours cours15 = new Cours();
+            cours15.setIntitule("TP - Physique Générale");
+            cours15.setTypeCours(TypeCours.TP);
+            cours15.setUe(phy101);
+            cours15.setClasse(mpsi);
+            cours15.setEnseignant(leroy);
+            cours15.setDureeTotal(20);
+            cours15.setDureeRestante(20);
+            cours15.setDescription("Travaux pratiques de physique");
+            coursRepo.save(cours15);
+
+            // CHI101 - Chimie Générale (2 types)
+            Cours cours16 = new Cours();
+            cours16.setIntitule("CM - Chimie Générale");
+            cours16.setTypeCours(TypeCours.CM);
+            cours16.setUe(chi101);
+            cours16.setClasse(prepaScientifique1A);
+            cours16.setEnseignant(leroy);
+            cours16.setDureeTotal(40);
+            cours16.setDureeRestante(40);
+            cours16.setDescription("Cours magistral de chimie");
+            coursRepo.save(cours16);
+
+            Cours cours17 = new Cours();
+            cours17.setIntitule("TP - Chimie Générale");
+            cours17.setTypeCours(TypeCours.TP);
+            cours17.setUe(chi101);
+            cours17.setClasse(prepaScientifique1A);
+            cours17.setEnseignant(leroy);
+            cours17.setDureeTotal(20);
+            cours17.setDureeRestante(20);
+            cours17.setDescription("Travaux pratiques de chimie");
+            coursRepo.save(cours17);
+
+            // INF102 - Bases de Données (3 types)
+            Cours cours18 = new Cours();
+            cours18.setIntitule("CM - Bases de Données");
+            cours18.setTypeCours(TypeCours.CM);
+            cours18.setUe(inf102);
+            cours18.setClasse(infoL1A);
+            cours18.setEnseignant(garcia);
+            cours18.setDureeTotal(25);
+            cours18.setDureeRestante(25);
+            cours18.setDescription("Cours magistral de bases de données");
+            coursRepo.save(cours18);
+
+            Cours cours19 = new Cours();
+            cours19.setIntitule("TD - Bases de Données");
+            cours19.setTypeCours(TypeCours.TD);
+            cours19.setUe(inf102);
+            cours19.setClasse(infoL1A);
+            cours19.setEnseignant(garcia);
+            cours19.setDureeTotal(15);
+            cours19.setDureeRestante(15);
+            cours19.setDescription("Travaux dirigés de bases de données");
+            coursRepo.save(cours19);
+
+            Cours cours20 = new Cours();
+            cours20.setIntitule("TP - Bases de Données");
+            cours20.setTypeCours(TypeCours.TP);
+            cours20.setUe(inf102);
+            cours20.setClasse(infoL1A);
+            cours20.setEnseignant(garcia);
+            cours20.setDureeTotal(10);
+            cours20.setDureeRestante(10);
+            cours20.setDescription("Travaux pratiques SQL");
+            coursRepo.save(cours20);
+
+            // INF103 - Réseaux et Systèmes (3 types)
+            Cours cours21 = new Cours();
+            cours21.setIntitule("CM - Réseaux et Systèmes");
+            cours21.setTypeCours(TypeCours.CM);
+            cours21.setUe(inf103);
+            cours21.setClasse(infoL1A);
+            cours21.setEnseignant(rousseau);
+            cours21.setDureeTotal(25);
+            cours21.setDureeRestante(25);
+            cours21.setDescription("Cours magistral de réseaux");
+            coursRepo.save(cours21);
+
+            Cours cours22 = new Cours();
+            cours22.setIntitule("TD - Réseaux et Systèmes");
+            cours22.setTypeCours(TypeCours.TD);
+            cours22.setUe(inf103);
+            cours22.setClasse(infoL1A);
+            cours22.setEnseignant(rousseau);
+            cours22.setDureeTotal(15);
+            cours22.setDureeRestante(15);
+            cours22.setDescription("Travaux dirigés de réseaux");
+            coursRepo.save(cours22);
+
+            Cours cours23 = new Cours();
+            cours23.setIntitule("TP - Réseaux et Systèmes");
+            cours23.setTypeCours(TypeCours.TP);
+            cours23.setUe(inf103);
+            cours23.setClasse(infoL1A);
+            cours23.setEnseignant(rousseau);
+            cours23.setDureeTotal(10);
+            cours23.setDureeRestante(10);
+            cours23.setDescription("Travaux pratiques de configuration réseau");
+            coursRepo.save(cours23);
+
+            // INF104 - Développement Web (3 types)
+            Cours cours24 = new Cours();
+            cours24.setIntitule("CM - Développement Web");
+            cours24.setTypeCours(TypeCours.CM);
+            cours24.setUe(inf104);
+            cours24.setClasse(infoL1A);
+            cours24.setEnseignant(petit);
+            cours24.setDureeTotal(30);
+            cours24.setDureeRestante(30);
+            cours24.setDescription("Cours magistral de développement web");
+            coursRepo.save(cours24);
+
+            Cours cours25 = new Cours();
+            cours25.setIntitule("TD - Développement Web");
+            cours25.setTypeCours(TypeCours.TD);
+            cours25.setUe(inf104);
+            cours25.setClasse(infoL1A);
+            cours25.setEnseignant(petit);
+            cours25.setDureeTotal(15);
+            cours25.setDureeRestante(15);
+            cours25.setDescription("Travaux dirigés HTML/CSS");
+            coursRepo.save(cours25);
+
+            Cours cours26 = new Cours();
+            cours26.setIntitule("TP - Développement Web");
+            cours26.setTypeCours(TypeCours.TP);
+            cours26.setUe(inf104);
+            cours26.setClasse(infoL1A);
+            cours26.setEnseignant(petit);
+            cours26.setDureeTotal(15);
+            cours26.setDureeRestante(15);
+            cours26.setDescription("Travaux pratiques JavaScript");
+            coursRepo.save(cours26);
+
+            log.info("Cours crees : 26 cours (au moins 2 types par UE)");
 
             // ========== 8. CREATION DES SALLES ==========
             log.info("Creation des salles...");
@@ -683,47 +1051,52 @@ public class DataInitializer {
             LocalDate debutSemaine = LocalDate.now().with(java.time.DayOfWeek.MONDAY);
             LocalDate finSemaine = debutSemaine.plusDays(6);
 
-            // Disponibilités pour Dupont
-            DisponibiliteEnseignant dispoDupont = new DisponibiliteEnseignant();
-            dispoDupont.setEnseignant(dupont);
-            dispoDupont.setDateDebut(debutSemaine);
-            dispoDupont.setDateFin(finSemaine);
-            disponibiliteRepo.save(dispoDupont);
+            // Méthode helper pour créer des disponibilités complètes
+            java.util.function.BiConsumer<Enseignant, String> creerDisponibilites = (enseignant, nom) -> {
+                DisponibiliteEnseignant dispo = new DisponibiliteEnseignant();
+                dispo.setEnseignant(enseignant);
+                dispo.setDateDebut(debutSemaine);
+                dispo.setDateFin(finSemaine);
+                disponibiliteRepo.save(dispo);
 
-            for (int i = 0; i < 5; i++) {
-                LocalDate jour = debutSemaine.plusDays(i);
+                // Créer des créneaux pour Lundi à Samedi (6 jours)
+                for (int i = 0; i < 6; i++) {
+                    LocalDate jour = debutSemaine.plusDays(i);
 
-                CreneauDisponibilite creneau = new CreneauDisponibilite();
-                creneau.setDisponibilite(dispoDupont);
-                creneau.setDate(jour);
-                creneauDispoRepo.save(creneau);
+                    CreneauDisponibilite creneau = new CreneauDisponibilite();
+                    creneau.setDisponibilite(dispo);
+                    creneau.setDate(jour);
+                    creneauDispoRepo.save(creneau);
 
-                PlageHoraire plage1 = new PlageHoraire();
-                plage1.setCreneauDisponibilite(creneau);
-                plage1.setHeureDebut(LocalTime.of(8, 0));
-                plage1.setHeureFin(LocalTime.of(10, 0));
-                plageHoraireRepo.save(plage1);
+                    // Plage matin : 8h-12h
+                    PlageHoraire plageMatin = new PlageHoraire();
+                    plageMatin.setCreneauDisponibilite(creneau);
+                    plageMatin.setHeureDebut(LocalTime.of(8, 0));
+                    plageMatin.setHeureFin(LocalTime.of(12, 0));
+                    plageHoraireRepo.save(plageMatin);
 
-                PlageHoraire plage2 = new PlageHoraire();
-                plage2.setCreneauDisponibilite(creneau);
-                plage2.setHeureDebut(LocalTime.of(10, 15));
-                plage2.setHeureFin(LocalTime.of(12, 0));
-                plageHoraireRepo.save(plage2);
+                    // Plage après-midi : 13h-17h
+                    PlageHoraire plageApresMidi = new PlageHoraire();
+                    plageApresMidi.setCreneauDisponibilite(creneau);
+                    plageApresMidi.setHeureDebut(LocalTime.of(13, 0));
+                    plageApresMidi.setHeureFin(LocalTime.of(17, 0));
+                    plageHoraireRepo.save(plageApresMidi);
+                }
+                log.info("Disponibilites creees pour {} (Lun-Sam, 8h-12h et 13h-17h)", nom);
+            };
 
-                PlageHoraire plage3 = new PlageHoraire();
-                plage3.setCreneauDisponibilite(creneau);
-                plage3.setHeureDebut(LocalTime.of(14, 0));
-                plage3.setHeureFin(LocalTime.of(16, 0));
-                plageHoraireRepo.save(plage3);
+            // Créer les disponibilités pour tous les enseignants
+            creerDisponibilites.accept(dupont, "Dupont");
+            creerDisponibilites.accept(laurent, "Laurent");
+            creerDisponibilites.accept(moreau, "Moreau");
+            creerDisponibilites.accept(dubois, "Dubois");
+            creerDisponibilites.accept(bernard, "Bernard");
+            creerDisponibilites.accept(leroy, "Leroy");
+            creerDisponibilites.accept(garcia, "Garcia");
+            creerDisponibilites.accept(rousseau, "Rousseau");
+            creerDisponibilites.accept(petit, "Petit");
 
-                PlageHoraire plage4 = new PlageHoraire();
-                plage4.setCreneauDisponibilite(creneau);
-                plage4.setHeureDebut(LocalTime.of(16, 15));
-                plage4.setHeureFin(LocalTime.of(18, 0));
-                plageHoraireRepo.save(plage4);
-            }
-
-            log.info("Disponibilites creees pour la semaine du {} au {}", debutSemaine, finSemaine);
+            log.info("Disponibilites creees pour la semaine du {} au {} (tous les enseignants)", debutSemaine, finSemaine);
 
             // ========== 12. CREATION DES EQUIPEMENTS (depuis frontend) ==========
             log.info("Creation des equipements...");
@@ -940,11 +1313,19 @@ public class DataInitializer {
             // ========== RESUME ==========
             log.info("");
             log.info("=== BASE DE DONNEES INITIALISEE AVEC SUCCES ===");
-            log.info("Ecoles: 4 | Filieres: 4 | Classes: 7 | Groupes: 2");
-            log.info("Enseignants: 6 | Etudiants: 2 | Administrateurs: 1");
-            log.info("UEs: 8 | Cours: 6 | Salles: 9");
+            log.info("Ecoles: 4 | Filieres: 5 | Classes: 7 | Groupes: 2");
+            log.info("Enseignants: 9 | Etudiants: 2 | Administrateurs: 1");
+            log.info("UEs: 11 | Cours: 26 (au moins 2 types par UE) | Salles: 9");
             log.info("Equipements: 12 | Affectations: 6");
-            log.info("Disponibilites: Semaine complete avec creneaux detailles");
+            log.info("Disponibilites: Tous les enseignants (Lun-Sam, 8h-12h et 13h-17h)");
+            log.info("");
+            log.info("=== COURS POUR INFORMATIQUE L1A ===");
+            log.info("INF101 - Introduction à la Programmation (CM 30h, TD 20h, TP 30h) - Dupont");
+            log.info("MAT101 - Mathématiques Fondamentales (CM 40h, TD 20h) - Laurent");
+            log.info("INF102 - Bases de Données (CM 25h, TD 15h, TP 10h) - Garcia");
+            log.info("INF103 - Réseaux et Systèmes (CM 25h, TD 15h, TP 10h) - Rousseau");
+            log.info("INF104 - Développement Web (CM 30h, TD 15h, TP 15h) - Petit");
+            log.info("TOTAL: 5 UEs, 15 cours, 260 heures");
             log.info("");
             log.info("=== IDENTIFIANTS DE CONNEXION ===");
             log.info("Admin: admin@test.com / password123");
@@ -954,6 +1335,9 @@ public class DataInitializer {
             log.info("Enseignant 4: marie.dubois@iu-saintjean.cm / password123");
             log.info("Enseignant 5: sophie.bernard@iu-saintjean.cm / password123");
             log.info("Enseignant 6: pierre.leroy@iu-saintjean.cm / password123");
+            log.info("Enseignant 7: carlos.garcia@iu-saintjean.cm / password123");
+            log.info("Enseignant 8: isabelle.rousseau@iu-saintjean.cm / password123");
+            log.info("Enseignant 9: thomas.petit@iu-saintjean.cm / password123");
             log.info("Etudiant 1: jean.dupont@student.com / password123");
             log.info("Etudiant 2: marie.martin@student.com / password123");
             log.info("===========================================");

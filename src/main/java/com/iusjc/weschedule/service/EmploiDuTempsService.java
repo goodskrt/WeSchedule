@@ -127,7 +127,16 @@ public class EmploiDuTempsService {
         seance.setHeureFin(heureFin);
         seance.setRemarques(remarques);
 
-        return seanceRepository.save(seance);
+        SeanceClasse savedSeance = seanceRepository.save(seance);
+        
+        // Décrémenter les heures restantes du cours
+        long dureeSeance = java.time.Duration.between(heureDebut, heureFin).toMinutes();
+        int heuresRestantes = cours.getDureeRestante() != null ? cours.getDureeRestante() : 0;
+        int nouvellesHeuresRestantes = Math.max(0, heuresRestantes - (int)(dureeSeance / 60));
+        cours.setDureeRestante(nouvellesHeuresRestantes);
+        coursRepository.save(cours);
+        
+        return savedSeance;
     }
 
     /**
@@ -192,6 +201,19 @@ public class EmploiDuTempsService {
      */
     @Transactional
     public void supprimerSeance(UUID seanceId) {
+        SeanceClasse seance = seanceRepository.findById(seanceId)
+                .orElseThrow(() -> new RuntimeException("Séance non trouvée"));
+        
+        // Réincrémenter les heures restantes du cours
+        Cours cours = seance.getCours();
+        if (cours != null) {
+            long dureeSeance = java.time.Duration.between(seance.getHeureDebut(), seance.getHeureFin()).toMinutes();
+            int heuresRestantes = cours.getDureeRestante() != null ? cours.getDureeRestante() : 0;
+            int nouvellesHeuresRestantes = heuresRestantes + (int)(dureeSeance / 60);
+            cours.setDureeRestante(nouvellesHeuresRestantes);
+            coursRepository.save(cours);
+        }
+        
         seanceRepository.deleteById(seanceId);
     }
 
@@ -205,6 +227,15 @@ public class EmploiDuTempsService {
         return emploiDuTempsRepository.findByClasseAndSemaineAndAnnee(classe, semaine, annee)
                 .orElse(null);
     }
+
+    /**
+     * Obtenir un emploi du temps par son ID
+     */
+    public EmploiDuTempsClasse getEmploiDuTempsById(UUID emploiDuTempsId) {
+        return emploiDuTempsRepository.findById(emploiDuTempsId)
+                .orElseThrow(() -> new RuntimeException("Emploi du temps non trouvé"));
+    }
+
 
     /**
      * Obtenir toutes les séances d'un emploi du temps

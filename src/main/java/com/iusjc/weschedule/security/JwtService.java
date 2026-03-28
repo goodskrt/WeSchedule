@@ -7,6 +7,7 @@ import io.jsonwebtoken.Jwts;
 import io.jsonwebtoken.SignatureAlgorithm;
 import io.jsonwebtoken.io.Decoders;
 import io.jsonwebtoken.security.Keys;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.security.core.userdetails.UserDetails;
 import org.springframework.stereotype.Service;
 
@@ -19,7 +20,8 @@ import java.util.function.Function;
 @Service
 public class JwtService {
 
-    private static final String SECRET_KEY = "secret-au-groupe-babana-airline-weschedule-2026"; // Clé secrète sécurisée (256+ bits)
+    @Value("${weschedule.jwt.secret}")
+    private String secretKey;
 
     /**
      * Générer un token JWT pour un UserDetails
@@ -31,7 +33,7 @@ public class JwtService {
                 .setSubject(userDetails.getUsername())
                 .claim("role", userDetails.getAuthorities().toString())
                 .setIssuedAt(new Date())
-                .setExpiration(new Date(System.currentTimeMillis() + 1000 * 60 * 60 * 10)) // 10h
+                .setExpiration(new Date(System.currentTimeMillis() + 1000 * 60 * 60 * 1)) // 1h
                 .signWith(getSignInKey(), SignatureAlgorithm.HS256)
                 .compact();
     }
@@ -63,7 +65,7 @@ public class JwtService {
                 .setClaims(claims)
                 .setSubject(utilisateur.getEmail()) // Le subject reste l'email pour la compatibilité
                 .setIssuedAt(new Date())
-                .setExpiration(new Date(System.currentTimeMillis() + 1000 * 60 * 60 * 10)) // 10h
+                .setExpiration(new Date(System.currentTimeMillis() + 1000 * 60 * 60 * 1)) // 1h
                 .signWith(getSignInKey(), SignatureAlgorithm.HS256)
                 .compact();
     }
@@ -143,7 +145,7 @@ public class JwtService {
      */
     private Key getSignInKey() {
         // Utiliser la clé secrète directement (pas de décodage Base64)
-        byte[] keyBytes = SECRET_KEY.getBytes();
+        byte[] keyBytes = secretKey.getBytes();
         return Keys.hmacShaKeyFor(keyBytes);
     }
 }

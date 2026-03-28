@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title th:text="${mode == 'creation' ? 'Nouvelle Salle' : 'Modifier Salle'} + ' - WeSchedule'">Salle - WeSchedule</title>
+    <title th:text="${mode == 'creation' ? 'Nouvelle Salle - WeSchedule' : 'Modifier Salle - WeSchedule'}">Salle - WeSchedule</title>
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
     <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css" rel="stylesheet">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
@@ -315,12 +315,19 @@
                                     <div class="type-card-icon"><i class="fas fa-flask"></i></div>
                                     <div class="type-card-label">Laboratoire</div>
                                 </label>
+                                <label class="type-card" th:classappend="${salle.typeSalle?.name() == 'SALLE_DE_CONFERENCE'} ? 'selected' : ''" id="card-SALLE_DE_CONFERENCE">
+                                    <input type="radio" name="typeSalle" value="SALLE_DE_CONFERENCE"
+                                           th:checked="${salle.typeSalle?.name() == 'SALLE_DE_CONFERENCE'}"
+                                           onchange="onTypeChange(this)">
+                                    <div class="type-card-icon"><i class="fas fa-microphone-alt"></i></div>
+                                    <div class="type-card-label">Salle de Conférence</div>
+                                </label>
                             </div>
                         </div>
 
                         <!-- Localisation -->
                         <div class="form-card mb-3">
-                            <p class="form-section-title">Localisation</p>
+                            <p class="form-section-title">Localisation &amp; Statut</p>
                             <div class="row g-3">
                                 <div class="col-12">
                                     <label class="form-label fw-semibold">Étage</label>
@@ -365,6 +372,29 @@
                                         </label>
                                     </div>
                                 </div>
+                                <!-- Statut -->
+                                <div class="col-12">
+                                    <label class="form-label fw-semibold">Statut</label>
+                                    <div class="pill-group">
+                                        <input type="radio" class="pill-option" name="statut" id="statut-dispo" value="DISPONIBLE"
+                                               th:checked="${salle.statut == null or salle.statut.name() == 'DISPONIBLE'}" onchange="updatePreview()">
+                                        <label for="statut-dispo" class="pill-label" style="--pill-active-bg:#d1fae5; --pill-active-color:#065f46;">
+                                            <i class="fas fa-check-circle" style="font-size:0.75rem;"></i> Disponible
+                                        </label>
+
+                                        <input type="radio" class="pill-option" name="statut" id="statut-occupe" value="OCCUPE"
+                                               th:checked="${salle.statut != null and salle.statut.name() == 'OCCUPE'}" onchange="updatePreview()">
+                                        <label for="statut-occupe" class="pill-label">
+                                            <i class="fas fa-lock" style="font-size:0.75rem;"></i> Occupé
+                                        </label>
+
+                                        <input type="radio" class="pill-option" name="statut" id="statut-maintenance" value="EN_MAINTENANCE"
+                                               th:checked="${salle.statut != null and salle.statut.name() == 'EN_MAINTENANCE'}" onchange="updatePreview()">
+                                        <label for="statut-maintenance" class="pill-label">
+                                            <i class="fas fa-tools" style="font-size:0.75rem;"></i> En maintenance
+                                        </label>
+                                    </div>
+                                </div>
                             </div>
                         </div>
 
@@ -392,6 +422,7 @@
             'SALLE_DE_TD':       { icon: 'fa-chalkboard',         label: 'Salle de TD',        gradient: 'linear-gradient(135deg,#f59e0b,#d97706)', badge: '#fef3c7', badgeText: '#92400e' },
             'SALLE_INFORMATIQUE':{ icon: 'fa-laptop',             label: 'Salle Informatique', gradient: 'linear-gradient(135deg,#059669,#10b981)', badge: '#d1fae5', badgeText: '#065f46' },
             'LABORATOIRE':       { icon: 'fa-flask',              label: 'Laboratoire',        gradient: 'linear-gradient(135deg,#8b5cf6,#7c3aed)', badge: '#ede9fe', badgeText: '#4c1d95' },
+            'SALLE_DE_CONFERENCE':{ icon: 'fa-microphone-alt',   label: 'Salle de Conférence',gradient: 'linear-gradient(135deg,#ec4899,#db2777)', badge: '#fce7f3', badgeText: '#9d174d' },
         };
 
         function updatePreview() {

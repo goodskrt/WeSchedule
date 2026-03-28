@@ -14,34 +14,31 @@ import java.util.UUID;
 @NoArgsConstructor
 @AllArgsConstructor
 public class Classe {
+
     @Id
     @GeneratedValue
     private UUID idClasse;
-    
+
     private String nom;
-    
+
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "ecole_id")
     private Ecole ecole;
-    
+
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "filiere_id")
     private Filiere filiere;
-    
+
     private String niveau;
+
     private Integer effectif;
-    
-    private Integer semestre;
-    
-    private Integer effectifMax;
-    
-    private String responsable;
-    
+
+    /** Langue d'enseignement (ex: Français, Anglais, Bilingue) */
+    private String langue;
+
     @Column(columnDefinition = "TEXT")
     private String description;
-    
-    private String specialite;
-    
+
     @ManyToMany(mappedBy = "classes", fetch = FetchType.LAZY)
     private Set<UE> ues;
 }

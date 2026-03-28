@@ -116,7 +116,7 @@ public class AuthService {
             }
 
             Utilisateur utilisateur = optionalUser.get();
-            log.info("Utilisateur trouvé - Hash en base: {}", utilisateur.getMotDePasse());
+            log.info("Utilisateur trouvé pour email: {}", email);
 
             // Vérifier le mot de passe
             boolean passwordMatches = passwordEncoder.matches(motDePasse, utilisateur.getMotDePasse());

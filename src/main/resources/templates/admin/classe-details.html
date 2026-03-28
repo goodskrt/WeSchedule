@@ -1,0 +1,250 @@
+<!DOCTYPE html>
+<html lang="fr" xmlns:th="http://www.thymeleaf.org">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title th:text="${classe.nom} + ' — WeSchedule'">Classe</title>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <link rel="stylesheet" href="/css/modern-layout.css">
+    <style>
+        .classe-hero {
+            border-radius: var(--radius-xl);
+            overflow: hidden;
+            margin-bottom: 1.5rem;
+            position: relative;
+        }
+        .classe-hero-bg {
+            height: 150px;
+            display: flex; align-items: flex-end; padding: 1.5rem;
+        }
+        .classe-hero-avatar {
+            width: 72px; height: 72px;
+            border-radius: var(--radius-xl);
+            background: rgba(255,255,255,0.2);
+            backdrop-filter: blur(8px);
+            border: 3px solid rgba(255,255,255,0.4);
+            display: flex; flex-direction: column; align-items: center; justify-content: center;
+            color: white; line-height: 1;
+            margin-right: 1.25rem; flex-shrink: 0;
+        }
+        .classe-hero-avatar .av-num { font-size: 2rem; font-weight: 800; }
+        .classe-hero-avatar .av-lbl { font-size: 0.6rem; opacity: 0.85; letter-spacing: 0.05em; font-weight: 600; }
+        .classe-hero-info { color: white; }
+        .classe-hero-info h1 { font-size: 1.5rem; font-weight: 700; margin-bottom: 0.3rem; text-shadow: 0 1px 4px rgba(0,0,0,0.2); }
+        .hero-badge {
+            display: inline-flex; align-items: center; gap: 0.35rem;
+            background: rgba(255,255,255,0.25); backdrop-filter: blur(4px);
+            border: 1px solid rgba(255,255,255,0.35); color: white;
+            padding: 0.2rem 0.7rem; border-radius: 2rem; font-size: 0.78rem; font-weight: 600;
+            margin-right: 0.4rem;
+        }
+        .hero-actions { position: absolute; top: 1rem; right: 1rem; display: flex; gap: 0.5rem; }
+        .hero-btn { display:inline-flex; align-items:center; gap:0.4rem; padding:0.4rem 0.9rem; border-radius:var(--radius-md); font-size:0.82rem; font-weight:600; border:none; cursor:pointer; text-decoration:none; transition:all 0.15s; }
+        .hero-btn-edit { background:rgba(255,255,255,0.9); color:var(--gray-800); }
+        .hero-btn-edit:hover { background:white; }
+        .hero-btn-delete { background:rgba(239,68,68,0.85); color:white; }
+        .hero-btn-delete:hover { background:#dc2626; }
+
+        .stat-row { display:grid; grid-template-columns:repeat(3,1fr); gap:1rem; margin-bottom:1.5rem; }
+        @media(max-width:600px){ .stat-row{grid-template-columns:1fr;} }
+        .stat-card { background:var(--white); border-radius:var(--radius-xl); border:1px solid var(--gray-200); padding:1.25rem 1.5rem; display:flex; align-items:center; gap:1rem; box-shadow:var(--shadow-sm); }
+        .stat-icon { width:48px; height:48px; border-radius:var(--radius-lg); display:flex; align-items:center; justify-content:center; font-size:1.2rem; flex-shrink:0; }
+        .stat-value { font-size:1.5rem; font-weight:700; line-height:1; color:var(--gray-900); }
+        .stat-label { font-size:0.78rem; color:var(--gray-500); margin-top:0.15rem; }
+
+        .details-grid { display:grid; grid-template-columns:1fr 1fr; gap:1rem; margin-bottom:1.5rem; }
+        @media(max-width:768px){ .details-grid{grid-template-columns:1fr;} }
+        .info-card { background:var(--white); border-radius:var(--radius-xl); border:1px solid var(--gray-200); box-shadow:var(--shadow-sm); padding:1.5rem; }
+        .info-card-title { font-size:0.68rem; font-weight:700; text-transform:uppercase; letter-spacing:0.08em; color:var(--gray-400); margin-bottom:1.25rem; display:flex; align-items:center; gap:0.5rem; }
+        .info-card-title i { color:var(--primary-color); }
+        .info-row { display:flex; align-items:flex-start; padding:0.65rem 0; border-bottom:1px solid var(--gray-100); }
+        .info-row:last-child { border-bottom:none; padding-bottom:0; }
+        .info-row-icon { width:32px; height:32px; border-radius:var(--radius-md); background:#f0fdf4; display:flex; align-items:center; justify-content:center; font-size:0.8rem; color:var(--primary-color); flex-shrink:0; margin-right:0.85rem; }
+        .info-row-label { font-size:0.72rem; color:var(--gray-400); margin-bottom:0.1rem; }
+        .info-row-value { font-size:0.9rem; font-weight:600; color:var(--gray-800); }
+
+        .ue-chip { display:inline-flex; align-items:center; gap:0.35rem; padding:0.3rem 0.75rem; border-radius:2rem; background:#f0fdf4; border:1px solid #bbf7d0; color:#065f46; font-size:0.78rem; font-weight:600; margin:0.2rem; }
+    </style>
+</head>
+<body>
+    <div th:replace="~{fragments/sidebar :: admin-sidebar('classes')}"></div>
+    <div class="ws-wrapper">
+        <div th:replace="~{fragments/header :: admin-header}"></div>
+        <main class="ws-main-content">
+
+            <nav aria-label="breadcrumb" class="mb-3">
+                <ol class="breadcrumb">
+                    <li class="breadcrumb-item"><a href="/admin/classes">Classes</a></li>
+                    <li class="breadcrumb-item active" th:text="${classe.nom}"></li>
+                </ol>
+            </nav>
+
+            <div th:if="${success}" class="alert alert-success alert-dismissible fade show mb-3">
+                <i class="fas fa-check-circle me-2"></i><span th:text="${success}"></span>
+                <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+            </div>
+
+            <!-- Hero -->
+            <div class="classe-hero">
+                <div class="classe-hero-bg"
+                     th:style="'background:linear-gradient(135deg,' +
+                               (${classe.niveau == 'Niveau 1'} ? '#3b82f6,#2563eb' :
+                               (${classe.niveau == 'Niveau 2'} ? '#06b6d4,#0891b2' :
+                               (${classe.niveau == 'Niveau 3'} ? '#8b5cf6,#7c3aed' :
+                               (${classe.niveau == 'Niveau 4'} ? '#f59e0b,#d97706' :
+                               (${classe.niveau == 'Niveau 5'} ? '#ef4444,#dc2626' : '#059669,#10b981'))))) + ');'">
+                    <div class="classe-hero-avatar">
+                        <span class="av-num" th:text="${classe.niveau != null ? #strings.replace(classe.niveau,'Niveau ','') : '?'}">?</span>
+                        <span class="av-lbl">NIV</span>
+                    </div>
+                    <div class="classe-hero-info">
+                        <h1 th:text="${classe.nom}">Classe</h1>
+                        <span class="hero-badge" th:if="${classe.ecole != null}">
+                            <i class="fas fa-school"></i><span th:text="${classe.ecole.nomEcole}"></span>
+                        </span>
+                        <span class="hero-badge" th:if="${classe.filiere != null}">
+                            <i class="fas fa-sitemap"></i><span th:text="${classe.filiere.nomFiliere}"></span>
+                        </span>
+                        <span class="hero-badge" th:if="${classe.langue != null}">
+                            <i class="fas fa-globe"></i><span th:text="${classe.langue}"></span>
+                        </span>
+                    </div>
+                </div>
+                <div class="hero-actions">
+                    <a th:href="@{/admin/classes/modifier/{id}(id=${classe.idClasse})}" class="hero-btn hero-btn-edit">
+                        <i class="fas fa-edit"></i> Modifier
+                    </a>
+                    <button class="hero-btn hero-btn-delete" onclick="confirmSupprimer()">
+                        <i class="fas fa-trash"></i> Supprimer
+                    </button>
+                </div>
+            </div>
+
+            <!-- Stats -->
+            <div class="stat-row">
+                <div class="stat-card">
+                    <div class="stat-icon" style="background:#dbeafe;color:#2563eb;"><i class="fas fa-user-graduate"></i></div>
+                    <div>
+                        <div class="stat-value" th:text="${classe.effectif != null ? classe.effectif : '—'}">—</div>
+                        <div class="stat-label">Étudiants</div>
+                    </div>
+                </div>
+                <div class="stat-card">
+                    <div class="stat-icon" style="background:#d1fae5;color:#059669;"><i class="fas fa-book"></i></div>
+                    <div>
+                        <div class="stat-value" th:text="${classe.ues != null ? #sets.size(classe.ues) : 0}">0</div>
+                        <div class="stat-label">UEs associées</div>
+                    </div>
+                </div>
+                <div class="stat-card">
+                    <div class="stat-icon" style="background:#f0fdf4;color:#059669;"><i class="fas fa-globe"></i></div>
+                    <div>
+                        <div class="stat-value" style="font-size:1rem;" th:text="${classe.langue != null ? classe.langue : '—'}">—</div>
+                        <div class="stat-label">Langue</div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Infos -->
+            <div class="details-grid">
+                <div class="info-card">
+                    <div class="info-card-title"><i class="fas fa-info-circle"></i> Informations générales</div>
+                    <div class="info-row">
+                        <div class="info-row-icon"><i class="fas fa-users"></i></div>
+                        <div><div class="info-row-label">Nom</div><div class="info-row-value" th:text="${classe.nom}">—</div></div>
+                    </div>
+                    <div class="info-row">
+                        <div class="info-row-icon"><i class="fas fa-layer-group"></i></div>
+                        <div><div class="info-row-label">Niveau</div><div class="info-row-value" th:text="${classe.niveau != null ? classe.niveau : '—'}">—</div></div>
+                    </div>
+                    <div class="info-row">
+                        <div class="info-row-icon"><i class="fas fa-user-graduate"></i></div>
+                        <div>
+                            <div class="info-row-label">Effectif</div>
+                            <div class="info-row-value" th:text="${classe.effectif != null ? classe.effectif + ' étudiants' : '—'}">—</div>
+                        </div>
+                    </div>
+                    <div class="info-row">
+                        <div class="info-row-icon"><i class="fas fa-globe"></i></div>
+                        <div><div class="info-row-label">Langue</div><div class="info-row-value" th:text="${classe.langue != null ? classe.langue : '—'}">—</div></div>
+                    </div>
+                </div>
+
+                <div class="info-card">
+                    <div class="info-card-title"><i class="fas fa-sitemap"></i> Rattachement</div>
+                    <div class="info-row">
+                        <div class="info-row-icon"><i class="fas fa-school"></i></div>
+                        <div><div class="info-row-label">École</div><div class="info-row-value" th:text="${classe.ecole != null ? classe.ecole.nomEcole : '—'}">—</div></div>
+                    </div>
+                    <div class="info-row">
+                        <div class="info-row-icon"><i class="fas fa-sitemap"></i></div>
+                        <div><div class="info-row-label">Filière</div><div class="info-row-value" th:text="${classe.filiere != null ? classe.filiere.nomFiliere : '—'}">—</div></div>
+                    </div>
+                    <div class="info-row" th:if="${classe.description != null and !#strings.isEmpty(classe.description)}">
+                        <div class="info-row-icon"><i class="fas fa-align-left"></i></div>
+                        <div>
+                            <div class="info-row-label">Description</div>
+                            <div class="info-row-value" style="font-weight:400;color:var(--gray-600);" th:text="${classe.description}">—</div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- UEs associées -->
+            <div class="info-card mb-4" th:if="${classe.ues != null and !classe.ues.isEmpty()}">
+                <div class="info-card-title"><i class="fas fa-book"></i> UEs associées</div>
+                <div>
+                    <span th:each="ue : ${classe.ues}" class="ue-chip">
+                        <i class="fas fa-book-open" style="font-size:0.65rem;"></i>
+                        <span th:text="${ue.code != null ? ue.code + ' — ' + ue.intitule : ue.intitule}"></span>
+                    </span>
+                </div>
+            </div>
+
+            <!-- Actions -->
+            <div class="d-flex gap-2">
+                <a href="/admin/classes" class="btn btn-secondary">
+                    <i class="fas fa-arrow-left me-1"></i> Retour
+                </a>
+                <a th:href="@{/admin/classes/modifier/{id}(id=${classe.idClasse})}" class="btn btn-primary">
+                    <i class="fas fa-edit me-1"></i> Modifier
+                </a>
+            </div>
+
+            <form id="deleteForm" th:action="@{/admin/classes/supprimer/{id}(id=${classe.idClasse})}" method="post" style="display:none;"></form>
+        </main>
+    </div>
+
+    <!-- Modal suppression -->
+    <div class="modal fade" id="deleteModal" tabindex="-1">
+        <div class="modal-dialog modal-sm">
+            <div class="modal-content">
+                <div class="modal-header border-0 pb-0">
+                    <h5 class="modal-title text-danger"><i class="fas fa-exclamation-triangle me-2"></i>Supprimer</h5>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+                </div>
+                <div class="modal-body pt-2">
+                    Supprimer <strong th:text="${classe.nom}"></strong> ?<br>
+                    <small class="text-muted">Cette action est irréversible.</small>
+                </div>
+                <div class="modal-footer border-0 pt-0">
+                    <button class="btn btn-secondary btn-sm" data-bs-dismiss="modal">Annuler</button>
+                    <button class="btn btn-danger btn-sm" onclick="document.getElementById('deleteForm').submit()">
+                        <i class="fas fa-trash me-1"></i> Supprimer
+                    </button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js"></script>
+    <script src="/js/modern-layout.js"></script>
+    <script>
+        function confirmSupprimer() {
+            new bootstrap.Modal(document.getElementById('deleteModal')).show();
+        }
+    </script>
+</body>
+</html>

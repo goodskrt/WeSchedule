@@ -1,5 +1,6 @@
 package com.iusjc.weschedule.models;
 
+import com.iusjc.weschedule.enums.StatutEquipement;
 import jakarta.persistence.*;
 import lombok.AllArgsConstructor;
 import lombok.Data;
@@ -22,25 +23,40 @@ public class Equipment {
     @GeneratedValue
     private UUID id;
 
-    @Column(nullable = false)
+    // ── Champs système Thymeleaf (EquipmentController) ──────────────────────
+    @Column(nullable = true)
+    private String nom;
+
+    @ManyToOne(fetch = FetchType.LAZY)
+    @JoinColumn(name = "type_equipement_id")
+    private TypeEquipement typeEquipement;
+
+    private String numeroSerie;
+
+    @Enumerated(EnumType.STRING)
+    private StatutEquipement statut;
+
+    @ManyToOne(fetch = FetchType.LAZY)
+    @JoinColumn(name = "salle_id")
+    private Salle salle;
+
+    private String photo;
+
+    // ── Champs système Angular (EquipmentService) ───────────────────────────
     private String name;
 
-    @Column(nullable = false)
-    private String category; // audiovisuel, informatique, ecriture, confort, connectivite, mobilier
+    private String category;
 
     private String icon;
 
     @Column(columnDefinition = "TEXT")
     private String description;
 
-    @Column(nullable = false)
     private Integer totalQuantity;
 
-    @Column(nullable = false)
     private Integer availableQuantity;
 
-    @Column(nullable = false)
-    private String status = "active"; // active, maintenance, retired
+    private String status = "active";
 
     @CreationTimestamp
     @Column(updatable = false)

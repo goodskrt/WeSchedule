@@ -6,12 +6,15 @@ import com.iusjc.weschedule.dto.ForgotPasswordRequest;
 import com.iusjc.weschedule.dto.LoginRequest;
 import com.iusjc.weschedule.dto.ResetPasswordWithTokenRequest;
 import com.iusjc.weschedule.enums.Role;
+import com.iusjc.weschedule.models.Cours;
 import com.iusjc.weschedule.models.Enseignant;
 import com.iusjc.weschedule.models.UE;
 import com.iusjc.weschedule.models.Utilisateur;
+import com.iusjc.weschedule.repositories.EnseignantRepository;
 import com.iusjc.weschedule.repositories.SalleRepository;
 import com.iusjc.weschedule.repositories.CoursRepository;
 import com.iusjc.weschedule.repositories.ClasseRepository;
+import com.iusjc.weschedule.repositories.UERepository;
 import com.iusjc.weschedule.service.AuthService;
 import com.iusjc.weschedule.service.EnseignantService;
 import com.iusjc.weschedule.service.PasswordResetService;
@@ -28,6 +31,7 @@ import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.security.web.context.HttpSessionSecurityContextRepository;
 import org.springframework.stereotype.Controller;
+import org.springframework.transaction.annotation.Transactional;
 import org.springframework.ui.Model;
 import org.springframework.validation.BindingResult;
 import org.springframework.web.bind.annotation.*;
@@ -36,6 +40,7 @@ import org.springframework.web.servlet.mvc.support.RedirectAttributes;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
+import java.util.UUID;
 
 @Controller
 @Slf4j
@@ -61,6 +66,12 @@ public class AuthController {
     
     @Autowired
     private ClasseRepository classeRepository;
+    
+    @Autowired
+    private EnseignantRepository enseignantRepository;
+
+    @Autowired
+    private UERepository ueRepository;
 
     /**
      * Page de login
@@ -170,11 +181,13 @@ public class AuthController {
             long totalSalles = salleRepository.count();
             long totalCours = coursRepository.count();
             long totalClasses = classeRepository.count();
+            long totalUes = ueRepository.count();
             
             model.addAttribute("totalEnseignants", totalEnseignants);
             model.addAttribute("totalSalles", totalSalles);
             model.addAttribute("totalCours", totalCours);
             model.addAttribute("totalClasses", totalClasses);
+            model.addAttribute("totalUes", totalUes);
             
             return "admin/dashboard-admin";
         }
@@ -326,8 +339,68 @@ public class AuthController {
      * Dashboard Enseignant - Vue d'ensemble
      */
     @GetMapping("/dashboard/enseignant")
+    @Transactional(readOnly = true)
     public String dashboardEnseignant(Authentication auth, Model model) {
         if (auth != null && auth.getPrincipal() instanceof UserPrincipal userPrincipal) {
+            UUID enseignantId = userPrincipal.getUtilisateur().getIdUser();
+            Enseignant enseignant = enseignantRepository.findById(enseignantId).orElse(null);
+            
+            if (enseignant != null) {
+                // Récupérer les cours de l'enseignant
+                List<Cours> mesCours = coursRepository.findAll().stream()
+                        .filter(c -> c.getEnseignant() != null && c.getEnseignant().getIdUser().equals(enseignantId))
+                        .toList();
+
+                // Calculer les statistiques
+                long nbCours = mesCours.size();
+                long nbClasses = mesCours.stream()
+                        .filter(c -> c.getClasse() != null)
+                        .map(c -> c.getClasse().getIdClasse())
+                        .distinct()
+                        .count();
+                int totalHeures = mesCours.stream()
+                        .mapToInt(c -> c.getDureeTotal() != null ? c.getDureeTotal() : 0)
+                        .sum();
+                int heuresRestantes = mesCours.stream()
+                        .mapToInt(c -> c.getDureeRestante() != null ? c.getDureeRestante() : 0)
+                        .sum();
+
+                // Compter par type de cours
+                long nbCM = mesCours.stream()
+                        .filter(c -> c.getTypeCours() != null && c.getTypeCours().name().equals("CM"))
+                        .count();
+                long nbTD = mesCours.stream()
+                        .filter(c -> c.getTypeCours() != null && c.getTypeCours().name().equals("TD"))
+                        .count();
+                long nbTP = mesCours.stream()
+                        .filter(c -> c.getTypeCours() != null && c.getTypeCours().name().equals("TP"))
+                        .count();
+
+                // Cours récents (limiter à 5)
+                List<Cours> coursRecents = mesCours.stream()
+                        .limit(5)
+                        .toList();
+
+                model.addAttribute("nbCours", nbCours);
+                model.addAttribute("nbClasses", nbClasses);
+                model.addAttribute("totalHeures", totalHeures);
+                model.addAttribute("heuresRestantes", heuresRestantes);
+                model.addAttribute("nbCM", nbCM);
+                model.addAttribute("nbTD", nbTD);
+                model.addAttribute("nbTP", nbTP);
+                model.addAttribute("coursRecents", coursRecents);
+            } else {
+                // Valeurs par défaut si enseignant non trouvé
+                model.addAttribute("nbCours", 0);
+                model.addAttribute("nbClasses", 0);
+                model.addAttribute("totalHeures", 0);
+                model.addAttribute("heuresRestantes", 0);
+                model.addAttribute("nbCM", 0);
+                model.addAttribute("nbTD", 0);
+                model.addAttribute("nbTP", 0);
+                model.addAttribute("coursRecents", List.of());
+            }
+            
             model.addAttribute("user", userPrincipal.getUtilisateur());
             model.addAttribute("nomComplet", userPrincipal.getNomComplet());
             model.addAttribute("email", userPrincipal.getUtilisateur().getEmail());
@@ -340,8 +413,17 @@ public class AuthController {
      * Dashboard Enseignant - Mes Cours
      */
     @GetMapping("/dashboard/enseignant/cours")
+    @Transactional(readOnly = true)
     public String dashboardEnseignantCours(Authentication auth, Model model) {
         if (auth != null && auth.getPrincipal() instanceof UserPrincipal userPrincipal) {
+            UUID enseignantId = userPrincipal.getUtilisateur().getIdUser();
+            
+            // Récupérer les cours de l'enseignant
+            List<Cours> mesCours = coursRepository.findAll().stream()
+                    .filter(c -> c.getEnseignant() != null && c.getEnseignant().getIdUser().equals(enseignantId))
+                    .toList();
+            
+            model.addAttribute("cours", mesCours);
             model.addAttribute("user", userPrincipal.getUtilisateur());
             model.addAttribute("nomComplet", userPrincipal.getNomComplet());
             model.addAttribute("email", userPrincipal.getUtilisateur().getEmail());
@@ -452,15 +534,23 @@ public class AuthController {
     }
 
     /**
-     * Dashboard Admin - Classes
+     * Dashboard Admin - Classes (redirect vers ClasseController)
      */
     @GetMapping("/dashboard/admin/classes")
-    public String dashboardAdminClasses(Authentication auth, Model model) {
-        if (auth != null && auth.getPrincipal() instanceof UserPrincipal userPrincipal) {
-            model.addAttribute("user", userPrincipal.getUtilisateur());
-            model.addAttribute("nomComplet", userPrincipal.getNomComplet());
-            model.addAttribute("email", userPrincipal.getUtilisateur().getEmail());
-            return "admin/classes";
+    public String dashboardAdminClasses(Authentication auth) {
+        if (auth != null && auth.isAuthenticated()) {
+            return "redirect:/admin/classes";
+        }
+        return "redirect:/login";
+    }
+
+    /**
+     * Dashboard Admin - UEs (redirect vers UEController)
+     */
+    @GetMapping("/dashboard/admin/ues")
+    public String dashboardAdminUEs(Authentication auth) {
+        if (auth != null && auth.isAuthenticated()) {
+            return "redirect:/admin/ues";
         }
         return "redirect:/login";
     }

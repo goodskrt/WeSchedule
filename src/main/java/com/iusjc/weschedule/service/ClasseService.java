@@ -36,39 +36,31 @@ public class ClasseService {
     public ClasseResponse createClasse(CreateClasseRequest request) {
         log.info("Creating new classe: {}", request.getNom());
 
-        Ecole ecole = ecoleRepository.findById(request.getEcoleId())
-                .orElseThrow(() -> new RuntimeException("École non trouvée"));
-
-        Filiere filiere = filiereRepository.findById(request.getFiliereId())
-                .orElseThrow(() -> new RuntimeException("Filière non trouvée"));
-
         Classe classe = new Classe();
         classe.setNom(request.getNom());
-        classe.setEcole(ecole);
-        classe.setFiliere(filiere);
         classe.setNiveau(request.getNiveau());
         classe.setEffectif(request.getEffectif());
-        classe.setSemestre(request.getSemestre());
-        classe.setEffectifMax(request.getEffectifMax());
-        classe.setResponsable(request.getResponsable());
+        classe.setLangue(request.getLangue());
         classe.setDescription(request.getDescription());
-        classe.setSpecialite(request.getSpecialite());
 
-        // Associer les UEs si fournies
+        if (request.getEcoleId() != null) {
+            ecoleRepository.findById(request.getEcoleId()).ifPresent(classe::setEcole);
+        }
+        if (request.getFiliereId() != null) {
+            filiereRepository.findById(request.getFiliereId()).ifPresent(classe::setFiliere);
+        }
         if (request.getUeIds() != null && !request.getUeIds().isEmpty()) {
             Set<UE> ues = new HashSet<>(ueRepository.findAllById(request.getUeIds()));
             classe.setUes(ues);
         }
 
-        Classe savedClasse = classeRepository.save(classe);
-        log.info("Classe created successfully with ID: {}", savedClasse.getIdClasse());
-
-        return mapToResponse(savedClasse);
+        Classe saved = classeRepository.save(classe);
+        log.info("Classe created with ID: {}", saved.getIdClasse());
+        return mapToResponse(saved);
     }
 
     @Transactional(readOnly = true)
     public List<ClasseResponse> getAllClasses() {
-        log.info("Fetching all classes");
         return classeRepository.findAll().stream()
                 .map(this::mapToResponse)
                 .collect(Collectors.toList());
@@ -76,7 +68,6 @@ public class ClasseService {
 
     @Transactional(readOnly = true)
     public ClasseResponse getClasseById(UUID id) {
-        log.info("Fetching classe with ID: {}", id);
         Classe classe = classeRepository.findById(id)
                 .orElseThrow(() -> new RuntimeException("Classe non trouvée"));
         return mapToResponse(classe);
@@ -84,11 +75,8 @@ public class ClasseService {
 
     @Transactional(readOnly = true)
     public List<ClasseResponse> getClassesByEcole(UUID ecoleId) {
-        log.info("Fetching classes for ecole ID: {}", ecoleId);
-        Ecole ecole = ecoleRepository.findById(ecoleId)
-                .orElseThrow(() -> new RuntimeException("École non trouvée"));
         return classeRepository.findAll().stream()
-                .filter(c -> c.getEcole().getIdEcole().equals(ecoleId))
+                .filter(c -> c.getEcole() != null && c.getEcole().getIdEcole().equals(ecoleId))
                 .map(this::mapToResponse)
                 .collect(Collectors.toList());
     }
@@ -100,76 +88,43 @@ public class ClasseService {
         Classe classe = classeRepository.findById(id)
                 .orElseThrow(() -> new RuntimeException("Classe non trouvée"));
 
-        if (request.getNom() != null) {
-            classe.setNom(request.getNom());
-        }
+        if (request.getNom() != null)        classe.setNom(request.getNom());
+        if (request.getNiveau() != null)     classe.setNiveau(request.getNiveau());
+        if (request.getEffectif() != null)   classe.setEffectif(request.getEffectif());
+        if (request.getLangue() != null)     classe.setLangue(request.getLangue());
+        if (request.getDescription() != null) classe.setDescription(request.getDescription());
+
         if (request.getEcoleId() != null) {
-            Ecole ecole = ecoleRepository.findById(request.getEcoleId())
-                    .orElseThrow(() -> new RuntimeException("École non trouvée"));
-            classe.setEcole(ecole);
+            ecoleRepository.findById(request.getEcoleId()).ifPresent(classe::setEcole);
         }
         if (request.getFiliereId() != null) {
-            Filiere filiere = filiereRepository.findById(request.getFiliereId())
-                    .orElseThrow(() -> new RuntimeException("Filière non trouvée"));
-            classe.setFiliere(filiere);
+            filiereRepository.findById(request.getFiliereId()).ifPresent(classe::setFiliere);
         }
-        if (request.getNiveau() != null) {
-            classe.setNiveau(request.getNiveau());
-        }
-        if (request.getEffectif() != null) {
-            classe.setEffectif(request.getEffectif());
-        }
-        if (request.getSemestre() != null) {
-            classe.setSemestre(request.getSemestre());
-        }
-        if (request.getEffectifMax() != null) {
-            classe.setEffectifMax(request.getEffectifMax());
-        }
-        if (request.getResponsable() != null) {
-            classe.setResponsable(request.getResponsable());
-        }
-        if (request.getDescription() != null) {
-            classe.setDescription(request.getDescription());
-        }
-        if (request.getSpecialite() != null) {
-            classe.setSpecialite(request.getSpecialite());
-        }
-
-        // Mettre à jour les UEs si fournies
         if (request.getUeIds() != null) {
             Set<UE> ues = new HashSet<>(ueRepository.findAllById(request.getUeIds()));
             classe.setUes(ues);
         }
 
-        Classe updatedClasse = classeRepository.save(classe);
+        Classe updated = classeRepository.save(classe);
         log.info("Classe updated successfully");
-
-        return mapToResponse(updatedClasse);
+        return mapToResponse(updated);
     }
 
     @Transactional
     public void deleteClasse(UUID id) {
-        log.info("Deleting classe with ID: {}", id);
         Classe classe = classeRepository.findById(id)
                 .orElseThrow(() -> new RuntimeException("Classe non trouvée"));
         classeRepository.delete(classe);
-        log.info("Classe deleted successfully");
+        log.info("Classe deleted: {}", id);
     }
 
     @Transactional
     public ClasseResponse associateUEs(UUID classeId, List<UUID> ueIds) {
-        log.info("Associating UEs to classe ID: {}", classeId);
-
         Classe classe = classeRepository.findById(classeId)
                 .orElseThrow(() -> new RuntimeException("Classe non trouvée"));
-
         Set<UE> ues = new HashSet<>(ueRepository.findAllById(ueIds));
         classe.setUes(ues);
-
-        Classe updatedClasse = classeRepository.save(classe);
-        log.info("UEs associated successfully");
-
-        return mapToResponse(updatedClasse);
+        return mapToResponse(classeRepository.save(classe));
     }
 
     private ClasseResponse mapToResponse(Classe classe) {
@@ -188,16 +143,13 @@ public class ClasseService {
                 .id(classe.getIdClasse())
                 .nom(classe.getNom())
                 .niveau(classe.getNiveau())
-                .ecoleId(classe.getEcole().getIdEcole())
-                .ecoleNom(classe.getEcole().getNomEcole())
-                .filiereId(classe.getFiliere().getIdFiliere())
-                .filiereNom(classe.getFiliere().getNomFiliere())
+                .ecoleId(classe.getEcole() != null ? classe.getEcole().getIdEcole() : null)
+                .ecoleNom(classe.getEcole() != null ? classe.getEcole().getNomEcole() : null)
+                .filiereId(classe.getFiliere() != null ? classe.getFiliere().getIdFiliere() : null)
+                .filiereNom(classe.getFiliere() != null ? classe.getFiliere().getNomFiliere() : null)
                 .effectif(classe.getEffectif())
-                .semestre(classe.getSemestre())
-                .effectifMax(classe.getEffectifMax())
-                .responsable(classe.getResponsable())
+                .langue(classe.getLangue())
                 .description(classe.getDescription())
-                .specialite(classe.getSpecialite())
                 .ues(ueResponses)
                 .build();
     }

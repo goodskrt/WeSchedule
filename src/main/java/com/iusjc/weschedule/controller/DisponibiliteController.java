@@ -1,6 +1,7 @@
 package com.iusjc.weschedule.controller;
 
 import com.iusjc.weschedule.models.*;
+import com.iusjc.weschedule.repositories.EnseignantRepository;
 import com.iusjc.weschedule.service.DisponibiliteService;
 import com.iusjc.weschedule.service.ExcelDisponibiliteService;
 import com.iusjc.weschedule.security.UserPrincipal;
@@ -9,8 +10,10 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.HttpHeaders;
 import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
+import org.springframework.lang.NonNull;
 import org.springframework.security.core.Authentication;
 import org.springframework.stereotype.Controller;
+import org.springframework.transaction.annotation.Transactional;
 import org.springframework.ui.Model;
 import org.springframework.web.bind.annotation.*;
 import org.springframework.web.multipart.MultipartFile;
@@ -31,6 +34,9 @@ public class DisponibiliteController {
     
     @Autowired
     private ExcelDisponibiliteService excelService;
+    
+    @Autowired
+    private EnseignantRepository enseignantRepository;
 
     /**
      * Page principale des disponibilités
@@ -82,7 +88,7 @@ public class DisponibiliteController {
      * Page de consultation d'une disponibilité (vue simple)
      */
     @GetMapping("/dashboard/enseignant/disponibilites/{id}/voir")
-    public String voirDisponibilite(@PathVariable UUID id, Authentication auth, Model model) {
+    public String voirDisponibilite(@PathVariable @NonNull UUID id, Authentication auth, Model model) {
         if (auth != null && auth.getPrincipal() instanceof UserPrincipal userPrincipal) {
             Utilisateur utilisateur = userPrincipal.getUtilisateur();
             
@@ -98,10 +104,31 @@ public class DisponibiliteController {
             DisponibiliteEnseignant disponibilite = disponibiliteOpt.get();
             Map<LocalDate, List<PlageHoraire>> emploiDuTemps = disponibiliteService.getEmploiDuTempsSemaine(id);
 
+            log.info("Chargement disponibilité {} - {} plages trouvées", id, emploiDuTemps.size());
+
+            // Convertir en format JSON-friendly pour JavaScript
+            Map<String, List<Map<String, String>>> emploiDuTempsJson = new LinkedHashMap<>();
+            emploiDuTemps.forEach((date, plages) -> {
+                String dateStr = date.toString();
+                List<Map<String, String>> plagesJson = new ArrayList<>();
+                log.info("Date: {}, {} plages", dateStr, plages.size());
+                for (PlageHoraire plage : plages) {
+                    Map<String, String> plageJson = new HashMap<>();
+                    plageJson.put("heureDebut", plage.getHeureDebut().format(DateTimeFormatter.ofPattern("HH:mm")));
+                    plageJson.put("heureFin", plage.getHeureFin().format(DateTimeFormatter.ofPattern("HH:mm")));
+                    plagesJson.add(plageJson);
+                    log.info("  Plage: {} - {}", plageJson.get("heureDebut"), plageJson.get("heureFin"));
+                }
+                emploiDuTempsJson.put(dateStr, plagesJson);
+            });
+
             model.addAttribute("user", utilisateur);
             model.addAttribute("nomComplet", userPrincipal.getNomComplet());
             model.addAttribute("disponibilite", disponibilite);
             model.addAttribute("emploiDuTemps", emploiDuTemps);
+            model.addAttribute("emploiDuTempsJson", emploiDuTempsJson);
+            
+            log.info("Modèle préparé avec {} dates", emploiDuTempsJson.size());
             
             return "dashboard/disponibilite-voir";
         }
@@ -112,7 +139,7 @@ public class DisponibiliteController {
      * Page de modification d'une disponibilité
      */
     @GetMapping("/dashboard/enseignant/disponibilites/{id}/modifier")
-    public String modifierDisponibilite(@PathVariable UUID id, Authentication auth, Model model) {
+    public String modifierDisponibilite(@PathVariable @NonNull UUID id, Authentication auth, Model model) {
         if (auth != null && auth.getPrincipal() instanceof UserPrincipal userPrincipal) {
             Utilisateur utilisateur = userPrincipal.getUtilisateur();
             
@@ -163,30 +190,50 @@ public class DisponibiliteController {
      */
     @PostMapping("/dashboard/enseignant/api/disponibilites/create")
     @ResponseBody
+    @Transactional
     public ResponseEntity<?> creerDisponibiliteComplete(@RequestBody Map<String, Object> payload, Authentication auth) {
         try {
+            log.info("Début création disponibilité - Payload: {}", payload);
+            
             if (auth != null && auth.getPrincipal() instanceof UserPrincipal userPrincipal) {
                 Utilisateur utilisateur = userPrincipal.getUtilisateur();
                 
-                if (!(utilisateur instanceof Enseignant enseignant)) {
+                if (!(utilisateur instanceof Enseignant)) {
+                    log.error("Utilisateur n'est pas un enseignant");
                     return ResponseEntity.badRequest().body(Map.of("success", false, "message", "Accès non autorisé"));
                 }
 
+                // Recharger l'enseignant depuis la base de données pour éviter les problèmes de session
+                Enseignant enseignant = enseignantRepository.findById(utilisateur.getIdUser())
+                    .orElseThrow(() -> new IllegalArgumentException("Enseignant non trouvé"));
+
                 String dateDebutStr = (String) payload.get("dateDebut");
+                log.info("Date début: {}", dateDebutStr);
+                
+                if (dateDebutStr == null || dateDebutStr.isEmpty()) {
+                    log.error("Date de début manquante");
+                    return ResponseEntity.badRequest().body(Map.of("success", false, "message", "Date de début manquante"));
+                }
+                
                 LocalDate dateDebut = LocalDate.parse(dateDebutStr);
+                log.info("Date parsée: {}", dateDebut);
                 
                 // Créer la disponibilité
                 DisponibiliteEnseignant disponibilite = disponibiliteService.creerDisponibiliteSemaine(enseignant, dateDebut);
+                log.info("Disponibilité créée avec ID: {}", disponibilite.getId());
                 
                 // Ajouter les créneaux
                 @SuppressWarnings("unchecked")
                 List<Map<String, Object>> creneaux = (List<Map<String, Object>>) payload.get("creneaux");
                 
-                if (creneaux != null) {
+                if (creneaux != null && !creneaux.isEmpty()) {
+                    log.info("Ajout de {} créneaux", creneaux.size());
                     for (Map<String, Object> creneau : creneaux) {
                         int dayIndex = ((Number) creneau.get("dayIndex")).intValue();
                         String heureDebut = (String) creneau.get("heureDebut");
                         String heureFin = (String) creneau.get("heureFin");
+                        
+                        log.info("Créneau: jour={}, {}h-{}h", dayIndex, heureDebut, heureFin);
                         
                         LocalDate date = disponibilite.getDateDebut().plusDays(dayIndex);
                         disponibiliteService.ajouterCreneau(
@@ -196,14 +243,21 @@ public class DisponibiliteController {
                             LocalTime.parse(heureFin)
                         );
                     }
+                } else {
+                    log.warn("Aucun créneau à ajouter");
                 }
                 
-                return ResponseEntity.ok(Map.of("success", true, "message", "Disponibilité créée", "id", disponibilite.getId()));
+                log.info("Disponibilité créée avec succès");
+                return ResponseEntity.ok(Map.of("success", true, "message", "Disponibilité créée", "id", disponibilite.getId().toString()));
             }
+            log.error("Utilisateur non authentifié");
             return ResponseEntity.badRequest().body(Map.of("success", false, "message", "Non authentifié"));
+        } catch (IllegalArgumentException e) {
+            log.error("Erreur validation: {}", e.getMessage(), e);
+            return ResponseEntity.badRequest().body(Map.of("success", false, "message", e.getMessage()));
         } catch (Exception e) {
             log.error("Erreur création disponibilité", e);
-            return ResponseEntity.badRequest().body(Map.of("success", false, "message", e.getMessage()));
+            return ResponseEntity.status(500).body(Map.of("success", false, "message", "Erreur serveur: " + e.getMessage()));
         }
     }
 
@@ -212,7 +266,7 @@ public class DisponibiliteController {
      */
     @PostMapping("/dashboard/enseignant/api/disponibilites/{id}/update")
     @ResponseBody
-    public ResponseEntity<?> updateDisponibilite(@PathVariable UUID id, @RequestBody Map<String, Object> payload, Authentication auth) {
+    public ResponseEntity<?> updateDisponibilite(@PathVariable @NonNull UUID id, @RequestBody Map<String, Object> payload, Authentication auth) {
         try {
             if (auth != null && auth.getPrincipal() instanceof UserPrincipal userPrincipal) {
                 Utilisateur utilisateur = userPrincipal.getUtilisateur();
@@ -251,12 +305,17 @@ public class DisponibiliteController {
                     }
                 }
                 
+                log.info("Disponibilité mise à jour avec succès");
                 return ResponseEntity.ok(Map.of("success", true, "message", "Disponibilité mise à jour"));
             }
+            log.error("Utilisateur non authentifié");
             return ResponseEntity.badRequest().body(Map.of("success", false, "message", "Non authentifié"));
+        } catch (IllegalArgumentException e) {
+            log.error("Erreur validation: {}", e.getMessage(), e);
+            return ResponseEntity.badRequest().body(Map.of("success", false, "message", e.getMessage()));
         } catch (Exception e) {
             log.error("Erreur mise à jour disponibilité", e);
-            return ResponseEntity.badRequest().body(Map.of("success", false, "message", e.getMessage()));
+            return ResponseEntity.status(500).body(Map.of("success", false, "message", "Erreur serveur: " + e.getMessage()));
         }
     }
 
@@ -299,7 +358,7 @@ public class DisponibiliteController {
     @PostMapping("/dashboard/enseignant/api/disponibilites/{id}/creneaux")
     @ResponseBody
     public ResponseEntity<?> ajouterCreneau(
-            @PathVariable UUID id,
+            @PathVariable @NonNull UUID id,
             @RequestParam String date,
             @RequestParam String heureDebut,
             @RequestParam String heureFin,
@@ -343,7 +402,7 @@ public class DisponibiliteController {
      */
     @DeleteMapping("/dashboard/enseignant/api/plages-horaires/{id}")
     @ResponseBody
-    public ResponseEntity<?> supprimerPlageHoraire(@PathVariable UUID id, Authentication auth) {
+    public ResponseEntity<?> supprimerPlageHoraire(@PathVariable @NonNull UUID id, Authentication auth) {
         try {
             if (auth != null && auth.getPrincipal() instanceof UserPrincipal userPrincipal) {
                 Utilisateur utilisateur = userPrincipal.getUtilisateur();
@@ -374,7 +433,7 @@ public class DisponibiliteController {
      */
     @DeleteMapping("/dashboard/enseignant/api/disponibilites/{id}")
     @ResponseBody
-    public ResponseEntity<?> supprimerDisponibilite(@PathVariable UUID id, Authentication auth) {
+    public ResponseEntity<?> supprimerDisponibilite(@PathVariable @NonNull UUID id, Authentication auth) {
         try {
             if (auth != null && auth.getPrincipal() instanceof UserPrincipal userPrincipal) {
                 Utilisateur utilisateur = userPrincipal.getUtilisateur();
@@ -435,7 +494,7 @@ public class DisponibiliteController {
      * Exporter une disponibilité existante vers Excel
      */
     @GetMapping("/dashboard/enseignant/api/disponibilites/{id}/excel/export")
-    public ResponseEntity<byte[]> exporterDisponibiliteExcel(@PathVariable UUID id, Authentication auth) {
+    public ResponseEntity<byte[]> exporterDisponibiliteExcel(@PathVariable @NonNull UUID id, Authentication auth) {
         try {
             if (auth != null && auth.getPrincipal() instanceof UserPrincipal userPrincipal) {
                 Utilisateur utilisateur = userPrincipal.getUtilisateur();

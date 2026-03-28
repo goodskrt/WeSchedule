@@ -1,80 +1,190 @@
 package com.iusjc.weschedule.controller;
 
-import com.iusjc.weschedule.dto.ApiResponse;
-import com.iusjc.weschedule.dto.ClasseResponse;
-import com.iusjc.weschedule.dto.CreateClasseRequest;
-import com.iusjc.weschedule.dto.UpdateClasseRequest;
-import com.iusjc.weschedule.service.ClasseService;
-import jakarta.validation.Valid;
-import lombok.RequiredArgsConstructor;
-import org.springframework.http.HttpStatus;
-import org.springframework.http.ResponseEntity;
-import org.springframework.security.access.prepost.PreAuthorize;
+import com.iusjc.weschedule.models.Classe;
+import com.iusjc.weschedule.models.Ecole;
+import com.iusjc.weschedule.models.Filiere;
+import com.iusjc.weschedule.repositories.ClasseRepository;
+import com.iusjc.weschedule.repositories.CoursRepository;
+import com.iusjc.weschedule.repositories.EcoleRepository;
+import com.iusjc.weschedule.repositories.EmploiDuTempsClasseRepository;
+import com.iusjc.weschedule.repositories.EtudiantRepository;
+import com.iusjc.weschedule.repositories.FiliereRepository;
+import com.iusjc.weschedule.repositories.UERepository;
+import lombok.extern.slf4j.Slf4j;
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.lang.NonNull;
+import org.springframework.stereotype.Controller;
+import org.springframework.transaction.annotation.Transactional;
+import org.springframework.ui.Model;
 import org.springframework.web.bind.annotation.*;
+import org.springframework.web.servlet.mvc.support.RedirectAttributes;
 
 import java.util.List;
 import java.util.UUID;
 
-@RestController
-@RequestMapping("/api/admin/classes")
-@RequiredArgsConstructor
-@PreAuthorize("hasRole('ADMINISTRATEUR')")
+@Controller
+@RequestMapping("/admin/classes")
+@Slf4j
 public class ClasseController {
 
-    private final ClasseService classeService;
+    @Autowired private ClasseRepository  classeRepository;
+    @Autowired private EcoleRepository   ecoleRepository;
+    @Autowired private FiliereRepository filiereRepository;
+    @Autowired private CoursRepository   coursRepository;
+    @Autowired private UERepository      ueRepository;
+    @Autowired private EtudiantRepository            etudiantRepository;
+    @Autowired private EmploiDuTempsClasseRepository emploiDuTempsClasseRepository;
 
-    @PostMapping
-    public ResponseEntity<ApiResponse<ClasseResponse>> createClasse(
-            @Valid @RequestBody CreateClasseRequest request) {
-        ClasseResponse response = classeService.createClasse(request);
-        return ResponseEntity.status(HttpStatus.CREATED)
-                .body(ApiResponse.success(response, "Classe créée avec succès"));
-    }
+    private static final List<String> NIVEAUX  = List.of("Niveau 1","Niveau 2","Niveau 3","Niveau 4","Niveau 5");
+    private static final List<String> LANGUES  = List.of("Francophone","Anglophone");
+
+    // ── Liste ──────────────────────────────────────────────────────────────
 
     @GetMapping
-    public ResponseEntity<ApiResponse<List<ClasseResponse>>> getAllClasses() {
-        List<ClasseResponse> classes = classeService.getAllClasses();
-        return ResponseEntity.ok(
-                ApiResponse.success(classes, "Classes récupérées avec succès"));
+    public String liste(Model model) {
+        model.addAttribute("classes",  classeRepository.findAll());
+        model.addAttribute("ecoles",   ecoleRepository.findAll());
+        model.addAttribute("filieres", filiereRepository.findAll());
+        return "admin/classes";
     }
 
-    @GetMapping("/{id}")
-    public ResponseEntity<ApiResponse<ClasseResponse>> getClasseById(@PathVariable UUID id) {
-        ClasseResponse response = classeService.getClasseById(id);
-        return ResponseEntity.ok(
-                ApiResponse.success(response, "Classe récupérée avec succès"));
+    // ── Détails ────────────────────────────────────────────────────────────
+
+    @GetMapping("/details/{id}")
+    public String details(@PathVariable @NonNull UUID id, Model model, RedirectAttributes ra) {
+        return classeRepository.findById(id).map(c -> {
+            model.addAttribute("classe", c);
+            return "admin/classe-details";
+        }).orElseGet(() -> {
+            ra.addFlashAttribute("error", "Classe introuvable");
+            return "redirect:/admin/classes";
+        });
     }
 
-    @GetMapping("/ecole/{ecoleId}")
-    public ResponseEntity<ApiResponse<List<ClasseResponse>>> getClassesByEcole(
-            @PathVariable UUID ecoleId) {
-        List<ClasseResponse> classes = classeService.getClassesByEcole(ecoleId);
-        return ResponseEntity.ok(
-                ApiResponse.success(classes, "Classes de l'école récupérées avec succès"));
+    // ── Formulaire création ────────────────────────────────────────────────
+
+    @GetMapping("/nouvelle")
+    public String nouvelleForm(Model model) {
+        model.addAttribute("classe",   new Classe());
+        model.addAttribute("ecoles",   ecoleRepository.findAll());
+        model.addAttribute("filieres", filiereRepository.findAll());
+        model.addAttribute("niveaux",  NIVEAUX);
+        model.addAttribute("langues",  LANGUES);
+        model.addAttribute("mode",     "creation");
+        return "admin/classe-form";
     }
 
-    @PutMapping("/{id}")
-    public ResponseEntity<ApiResponse<ClasseResponse>> updateClasse(
-            @PathVariable UUID id,
-            @Valid @RequestBody UpdateClasseRequest request) {
-        ClasseResponse response = classeService.updateClasse(id, request);
-        return ResponseEntity.ok(
-                ApiResponse.success(response, "Classe mise à jour avec succès"));
+    @PostMapping("/creer")
+    public String creer(
+            @RequestParam String nom,
+            @RequestParam(required = false) String ecoleId,
+            @RequestParam(required = false) String filiereId,
+            @RequestParam(required = false) String niveau,
+            @RequestParam(required = false) Integer effectif,
+            @RequestParam(required = false) String langue,
+            @RequestParam(required = false) String description,
+            RedirectAttributes ra) {
+        try {
+            if (nom == null || nom.isBlank()) {
+                ra.addFlashAttribute("error", "Le nom est obligatoire");
+                return "redirect:/admin/classes/nouvelle";
+            }
+            Classe c = new Classe();
+            c.setNom(nom.trim());
+            c.setNiveau(niveau);
+            c.setEffectif(effectif);
+            c.setLangue(langue != null && !langue.isBlank() ? langue : null);
+            c.setDescription(description != null && !description.isBlank() ? description.trim() : null);
+            if (ecoleId != null && !ecoleId.isBlank())
+                ecoleRepository.findById(UUID.fromString(ecoleId)).ifPresent(c::setEcole);
+            if (filiereId != null && !filiereId.isBlank())
+                filiereRepository.findById(UUID.fromString(filiereId)).ifPresent(c::setFiliere);
+            classeRepository.save(c);
+            ra.addFlashAttribute("success", "Classe « " + c.getNom() + " » créée avec succès");
+            return "redirect:/admin/classes";
+        } catch (Exception e) {
+            log.error("Erreur création classe", e);
+            ra.addFlashAttribute("error", "Erreur : " + e.getMessage());
+            return "redirect:/admin/classes/nouvelle";
+        }
     }
 
-    @DeleteMapping("/{id}")
-    public ResponseEntity<ApiResponse<Void>> deleteClasse(@PathVariable UUID id) {
-        classeService.deleteClasse(id);
-        return ResponseEntity.ok(
-                ApiResponse.success(null, "Classe supprimée avec succès"));
+    // ── Formulaire modification ────────────────────────────────────────────
+
+    @GetMapping("/modifier/{id}")
+    public String modifierForm(@PathVariable @NonNull UUID id, Model model, RedirectAttributes ra) {
+        return classeRepository.findById(id).map(c -> {
+            model.addAttribute("classe",   c);
+            model.addAttribute("ecoles",   ecoleRepository.findAll());
+            model.addAttribute("filieres", filiereRepository.findAll());
+            model.addAttribute("niveaux",  NIVEAUX);
+            model.addAttribute("langues",  LANGUES);
+            model.addAttribute("mode",     "modification");
+            return "admin/classe-form";
+        }).orElseGet(() -> {
+            ra.addFlashAttribute("error", "Classe introuvable");
+            return "redirect:/admin/classes";
+        });
     }
 
-    @PostMapping("/{id}/ues")
-    public ResponseEntity<ApiResponse<ClasseResponse>> associateUEs(
-            @PathVariable UUID id,
-            @RequestBody List<UUID> ueIds) {
-        ClasseResponse response = classeService.associateUEs(id, ueIds);
-        return ResponseEntity.ok(
-                ApiResponse.success(response, "UEs associées avec succès"));
+    @PostMapping("/modifier/{id}")
+    public String modifier(
+            @PathVariable @NonNull UUID id,
+            @RequestParam String nom,
+            @RequestParam(required = false) String ecoleId,
+            @RequestParam(required = false) String filiereId,
+            @RequestParam(required = false) String niveau,
+            @RequestParam(required = false) Integer effectif,
+            @RequestParam(required = false) String langue,
+            @RequestParam(required = false) String description,
+            RedirectAttributes ra) {
+        try {
+            Classe c = classeRepository.findById(id)
+                    .orElseThrow(() -> new RuntimeException("Classe introuvable"));
+            c.setNom(nom.trim());
+            c.setNiveau(niveau);
+            c.setEffectif(effectif);
+            c.setLangue(langue != null && !langue.isBlank() ? langue : null);
+            c.setDescription(description != null && !description.isBlank() ? description.trim() : null);
+            c.setEcole(null);
+            c.setFiliere(null);
+            if (ecoleId != null && !ecoleId.isBlank())
+                ecoleRepository.findById(UUID.fromString(ecoleId)).ifPresent(c::setEcole);
+            if (filiereId != null && !filiereId.isBlank())
+                filiereRepository.findById(UUID.fromString(filiereId)).ifPresent(c::setFiliere);
+            classeRepository.save(c);
+            ra.addFlashAttribute("success", "Classe modifiée avec succès");
+            return "redirect:/admin/classes/details/" + id;
+        } catch (Exception e) {
+            log.error("Erreur modification classe", e);
+            ra.addFlashAttribute("error", "Erreur : " + e.getMessage());
+            return "redirect:/admin/classes/modifier/" + id;
+        }
+    }
+
+    // ── Suppression ────────────────────────────────────────────────────────
+
+    @PostMapping("/supprimer/{id}")
+    @Transactional
+    public String supprimer(@PathVariable @NonNull UUID id, RedirectAttributes ra) {
+        try {
+            Classe c = classeRepository.findById(id)
+                    .orElseThrow(() -> new RuntimeException("Classe introuvable"));
+            // 1. Détacher les cours de cette classe (cours.classe_id → null)
+            coursRepository.detachFromClasse(id);
+            // 2. Supprimer les lignes de jointure ue_classe
+            ueRepository.deleteUeClasseByClasseId(id);
+            // 3. Détacher les étudiants (etudiants.classe_id → null)
+            etudiantRepository.detachFromClasse(id);
+            // 4. Supprimer les emplois du temps (cascade supprime les séances)
+            emploiDuTempsClasseRepository.deleteAll(emploiDuTempsClasseRepository.findByClasse(c));
+            // 5. Supprimer la classe
+            classeRepository.delete(c);
+            ra.addFlashAttribute("success", "Classe supprimée");
+        } catch (Exception e) {
+            log.error("Erreur suppression classe", e);
+            ra.addFlashAttribute("error", "Impossible de supprimer : " + e.getMessage());
+        }
+        return "redirect:/admin/classes";
     }
 }

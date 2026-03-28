@@ -5,6 +5,8 @@ import com.iusjc.weschedule.dto.LoginRequest;
 import com.iusjc.weschedule.models.Utilisateur;
 import com.iusjc.weschedule.security.JwtService;
 import com.iusjc.weschedule.service.AuthService;
+import io.swagger.v3.oas.annotations.Operation;
+import io.swagger.v3.oas.annotations.tags.Tag;
 import jakarta.validation.Valid;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -16,6 +18,7 @@ import java.util.Optional;
 @RestController
 @RequestMapping("/api/auth")
 @CrossOrigin(origins = {"http://localhost:4200", "http://localhost:3000"})
+@Tag(name = "Authentication", description = "API pour l'authentification des utilisateurs")
 @Slf4j
 public class AuthRestController {
 
@@ -30,6 +33,8 @@ public class AuthRestController {
      * POST /api/auth/login
      */
     @PostMapping("/login")
+    @Operation(summary = "Connexion utilisateur", 
+               description = "Authentifie un utilisateur et retourne un token JWT")
     public ResponseEntity<AuthResponse> login(@Valid @RequestBody LoginRequest loginRequest) {
         try {
             log.info("=== TENTATIVE DE CONNEXION REST ===");

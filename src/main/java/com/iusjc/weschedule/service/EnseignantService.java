@@ -41,7 +41,7 @@ public class EnseignantService {
 
     public List<Enseignant> getAllEnseignants() {
         log.info("Récupération de tous les enseignants");
-        List<Enseignant> enseignants = enseignantRepository.findAll();
+        List<Enseignant> enseignants = enseignantRepository.findAllWithUEs();
         log.info("Nombre d'enseignants trouvés: {}", enseignants.size());
         return enseignants;
     }
@@ -64,7 +64,7 @@ public class EnseignantService {
     }
 
     public List<UE> getUEsEnseignant(UUID enseignantId) {
-        Optional<Enseignant> enseignantOpt = enseignantRepository.findById(enseignantId);
+        Optional<Enseignant> enseignantOpt = enseignantRepository.findByIdWithUEs(enseignantId);
         if (enseignantOpt.isEmpty() || enseignantOpt.get().getUesEnseignees() == null) {
             return new ArrayList<>();
         }

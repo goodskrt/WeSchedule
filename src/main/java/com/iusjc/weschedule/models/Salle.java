@@ -1,11 +1,15 @@
 package com.iusjc.weschedule.models;
 
+import com.iusjc.weschedule.enums.StatutSalle;
 import com.iusjc.weschedule.enums.TypeSalle;
 import jakarta.persistence.*;
 import lombok.AllArgsConstructor;
 import lombok.Data;
 import lombok.NoArgsConstructor;
+import lombok.ToString;
 
+import java.util.ArrayList;
+import java.util.List;
 import java.util.UUID;
 
 @Entity
@@ -13,6 +17,7 @@ import java.util.UUID;
 @Data
 @NoArgsConstructor
 @AllArgsConstructor
+@ToString(exclude = "equipements")
 public class Salle {
 
     @Id
@@ -31,4 +36,11 @@ public class Salle {
 
     /** Nouveau bâtiment, Ancien bâtiment */
     private String batiment;
+
+    @Enumerated(EnumType.STRING)
+    @Column(nullable = false)
+    private StatutSalle statut = StatutSalle.DISPONIBLE;
+
+    @OneToMany(mappedBy = "salle", fetch = FetchType.LAZY)
+    private List<Equipment> equipements = new ArrayList<>();
 }

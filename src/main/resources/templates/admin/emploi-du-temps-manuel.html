@@ -77,7 +77,7 @@
                         <div class="schedule-grid" id="scheduleGrid">
                             <div class="schedule-header"></div>
                             <div class="schedule-header" th:each="jour : ${#numbers.sequence(0, 6)}">
-                                <span th:text="${#temporals.format(lundi.plusDays(jour), 'EEE', #locale)}">Lun</span><br>
+                                <span th:text="${#temporals.format(lundi.plusDays(jour), 'EEE')}">Lun</span><br>
                                 <small th:text="${#temporals.format(lundi.plusDays(jour), 'dd/MM')}">01/01</small>
                             </div>
                         </div>
@@ -123,8 +123,8 @@
                         <label class="form-label">Cours *</label>
                         <select id="seanceCours" class="form-select" required>
                             <option value="">Sélectionner un cours</option>
-                            <option th:each="c : ${cours}" th:value="${c.idCours}" 
-                                    th:text="${c.intitule + ' (' + c.typeCours + ')'}">Cours</option>
+                            <option th:each="c : ${cours}" th:value="${c.idCours}"
+                                    th:text="${c.intitule} + ' (' + ${c.typeCours != null ? c.typeCours.name() : '?'} + ')'">Cours</option>
                         </select>
                     </div>
                     
@@ -132,8 +132,8 @@
                         <label class="form-label">Enseignant</label>
                         <select id="seanceEnseignant" class="form-select">
                             <option value="">Aucun</option>
-                            <option th:each="e : ${enseignants}" th:value="${e.idUser}" 
-                                    th:text="${e.prenom + ' ' + e.nom}">Enseignant</option>
+                            <option th:each="e : ${enseignants}" th:value="${e.idUser}"
+                                    th:text="${e.prenom} + ' ' + ${e.nom}">Enseignant</option>
                         </select>
                     </div>
                     
@@ -141,8 +141,8 @@
                         <label class="form-label">Salle</label>
                         <select id="seanceSalle" class="form-select">
                             <option value="">Aucune</option>
-                            <option th:each="s : ${salles}" th:value="${s.idSalle}" 
-                                    th:text="${s.nomSalle + ' (' + s.capacite + ' places)'}">Salle</option>
+                            <option th:each="s : ${salles}" th:value="${s.idSalle}"
+                                    th:text="${s.nomSalle} + ' (' + ${s.capacite != null ? s.capacite : '?'} + ' places)'">Salle</option>
                         </select>
                     </div>
                     
@@ -186,7 +186,7 @@
         const classeId = /*[[${classe.idClasse}]]*/ '';
         const semaine = /*[[${semaine}]]*/ 1;
         const annee = /*[[${annee}]]*/ 2026;
-        const lundiStr = /*[[${lundi}]]*/ '';
+        const lundiStr = /*[[${#temporals.format(lundi,'yyyy-MM-dd')}]]*/ '';
         
         const timeSlots = ['08:00-09:00','09:00-10:00','10:00-11:00','11:00-12:00','12:00-13:00','13:00-14:00','14:00-15:00','15:00-16:00','16:00-17:00','17:00-18:00','18:00-19:00','19:00-20:00'];
         let seances = {}; // Format: "day-slot": {coursId, enseignantId, salleId, remarques, coursNom}

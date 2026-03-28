@@ -1,18 +1,14 @@
 package com.iusjc.weschedule.models;
 
-import com.iusjc.weschedule.enums.StatutCours;
 import com.iusjc.weschedule.enums.TypeCours;
 import jakarta.persistence.*;
 import lombok.AllArgsConstructor;
 import lombok.Data;
-import lombok.EqualsAndHashCode;
 import lombok.NoArgsConstructor;
-import lombok.ToString;
 import org.hibernate.annotations.CreationTimestamp;
 import org.hibernate.annotations.UpdateTimestamp;
 
 import java.time.LocalDateTime;
-import java.util.Set;
 import java.util.UUID;
 
 @Entity
@@ -20,40 +16,35 @@ import java.util.UUID;
 @Data
 @NoArgsConstructor
 @AllArgsConstructor
-@EqualsAndHashCode(exclude = {"classes"})
-@ToString(exclude = {"classes"})
 public class Cours {
 
     @Id
     @GeneratedValue
     private UUID idCours;
 
-    private String intitule; //A supprimer car la concatenation du type de cours et de l'ue d'enseignant est suffisant
+    private String intitule;
 
     @Enumerated(EnumType.STRING)
     private TypeCours typeCours;
 
-    private Integer duree; // Nombre d'heures RESTANTES pour cette UE (ex: 45h restantes sur 60h total)
+    /** Durée totale prévue pour ce cours (en heures) */
+    private Integer dureeTotal;
+
+    /** Heures restantes à planifier (décrémentées au fil des séances) */
+    private Integer dureeRestante;
 
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "ue_id")
     private UE ue;
 
+    /** La classe concernée par ce cours */
+    @ManyToOne(fetch = FetchType.LAZY)
+    @JoinColumn(name = "classe_id")
+    private Classe classe;
+
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "enseignant_id")
     private Enseignant enseignant;
-
-    @ManyToMany(fetch = FetchType.LAZY)
-    @JoinTable(
-        name = "cours_classe",
-        joinColumns = @JoinColumn(name = "cours_id"),
-        inverseJoinColumns = @JoinColumn(name = "classe_id")
-    )
-    private Set<Classe> classes;
-
-    @Enumerated(EnumType.STRING)
-    @Column(nullable = false)
-    private StatutCours statut = StatutCours.ACTIF;
 
     @Column(columnDefinition = "TEXT")
     private String description;
@@ -65,4 +56,25 @@ public class Cours {
     @UpdateTimestamp
     private LocalDateTime updatedAt;
 
+    // ── Helpers ──────────────────────────────────────────────────────────
+
+    /** Heures déjà effectuées = total - restantes */
+    @Transient
+    public int getHeuresEffectuees() {
+        if (dureeTotal == null || dureeRestante == null) return 0;
+        return Math.max(0, dureeTotal - dureeRestante);
+    }
+
+    /** Pourcentage d'avancement (0-100) */
+    @Transient
+    public double getPourcentageAvancement() {
+        if (dureeTotal == null || dureeTotal == 0) return 0.0;
+        return (getHeuresEffectuees() * 100.0) / dureeTotal;
+    }
+
+    /** true si toutes les heures ont été effectuées */
+    @Transient
+    public boolean isTermine() {
+        return dureeRestante != null && dureeRestante == 0;
+    }
 }

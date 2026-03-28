@@ -6,6 +6,7 @@ import com.iusjc.weschedule.service.EmploiDuTempsService;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.format.annotation.DateTimeFormat;
 import org.springframework.http.ResponseEntity;
+import org.springframework.lang.NonNull;
 import org.springframework.web.bind.annotation.*;
 
 import java.time.LocalDate;
@@ -50,7 +51,7 @@ public class EmploiDuTempsController {
      */
     @PostMapping("/{emploiDuTempsId}/seances")
     public ResponseEntity<Map<String, Object>> ajouterSeance(
-            @PathVariable UUID emploiDuTempsId,
+            @PathVariable @NonNull UUID emploiDuTempsId,
             @RequestParam UUID coursId,
             @RequestParam(required = false) UUID enseignantId,
             @RequestParam(required = false) UUID salleId,
@@ -82,7 +83,7 @@ public class EmploiDuTempsController {
      */
     @PutMapping("/seances/{seanceId}")
     public ResponseEntity<Map<String, Object>> modifierSeance(
-            @PathVariable UUID seanceId,
+            @PathVariable @NonNull UUID seanceId,
             @RequestParam(required = false) UUID coursId,
             @RequestParam(required = false) UUID enseignantId,
             @RequestParam(required = false) UUID salleId,
@@ -112,7 +113,7 @@ public class EmploiDuTempsController {
      * Supprimer une séance
      */
     @DeleteMapping("/seances/{seanceId}")
-    public ResponseEntity<Map<String, Object>> supprimerSeance(@PathVariable UUID seanceId) {
+    public ResponseEntity<Map<String, Object>> supprimerSeance(@PathVariable @NonNull UUID seanceId) {
         try {
             emploiDuTempsService.supprimerSeance(seanceId);
             
@@ -167,7 +168,7 @@ public class EmploiDuTempsController {
      * Obtenir tous les emplois du temps d'une classe
      */
     @GetMapping("/classe/{classeId}")
-    public ResponseEntity<Map<String, Object>> getEmploisDuTempsClasse(@PathVariable UUID classeId) {
+    public ResponseEntity<Map<String, Object>> getEmploisDuTempsClasse(@PathVariable @NonNull UUID classeId) {
         try {
             List<EmploiDuTempsClasse> emplois = emploiDuTempsService.getEmploisDuTempsClasse(classeId);
             
@@ -193,7 +194,7 @@ public class EmploiDuTempsController {
      * Supprimer un emploi du temps
      */
     @DeleteMapping("/{emploiDuTempsId}")
-    public ResponseEntity<Map<String, Object>> supprimerEmploiDuTemps(@PathVariable UUID emploiDuTempsId) {
+    public ResponseEntity<Map<String, Object>> supprimerEmploiDuTemps(@PathVariable @NonNull UUID emploiDuTempsId) {
         try {
             emploiDuTempsService.supprimerEmploiDuTemps(emploiDuTempsId);
             
@@ -215,7 +216,7 @@ public class EmploiDuTempsController {
      */
     @PostMapping("/{emploiDuTempsId}/dupliquer")
     public ResponseEntity<Map<String, Object>> dupliquerEmploiDuTemps(
-            @PathVariable UUID emploiDuTempsId,
+            @PathVariable @NonNull UUID emploiDuTempsId,
             @RequestParam @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) LocalDate nouvelleDateDebut) {
         try {
             EmploiDuTempsClasse nouveau = emploiDuTempsService.dupliquerEmploiDuTemps(emploiDuTempsId, nouvelleDateDebut);
@@ -274,7 +275,7 @@ public class EmploiDuTempsController {
                     coursMap.put("id", seance.getCours().getIdCours());
                     coursMap.put("intitule", seance.getCours().getIntitule());
                     coursMap.put("typeCours", seance.getCours().getTypeCours());
-                    coursMap.put("duree", seance.getCours().getDuree());
+                    coursMap.put("duree", seance.getCours().getDureeRestante());
                     if (seance.getCours().getUe() != null) {
                         Map<String, Object> ueMap = new HashMap<>();
                         ueMap.put("id", seance.getCours().getUe().getIdUE());

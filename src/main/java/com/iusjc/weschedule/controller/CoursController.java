@@ -1,318 +1,306 @@
 package com.iusjc.weschedule.controller;
 
-import com.iusjc.weschedule.enums.StatutUE;
+import com.iusjc.weschedule.enums.TypeCours;
+import com.iusjc.weschedule.models.Classe;
 import com.iusjc.weschedule.models.Cours;
 import com.iusjc.weschedule.models.UE;
+import com.iusjc.weschedule.repositories.ClasseRepository;
 import com.iusjc.weschedule.repositories.CoursRepository;
+import com.iusjc.weschedule.repositories.EcoleRepository;
+import com.iusjc.weschedule.repositories.EnseignantRepository;
 import com.iusjc.weschedule.repositories.UERepository;
-import com.iusjc.weschedule.service.DureeService;
+import com.iusjc.weschedule.service.ExcelCoursService;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.http.HttpHeaders;
+import org.springframework.http.MediaType;
+import org.springframework.http.ResponseEntity;
 import org.springframework.stereotype.Controller;
 import org.springframework.transaction.annotation.Transactional;
 import org.springframework.ui.Model;
 import org.springframework.web.bind.annotation.*;
+import org.springframework.web.multipart.MultipartFile;
 import org.springframework.web.servlet.mvc.support.RedirectAttributes;
 
 import java.util.*;
 
 @Controller
 @RequestMapping("/admin/cours")
+@Slf4j
 public class CoursController {
 
-    @Autowired
-    private CoursRepository coursRepository;
+    @Autowired private CoursRepository      coursRepository;
+    @Autowired private UERepository         ueRepository;
+    @Autowired private ClasseRepository     classeRepository;
+    @Autowired private EcoleRepository      ecoleRepository;
+    @Autowired private EnseignantRepository enseignantRepository;
+    @Autowired private ExcelCoursService    excelCoursService;
 
-    @Autowired
-    private UERepository ueRepository;
+    // ── API : Classes d'une école (pour le filtre dynamique) ──────────────
 
-    @Autowired
-    private DureeService dureeService;
-    
-    @Autowired
-    private com.iusjc.weschedule.repositories.SeanceClasseRepository seanceClasseRepository;
-
-    /**
-     * Liste de tous les cours
-     */
-    @GetMapping
+    @GetMapping("/api/classes-par-ecole/{ecoleId}")
+    @ResponseBody
     @Transactional(readOnly = true)
-    public String listeCours(Model model) {
-        List<Cours> cours = coursRepository.findAll();
+    public ResponseEntity<List<Map<String, Object>>> classesParEcole(@PathVariable UUID ecoleId) {
+        List<Classe> classes = classeRepository.findAll().stream()
+                .filter(c -> c.getEcole() != null && c.getEcole().getIdEcole().equals(ecoleId))
+                .toList();
+        List<Map<String, Object>> result = new ArrayList<>();
+        for (Classe c : classes) {
+            Map<String, Object> m = new LinkedHashMap<>();
+            m.put("id",  c.getIdClasse());
+            m.put("nom", c.getNom());
+            result.add(m);
+        }
+        return ResponseEntity.ok(result);
+    }
+
+    // ── API : UEs d'une classe (pour le filtre dynamique) ─────────────────
+
+    @GetMapping("/api/ues-par-classe/{classeId}")
+    @ResponseBody
+    @Transactional(readOnly = true)
+    public ResponseEntity<List<Map<String, Object>>> uesParClasse(@PathVariable UUID classeId) {
+        List<UE> ues = ueRepository.findByClassesIdClasse(classeId);
+        List<Map<String, Object>> result = new ArrayList<>();
+        for (UE ue : ues) {
+            Map<String, Object> m = new LinkedHashMap<>();
+            m.put("id",       ue.getIdUE());
+            m.put("code",     ue.getCode());
+            m.put("intitule", ue.getIntitule());
+            m.put("semestre", ue.getSemestre());
+            result.add(m);
+        }
+        return ResponseEntity.ok(result);
+    }
+    
+    @GetMapping("/api/enseignants-par-ue/{ueId}")
+    @ResponseBody
+    @Transactional(readOnly = true)
+    public ResponseEntity<List<Map<String, Object>>> enseignantsParUE(@PathVariable UUID ueId) {
+        // Récupérer tous les cours de cette UE
+        List<Cours> cours = coursRepository.findAll().stream()
+                .filter(c -> c.getUe() != null && c.getUe().getIdUE().equals(ueId))
+                .filter(c -> c.getEnseignant() != null)
+                .toList();
         
-        // Enrichir avec les informations d'avancement
-        List<Map<String, Object>> coursAvecInfos = new ArrayList<>();
+        // Extraire les enseignants uniques
+        Set<UUID> enseignantIds = new HashSet<>();
+        List<Map<String, Object>> result = new ArrayList<>();
+        
         for (Cours c : cours) {
-            Map<String, Object> info = new HashMap<>();
-            info.put("cours", c);
-            
-            // Charger explicitement les collections pour éviter LazyInitializationException
-            if (c.getUe() != null) {
-                int heuresEffectuees = dureeService.calculerHeuresEffectuees(c);
-                double pourcentage = dureeService.calculerPourcentageAvancement(c);
-                boolean termine = dureeService.estTermine(c);
-                
-                info.put("heuresEffectuees", heuresEffectuees);
-                info.put("pourcentage", pourcentage);
-                info.put("termine", termine);
-                
-                // Initialiser les classes et écoles
-                if (c.getUe().getClasses() != null) {
-                    c.getUe().getClasses().size(); // Force l'initialisation
-                    c.getUe().getClasses().forEach(classe -> {
-                        if (classe.getEcole() != null) {
-                            classe.getEcole().getNomEcole(); // Force l'initialisation de l'école
-                        }
-                    });
-                }
+            if (c.getEnseignant() != null && !enseignantIds.contains(c.getEnseignant().getIdUser())) {
+                enseignantIds.add(c.getEnseignant().getIdUser());
+                Map<String, Object> m = new LinkedHashMap<>();
+                m.put("id",     c.getEnseignant().getIdUser().toString());
+                m.put("nom",    c.getEnseignant().getNom());
+                m.put("prenom", c.getEnseignant().getPrenom());
+                result.add(m);
             }
-            
-            // Récupérer la première séance pour le tri
-            com.iusjc.weschedule.models.SeanceClasse premiereSeance = seanceClasseRepository.findFirstByCoursOrderByDateAsc(c);
-            info.put("premiereSeance", premiereSeance);
-            
-            coursAvecInfos.add(info);
         }
         
-        // Trier par date de réservation (date de la première séance)
-        coursAvecInfos.sort((info1, info2) -> {
-            com.iusjc.weschedule.models.SeanceClasse seance1 = (com.iusjc.weschedule.models.SeanceClasse) info1.get("premiereSeance");
-            com.iusjc.weschedule.models.SeanceClasse seance2 = (com.iusjc.weschedule.models.SeanceClasse) info2.get("premiereSeance");
-            
-            // Les cours sans séance vont à la fin
-            if (seance1 == null && seance2 == null) return 0;
-            if (seance1 == null) return 1;
-            if (seance2 == null) return -1;
-            
-            return seance1.getDate().compareTo(seance2.getDate());
+        // Trier par nom
+        result.sort((a, b) -> {
+            String nomA = (String) a.get("nom");
+            String nomB = (String) b.get("nom");
+            return nomA.compareTo(nomB);
         });
         
-        model.addAttribute("coursListe", coursAvecInfos);
-        model.addAttribute("totalCours", cours.size());
-        
+        return ResponseEntity.ok(result);
+    }
+
+    // ── Liste ──────────────────────────────────────────────────────────────
+
+    @GetMapping
+    @Transactional(readOnly = true)
+    public String liste(Model model) {
+        List<Cours> cours = coursRepository.findAll();
+        cours.forEach(c -> {
+            if (c.getClasse() != null) {
+                c.getClasse().getNom();
+                if (c.getClasse().getEcole() != null) c.getClasse().getEcole().getNomEcole();
+            }
+            if (c.getUe() != null) c.getUe().getCode();
+            if (c.getEnseignant() != null) c.getEnseignant().getNom();
+        });
+        model.addAttribute("cours",   cours);
+        model.addAttribute("classes", classeRepository.findAll());
+        model.addAttribute("ecoles",  ecoleRepository.findAll());
+        model.addAttribute("ues",     ueRepository.findAll());
         return "admin/cours-liste";
     }
 
-    /**
-     * Formulaire de création d'un cours
-     */
+    // ── Détails ────────────────────────────────────────────────────────────
+
+    @GetMapping("/details/{id}")
+    @Transactional(readOnly = true)
+    public String details(@PathVariable UUID id, Model model, RedirectAttributes ra) {
+        Optional<Cours> opt = coursRepository.findById(id);
+        if (opt.isEmpty()) { ra.addFlashAttribute("error", "Cours introuvable"); return "redirect:/admin/cours"; }
+        Cours c = opt.get();
+        if (c.getClasse() != null && c.getClasse().getEcole() != null) c.getClasse().getEcole().getNomEcole();
+        if (c.getUe() != null) c.getUe().getCode();
+        if (c.getEnseignant() != null) c.getEnseignant().getNom();
+        model.addAttribute("cours", c);
+        return "admin/cours-details";
+    }
+
+    // ── Formulaire création ────────────────────────────────────────────────
+
     @GetMapping("/nouveau")
-    public String nouveauCoursForm(Model model) {
-        // Récupérer uniquement les UE actives
-        List<UE> uesActives = ueRepository.findByStatut(StatutUE.ACTIF);
-        
-        model.addAttribute("cours", new Cours());
-        model.addAttribute("ues", uesActives);
-        model.addAttribute("mode", "creation");
-        
+    public String nouveauForm(Model model) {
+        model.addAttribute("cours",       new Cours());
+        model.addAttribute("classes",     classeRepository.findAll());
+        model.addAttribute("ecoles",      ecoleRepository.findAll());
+        model.addAttribute("enseignants", enseignantRepository.findAll());
+        model.addAttribute("types",       TypeCours.values());
+        model.addAttribute("mode",        "creation");
         return "admin/cours-form";
     }
 
-    /**
-     * Créer un nouveau cours
-     */
     @PostMapping("/creer")
-    public String creerCours(
+    public String creer(
             @RequestParam String intitule,
             @RequestParam String typeCours,
+            @RequestParam UUID classeId,
             @RequestParam UUID ueId,
-            @RequestParam(required = false) Integer duree,
-            RedirectAttributes redirectAttributes) {
-        
+            @RequestParam(required = false) UUID enseignantId,
+            @RequestParam Integer dureeTotal,
+            @RequestParam(required = false) String description,
+            RedirectAttributes ra) {
         try {
-            UE ue = ueRepository.findById(ueId)
-                    .orElseThrow(() -> new RuntimeException("UE non trouvée"));
-            
-            // Vérifier que l'UE est active
-            if (ue.getStatut() != StatutUE.ACTIF) {
-                redirectAttributes.addFlashAttribute("error", 
-                    "Impossible de créer un cours pour une UE inactive");
-                return "redirect:/admin/cours/nouveau";
-            }
-            
             Cours cours = new Cours();
-            cours.setIntitule(intitule);
-            cours.setTypeCours(com.iusjc.weschedule.enums.TypeCours.valueOf(typeCours));
-            cours.setUe(ue);
-            
-            // Si durée non spécifiée, utiliser la durée totale de l'UE
-            if (duree == null || duree == 0) {
-                cours.setDuree(ue.getDuree());
-            } else {
-                cours.setDuree(duree);
-            }
-            
-            // Valider la durée
-            dureeService.validerDureeCours(cours);
-            
+            cours.setIntitule(intitule.trim());
+            cours.setTypeCours(TypeCours.valueOf(typeCours));
+            cours.setDureeTotal(dureeTotal);
+            cours.setDureeRestante(dureeTotal);
+            cours.setDescription(description != null && !description.isBlank() ? description.trim() : null);
+
+            classeRepository.findById(classeId).ifPresent(cours::setClasse);
+            ueRepository.findById(ueId).ifPresent(cours::setUe);
+            if (enseignantId != null) enseignantRepository.findById(enseignantId).ifPresent(cours::setEnseignant);
+
             coursRepository.save(cours);
-            
-            redirectAttributes.addFlashAttribute("success", 
-                "Cours créé avec succès");
+            ra.addFlashAttribute("success", "Cours « " + cours.getIntitule() + " » créé avec succès");
             return "redirect:/admin/cours";
-            
         } catch (Exception e) {
-            redirectAttributes.addFlashAttribute("error", 
-                "Erreur lors de la création du cours: " + e.getMessage());
+            log.error("Erreur création cours", e);
+            ra.addFlashAttribute("error", "Erreur : " + e.getMessage());
             return "redirect:/admin/cours/nouveau";
         }
     }
 
-    /**
-     * Formulaire de modification d'un cours
-     */
+    // ── Formulaire modification ────────────────────────────────────────────
+
     @GetMapping("/modifier/{id}")
-    public String modifierCoursForm(@PathVariable UUID id, Model model, RedirectAttributes redirectAttributes) {
-        try {
-            Cours cours = coursRepository.findById(id)
-                    .orElseThrow(() -> new RuntimeException("Cours non trouvé"));
-            
-            List<UE> uesActives = ueRepository.findByStatut(StatutUE.ACTIF);
-            
-            // Ajouter l'UE actuelle si elle n'est pas active (pour permettre la modification)
-            if (cours.getUe() != null && cours.getUe().getStatut() != StatutUE.ACTIF) {
-                if (!uesActives.contains(cours.getUe())) {
-                    uesActives.add(cours.getUe());
-                }
-            }
-            
-            model.addAttribute("cours", cours);
-            model.addAttribute("ues", uesActives);
-            model.addAttribute("mode", "modification");
-            
-            // Informations d'avancement
-            if (cours.getUe() != null) {
-                model.addAttribute("heuresEffectuees", dureeService.calculerHeuresEffectuees(cours));
-                model.addAttribute("pourcentage", dureeService.calculerPourcentageAvancement(cours));
-            }
-            
-            return "admin/cours-form";
-            
-        } catch (Exception e) {
-            redirectAttributes.addFlashAttribute("error", 
-                "Erreur: " + e.getMessage());
-            return "redirect:/admin/cours";
-        }
+    @Transactional(readOnly = true)
+    public String modifierForm(@PathVariable UUID id, Model model, RedirectAttributes ra) {
+        Optional<Cours> opt = coursRepository.findById(id);
+        if (opt.isEmpty()) { ra.addFlashAttribute("error", "Cours introuvable"); return "redirect:/admin/cours"; }
+        Cours c = opt.get();
+        if (c.getClasse() != null && c.getClasse().getEcole() != null) c.getClasse().getEcole().getNomEcole();
+        if (c.getUe() != null) c.getUe().getCode();
+        if (c.getEnseignant() != null) c.getEnseignant().getNom();
+
+        // UEs de la classe sélectionnée (pour pré-remplir le select)
+        List<UE> uesClasse = c.getClasse() != null
+                ? ueRepository.findByClassesIdClasse(c.getClasse().getIdClasse())
+                : List.of();
+
+        model.addAttribute("cours",       c);
+        model.addAttribute("classes",     classeRepository.findAll());
+        model.addAttribute("ecoles",      ecoleRepository.findAll());
+        model.addAttribute("uesClasse",   uesClasse);
+        model.addAttribute("enseignants", enseignantRepository.findAll());
+        model.addAttribute("types",       TypeCours.values());
+        model.addAttribute("mode",        "modification");
+        return "admin/cours-form";
     }
 
-    /**
-     * Mettre à jour un cours
-     */
     @PostMapping("/modifier/{id}")
-    public String modifierCours(
+    public String modifier(
             @PathVariable UUID id,
             @RequestParam String intitule,
             @RequestParam String typeCours,
+            @RequestParam UUID classeId,
             @RequestParam UUID ueId,
-            @RequestParam Integer duree,
-            RedirectAttributes redirectAttributes) {
-        
+            @RequestParam(required = false) UUID enseignantId,
+            @RequestParam Integer dureeTotal,
+            @RequestParam Integer dureeRestante,
+            @RequestParam(required = false) String description,
+            RedirectAttributes ra) {
         try {
             Cours cours = coursRepository.findById(id)
-                    .orElseThrow(() -> new RuntimeException("Cours non trouvé"));
-            
-            UE ue = ueRepository.findById(ueId)
-                    .orElseThrow(() -> new RuntimeException("UE non trouvée"));
-            
-            cours.setIntitule(intitule);
-            cours.setTypeCours(com.iusjc.weschedule.enums.TypeCours.valueOf(typeCours));
-            cours.setUe(ue);
-            cours.setDuree(duree);
-            
-            // Valider la durée
-            dureeService.validerDureeCours(cours);
-            
+                    .orElseThrow(() -> new RuntimeException("Cours introuvable"));
+            cours.setIntitule(intitule.trim());
+            cours.setTypeCours(TypeCours.valueOf(typeCours));
+            cours.setDureeTotal(dureeTotal);
+            cours.setDureeRestante(Math.min(dureeRestante, dureeTotal));
+            cours.setDescription(description != null && !description.isBlank() ? description.trim() : null);
+
+            classeRepository.findById(classeId).ifPresent(cours::setClasse);
+            ueRepository.findById(ueId).ifPresent(cours::setUe);
+            cours.setEnseignant(enseignantId != null
+                    ? enseignantRepository.findById(enseignantId).orElse(null) : null);
+
             coursRepository.save(cours);
-            
-            redirectAttributes.addFlashAttribute("success", 
-                "Cours modifié avec succès");
-            return "redirect:/admin/cours";
-            
+            ra.addFlashAttribute("success", "Cours modifié avec succès");
+            return "redirect:/admin/cours/details/" + id;
         } catch (Exception e) {
-            redirectAttributes.addFlashAttribute("error", 
-                "Erreur lors de la modification: " + e.getMessage());
+            log.error("Erreur modification cours", e);
+            ra.addFlashAttribute("error", "Erreur : " + e.getMessage());
             return "redirect:/admin/cours/modifier/" + id;
         }
     }
 
-    /**
-     * Supprimer un cours
-     */
+    // ── Suppression ────────────────────────────────────────────────────────
+
     @PostMapping("/supprimer/{id}")
-    public String supprimerCours(@PathVariable UUID id, RedirectAttributes redirectAttributes) {
+    public String supprimer(@PathVariable UUID id, RedirectAttributes ra) {
         try {
-            Cours cours = coursRepository.findById(id)
-                    .orElseThrow(() -> new RuntimeException("Cours non trouvé"));
-            
-            coursRepository.delete(cours);
-            
-            redirectAttributes.addFlashAttribute("success", 
-                "Cours supprimé avec succès");
-            
+            coursRepository.deleteById(id);
+            ra.addFlashAttribute("success", "Cours supprimé");
         } catch (Exception e) {
-            redirectAttributes.addFlashAttribute("error", 
-                "Erreur lors de la suppression: " + e.getMessage());
+            log.error("Erreur suppression cours", e);
+            ra.addFlashAttribute("error", "Impossible de supprimer : " + e.getMessage());
         }
-        
         return "redirect:/admin/cours";
     }
 
-    /**
-     * Réinitialiser les heures d'un cours
-     */
-    @PostMapping("/reinitialiser/{id}")
-    public String reinitialiserHeures(@PathVariable UUID id, RedirectAttributes redirectAttributes) {
+    // ── Export Excel ───────────────────────────────────────────────────────
+
+    @GetMapping("/export")
+    public ResponseEntity<byte[]> exportExcel() {
         try {
-            Cours cours = coursRepository.findById(id)
-                    .orElseThrow(() -> new RuntimeException("Cours non trouvé"));
-            
-            dureeService.reinitialiserHeures(cours);
-            
-            redirectAttributes.addFlashAttribute("success", 
-                "Heures réinitialisées avec succès");
-            
+            byte[] data = excelCoursService.exporterCours();
+            return ResponseEntity.ok()
+                    .header(HttpHeaders.CONTENT_DISPOSITION, "attachment; filename=cours.xlsx")
+                    .contentType(MediaType.parseMediaType("application/vnd.openxmlformats-officedocument.spreadsheetml.sheet"))
+                    .body(data);
         } catch (Exception e) {
-            redirectAttributes.addFlashAttribute("error", 
-                "Erreur lors de la réinitialisation: " + e.getMessage());
+            log.error("Erreur export cours", e);
+            return ResponseEntity.internalServerError().build();
         }
-        
-        return "redirect:/admin/cours";
     }
 
-    /**
-     * Détails d'un cours
-     */
-    @GetMapping("/details/{id}")
-    @Transactional(readOnly = true)
-    public String detailsCours(@PathVariable UUID id, Model model, RedirectAttributes redirectAttributes) {
+    // ── Import Excel ───────────────────────────────────────────────────────
+
+    @PostMapping("/import")
+    public String importExcel(@RequestParam("file") MultipartFile file, RedirectAttributes ra) {
         try {
-            Cours cours = coursRepository.findById(id)
-                    .orElseThrow(() -> new RuntimeException("Cours non trouvé"));
-            
-            model.addAttribute("cours", cours);
-            
-            if (cours.getUe() != null) {
-                model.addAttribute("heuresEffectuees", dureeService.calculerHeuresEffectuees(cours));
-                model.addAttribute("pourcentage", dureeService.calculerPourcentageAvancement(cours));
-                model.addAttribute("termine", dureeService.estTermine(cours));
-                model.addAttribute("resume", dureeService.obtenirResume(cours));
-                
-                // Initialiser les classes et écoles pour éviter LazyInitializationException
-                if (cours.getUe().getClasses() != null) {
-                    cours.getUe().getClasses().size(); // Force l'initialisation
-                    cours.getUe().getClasses().forEach(classe -> {
-                        if (classe.getEcole() != null) {
-                            classe.getEcole().getNomEcole(); // Force l'initialisation de l'école
-                        }
-                    });
-                }
-            }
-            
-            return "admin/cours-details";
-            
+            ExcelCoursService.ImportResult result = excelCoursService.importerCours(file);
+            if (result.getSucces() > 0)
+                ra.addFlashAttribute("success", result.getSucces() + " cours importé(s) avec succès");
+            if (result.hasErreurs())
+                ra.addFlashAttribute("importErreurs", result.getErreurs());
+            if (result.hasAvertissements())
+                ra.addFlashAttribute("importAvertissements", result.getAvertissements());
+            if (result.getSucces() == 0 && !result.hasErreurs())
+                ra.addFlashAttribute("error", "Aucun cours importé");
         } catch (Exception e) {
-            redirectAttributes.addFlashAttribute("error", 
-                "Erreur: " + e.getMessage());
-            return "redirect:/admin/cours";
+            log.error("Erreur import cours", e);
+            ra.addFlashAttribute("error", "Erreur import : " + e.getMessage());
         }
+        return "redirect:/admin/cours";
     }
 }

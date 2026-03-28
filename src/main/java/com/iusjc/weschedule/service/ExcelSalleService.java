@@ -1,5 +1,6 @@
 package com.iusjc.weschedule.service;
 
+import com.iusjc.weschedule.enums.StatutSalle;
 import com.iusjc.weschedule.enums.TypeSalle;
 import com.iusjc.weschedule.models.Salle;
 import com.iusjc.weschedule.repositories.SalleRepository;
@@ -22,7 +23,7 @@ public class ExcelSalleService {
     private SalleRepository salleRepository;
 
     private static final String[] HEADERS = {
-        "Nom de la salle", "Type", "Capacité", "Étage", "Bâtiment"
+        "Nom de la salle", "Type", "Capacité", "Étage", "Bâtiment", "Statut"
     };
     private static final String[] TYPES_VALIDES = {
         "SALLE_DE_COURS", "SALLE_DE_TD", "SALLE_INFORMATIQUE", "LABORATOIRE"
@@ -32,6 +33,9 @@ public class ExcelSalleService {
     };
     private static final String[] BATIMENTS_VALIDES = {
         "Nouveau bâtiment", "Ancien bâtiment"
+    };
+    private static final String[] STATUTS_VALIDES = {
+        "DISPONIBLE", "OCCUPE", "EN_MAINTENANCE"
     };
 
     // ─── EXPORT ──────────────────────────────────────────────────────────────
@@ -48,7 +52,7 @@ public class ExcelSalleService {
 
             // En-têtes
             Row headerRow = sheet.createRow(0);
-            int[] widths = {8000, 6000, 4000, 5000, 6000};
+            int[] widths = {8000, 6000, 4000, 5000, 6000, 5000};
             for (int i = 0; i < HEADERS.length; i++) {
                 Cell cell = headerRow.createCell(i);
                 cell.setCellValue(HEADERS[i]);
@@ -66,6 +70,7 @@ public class ExcelSalleService {
                 createCell(row, 2, s.getCapacite() != null ? String.valueOf(s.getCapacite()) : "", style);
                 createCell(row, 3, s.getEtage() != null ? s.getEtage() : "", style);
                 createCell(row, 4, s.getBatiment() != null ? s.getBatiment() : "", style);
+                createCell(row, 5, s.getStatut() != null ? s.getStatut().name() : "DISPONIBLE", style);
                 rowNum++;
             }
 
@@ -84,15 +89,18 @@ public class ExcelSalleService {
             createCell(exemple, 2, "40", dataStyle);
             createCell(exemple, 3, "1er étage", dataStyle);
             createCell(exemple, 4, "Nouveau bâtiment", dataStyle);
+            createCell(exemple, 5, "DISPONIBLE", dataStyle);
 
             // Onglet référence
             Sheet ref = wb.createSheet("Valeurs acceptées");
             addRefColumn(ref, wb, headerStyle, dataStyle, 0, "Types valides", TYPES_VALIDES);
             addRefColumn(ref, wb, headerStyle, dataStyle, 1, "Étages valides", ETAGES_VALIDES);
             addRefColumn(ref, wb, headerStyle, dataStyle, 2, "Bâtiments valides", BATIMENTS_VALIDES);
+            addRefColumn(ref, wb, headerStyle, dataStyle, 3, "Statuts valides", STATUTS_VALIDES);
             ref.setColumnWidth(0, 7000);
             ref.setColumnWidth(1, 5000);
             ref.setColumnWidth(2, 6000);
+            ref.setColumnWidth(3, 5000);
 
             ByteArrayOutputStream out = new ByteArrayOutputStream();
             wb.write(out);
@@ -125,6 +133,7 @@ public class ExcelSalleService {
                     String capStr   = getCellString(row, 2);
                     String etage    = getCellString(row, 3);
                     String batiment = getCellString(row, 4);
+                    String statutStr = getCellString(row, 5).toUpperCase().replace(" ", "_");
 
                     if (nom.isEmpty()) {
                         result.addErreur(i + 1, "Nom de la salle obligatoire");
@@ -164,6 +173,14 @@ public class ExcelSalleService {
                     salle.setCapacite(capacite);
                     salle.setEtage(etage.isEmpty() ? null : etage);
                     salle.setBatiment(batiment.isEmpty() ? null : batiment);
+                    // Statut
+                    if (!statutStr.isEmpty()) {
+                        try {
+                            salle.setStatut(StatutSalle.valueOf(statutStr));
+                        } catch (IllegalArgumentException e) {
+                            salle.setStatut(StatutSalle.DISPONIBLE);
+                        }
+                    }
                     salleRepository.save(salle);
                     result.incrementSucces();
 

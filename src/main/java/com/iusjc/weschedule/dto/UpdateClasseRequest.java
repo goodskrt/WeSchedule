@@ -24,16 +24,9 @@ public class UpdateClasseRequest {
     @Min(value = 0, message = "L'effectif ne peut pas être négatif")
     private Integer effectif;
 
-    private Integer semestre;
-
-    @Min(value = 1, message = "L'effectif maximum doit être supérieur à 0")
-    private Integer effectifMax;
-
-    private String responsable;
+    private String langue;
 
     private String description;
-
-    private String specialite;
 
     private List<UUID> ueIds;
 }

@@ -64,6 +64,9 @@ public class SecurityConfig {
                                 "/reset-password-success", "/api/forgot-password", "/api/reset-password-with-token", 
                                 "/api/auto-login", "/api/validate-new-password").permitAll()
 
+                        // Swagger/OpenAPI documentation
+                        .requestMatchers("/swagger-ui/**", "/v3/api-docs/**", "/swagger-ui.html").permitAll()
+
                         // Toutes les autres pages → authentication requise
                         .anyRequest().authenticated()
                 )

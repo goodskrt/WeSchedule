@@ -2,12 +2,19 @@ package com.iusjc.weschedule.controller;
 
 import com.iusjc.weschedule.models.*;
 import com.iusjc.weschedule.repositories.*;
+import com.iusjc.weschedule.service.AutoGenerationEmploiDuTempsService;
 import com.iusjc.weschedule.service.EmploiDuTempsService;
+import com.iusjc.weschedule.service.ExcelEmploiDuTempsService;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.http.HttpHeaders;
+import org.springframework.http.MediaType;
+import org.springframework.http.ResponseEntity;
+import org.springframework.lang.NonNull;
 import org.springframework.stereotype.Controller;
 import org.springframework.transaction.annotation.Transactional;
 import org.springframework.ui.Model;
 import org.springframework.web.bind.annotation.*;
+import org.springframework.web.multipart.MultipartFile;
 import org.springframework.web.servlet.mvc.support.RedirectAttributes;
 
 import java.time.DayOfWeek;
@@ -40,6 +47,12 @@ public class AdminEmploiDuTempsController {
 
     @Autowired
     private SeanceClasseRepository seanceRepository;
+    
+    @Autowired
+    private ExcelEmploiDuTempsService excelEmploiDuTempsService;
+    
+    @Autowired
+    private AutoGenerationEmploiDuTempsService autoGenerationService;
 
     /**
      * Page principale de gestion des emplois du temps
@@ -57,7 +70,7 @@ public class AdminEmploiDuTempsController {
     @GetMapping("/classe/{classeId}")
     @Transactional(readOnly = true)
     public String afficherEmploiDuTemps(
-            @PathVariable UUID classeId,
+            @PathVariable @NonNull UUID classeId,
             @RequestParam(required = false) Integer semaine,
             @RequestParam(required = false) Integer annee,
             Model model,
@@ -138,7 +151,7 @@ public class AdminEmploiDuTempsController {
     @GetMapping("/classe/{classeId}/manuel")
     @Transactional(readOnly = true)
     public String afficherModeManuel(
-            @PathVariable UUID classeId,
+            @PathVariable @NonNull UUID classeId,
             @RequestParam Integer semaine,
             @RequestParam Integer annee,
             Model model,
@@ -295,7 +308,7 @@ public class AdminEmploiDuTempsController {
      */
     @PostMapping("/seance/supprimer/{seanceId}")
     public String supprimerSeance(
-            @PathVariable UUID seanceId,
+            @PathVariable @NonNull UUID seanceId,
             RedirectAttributes redirectAttributes) {
         
         try {
@@ -322,7 +335,7 @@ public class AdminEmploiDuTempsController {
      */
     @PostMapping("/supprimer/{emploiDuTempsId}")
     public String supprimerEmploiDuTemps(
-            @PathVariable UUID emploiDuTempsId,
+            @PathVariable @NonNull UUID emploiDuTempsId,
             RedirectAttributes redirectAttributes) {
         
         try {
@@ -348,7 +361,7 @@ public class AdminEmploiDuTempsController {
      */
     @PostMapping("/dupliquer/{emploiDuTempsId}")
     public String dupliquerEmploiDuTemps(
-            @PathVariable UUID emploiDuTempsId,
+            @PathVariable @NonNull UUID emploiDuTempsId,
             @RequestParam Integer nouvelleSemaine,
             @RequestParam Integer nouvelleAnnee,
             RedirectAttributes redirectAttributes) {
@@ -369,6 +382,89 @@ public class AdminEmploiDuTempsController {
         } catch (Exception e) {
             redirectAttributes.addFlashAttribute("error", "Erreur: " + e.getMessage());
             return "redirect:/admin/emplois-du-temps";
+        }
+    }
+    
+    /**
+     * Exporter l'emploi du temps en Excel
+     */
+    @GetMapping("/{emploiDuTempsId}/export")
+    public ResponseEntity<byte[]> exporterEmploiDuTemps(@PathVariable @NonNull UUID emploiDuTempsId) {
+        try {
+            byte[] excelData = excelEmploiDuTempsService.exporterEmploiDuTemps(emploiDuTempsId);
+            
+            EmploiDuTempsClasse emploiDuTemps = emploiDuTempsRepository.findById(emploiDuTempsId)
+                    .orElseThrow(() -> new RuntimeException("Emploi du temps non trouvé"));
+            
+            String filename = "EmploiDuTemps_" + emploiDuTemps.getClasse().getNom().replaceAll(" ", "_") +
+                    "_S" + emploiDuTemps.getSemaine() + "_" + emploiDuTemps.getAnnee() + ".xlsx";
+            
+            HttpHeaders headers = new HttpHeaders();
+            headers.setContentType(MediaType.APPLICATION_OCTET_STREAM);
+            headers.setContentDispositionFormData("attachment", filename);
+            
+            return ResponseEntity.ok()
+                    .headers(headers)
+                    .body(excelData);
+            
+        } catch (Exception e) {
+            return ResponseEntity.badRequest().body(e.getMessage().getBytes());
+        }
+    }
+    
+    /**
+     * Importer un emploi du temps depuis Excel
+     */
+    @PostMapping("/import")
+    public ResponseEntity<String> importerEmploiDuTemps(
+            @RequestParam("file") MultipartFile file,
+            @RequestParam UUID classeId,
+            @RequestParam Integer semaine,
+            @RequestParam Integer annee) {
+        try {
+            // TODO: Implémenter l'import Excel
+            // Pour l'instant, retourner une erreur
+            return ResponseEntity.status(501).body("Import non implémenté");
+            
+        } catch (Exception e) {
+            return ResponseEntity.badRequest().body(e.getMessage());
+        }
+    }
+    
+    /**
+     * Auto-générer l'emploi du temps pour une classe
+     */
+    @PostMapping("/auto-generer")
+    @ResponseBody
+    public Map<String, Object> autoGenererEmploiDuTemps(
+            @RequestParam UUID classeId,
+            @RequestParam Integer semaine,
+            @RequestParam Integer annee) {
+        
+        Map<String, Object> response = new HashMap<>();
+        
+        try {
+            // Trouver ou créer l'emploi du temps
+            EmploiDuTempsClasse emploiDuTemps = emploiDuTempsService.getEmploiDuTempsParSemaine(classeId, semaine, annee);
+            
+            if (emploiDuTemps == null) {
+                // Créer un nouvel emploi du temps
+                WeekFields weekFields = WeekFields.of(DayOfWeek.MONDAY, 4);
+                LocalDate premierJanvier = LocalDate.of(annee, 1, 1);
+                LocalDate lundi = premierJanvier.with(weekFields.weekOfWeekBasedYear(), semaine).with(DayOfWeek.MONDAY);
+                
+                emploiDuTemps = emploiDuTempsService.creerEmploiDuTemps(classeId, lundi);
+            }
+            
+            // Lancer la génération automatique
+            Map<String, Object> resultat = autoGenerationService.genererEmploiDuTemps(emploiDuTemps.getId());
+            
+            return resultat;
+            
+        } catch (Exception e) {
+            response.put("success", false);
+            response.put("message", "Erreur: " + e.getMessage());
+            return response;
         }
     }
 }

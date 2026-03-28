@@ -3,97 +3,181 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Gestion des Emplois du Temps - WeSchedule</title>
+    <title>Emplois du Temps - WeSchedule</title>
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
     <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css" rel="stylesheet">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
     <link rel="stylesheet" href="/css/modern-layout.css">
-    <link rel="stylesheet" href="/css/modern-modals.css">
+    <style>
+        .classe-card {
+            background: var(--white); border-radius: var(--radius-xl); padding: 1.5rem;
+            border: 1px solid var(--gray-200); box-shadow: var(--shadow-sm);
+            transition: all 0.2s; cursor: pointer; text-decoration: none; color: inherit;
+            display: block;
+        }
+        .classe-card:hover { transform: translateY(-3px); box-shadow: var(--shadow-md); border-color: var(--primary-color); color: inherit; }
+        .classe-icon {
+            width: 52px; height: 52px; border-radius: var(--radius-lg);
+            display: flex; align-items: center; justify-content: center;
+            font-size: 1.4rem; margin-bottom: 1rem;
+        }
+        .badge-niveau { background: #ede9fe; color: #5b21b6; padding: 0.2rem 0.6rem; border-radius: 2rem; font-size: 0.72rem; font-weight: 600; }
+        .badge-langue { background: #e0f2fe; color: #0369a1; padding: 0.2rem 0.6rem; border-radius: 2rem; font-size: 0.72rem; font-weight: 600; }
+        .search-box {
+            background: var(--white); border-radius: 2rem; padding: 0.65rem 1.25rem;
+            box-shadow: var(--shadow-sm); border: 1px solid var(--gray-200);
+            display: flex; align-items: center;
+        }
+        .search-box input { border: none; outline: none; width: 100%; background: transparent; font-size: 0.9rem; }
+        .filter-btn { border-radius: 2rem; padding: 0.45rem 1rem; font-size: 0.85rem; font-weight: 500; }
+        .filter-btn.active { background: var(--primary-color); color: white; border-color: var(--primary-color); }
+        .empty-state { text-align: center; padding: 4rem 2rem; background: var(--white); border-radius: var(--radius-xl); }
+    </style>
 </head>
 <body>
     <div th:replace="~{fragments/sidebar :: admin-sidebar('emplois')}"></div>
     <div class="ws-wrapper">
         <div th:replace="~{fragments/header :: admin-header}"></div>
         <main class="ws-main-content">
-                    <!-- Header -->
-                    <div class="d-flex justify-content-between align-items-center mb-4">
-                        <div>
-                            <h2 class="page-title">Gestion des Emplois du Temps</h2>
-                            <p class="page-subtitle">Créez et gérez les emplois du temps par classe</p>
-                        </div>
-                    </div>
 
-                    <!-- Info Note -->
-                    <div class="info-note mb-4">
-                        <i class="fas fa-info-circle"></i>
-                        <div class="info-note-content">
-                            <p class="info-note-title">Comment ça marche ?</p>
-                            <p class="info-note-text mb-0">
-                                Sélectionnez une classe pour créer ou modifier son emploi du temps. 
-                                Vous pouvez ajouter des séances manuellement ou utiliser la génération automatique.
-                            </p>
-                        </div>
-                    </div>
+            <!-- Header -->
+            <div class="d-flex justify-content-between align-items-center mb-4">
+                <div>
+                    <h2 class="page-title">Emplois du Temps</h2>
+                    <p class="page-subtitle">Gérez les plannings hebdomadaires par classe</p>
+                </div>
+            </div>
 
-                    <!-- Classes Grid -->
-                    <div class="row">
-                        <div th:each="classe : ${classes}" class="col-md-6 col-lg-4 mb-4">
-                            <div class="section-card">
-                                <div class="d-flex align-items-center mb-3">
-                                    <div class="section-icon me-3">
-                                        <i class="fas fa-users"></i>
-                                    </div>
-                                    <div>
-                                        <h5 class="mb-0" th:text="${classe.nom}">Classe</h5>
-                                        <small class="text-muted" th:if="${classe.niveau != null}" th:text="'Niveau: ' + ${classe.niveau}">Niveau</small>
-                                    </div>
-                                </div>
+            <!-- Filtres -->
+            <div class="d-flex align-items-center gap-2 mb-4" style="flex-wrap:wrap;">
+                <div class="search-box" style="min-width:220px; flex:1;">
+                    <i class="fas fa-search text-muted me-2"></i>
+                    <input type="text" id="searchInput" placeholder="Rechercher une classe…" oninput="filterClasses()">
+                </div>
+                <div class="d-flex gap-1" id="ecoleFilters">
+                    <button class="btn btn-outline-secondary filter-btn active" onclick="filterByEcole(null, this)">Toutes</button>
+                </div>
+                <span class="text-muted small" id="countInfo"></span>
+            </div>
 
-                                <div class="mb-3" th:if="${classe.ecole != null}">
-                                    <small class="text-muted">
-                                        <i class="fas fa-school me-1"></i>
-                                        <span th:text="${classe.ecole.nomEcole}">École</span>
-                                    </small>
-                                </div>
+            <!-- Grille classes -->
+            <div class="row g-3" id="classesGrid">
+                <div class="col-12 text-center py-5">
+                    <div class="spinner-border text-primary" role="status"></div>
+                    <p class="mt-3 text-muted">Chargement…</p>
+                </div>
+            </div>
 
-                                <div class="mb-3" th:if="${classe.effectif != null}">
-                                    <small class="text-muted">
-                                        <i class="fas fa-user-graduate me-1"></i>
-                                        <span th:text="${classe.effectif} + ' étudiants'">Effectif</span>
-                                    </small>
-                                </div>
-
-                                <a th:href="@{/admin/emplois-du-temps/classe/{id}(id=${classe.idClasse})}" 
-                                   class="btn btn-primary w-100">
-                                    <i class="fas fa-calendar-alt me-2"></i>
-                                    Gérer l'emploi du temps
-                                </a>
-                            </div>
-                        </div>
-
-                        <div th:if="${classes.isEmpty()}" class="col-12">
-                            <div class="empty-state">
-                                <i class="fas fa-users"></i>
-                                <h4>Aucune classe trouvée</h4>
-                                <p>Créez d'abord des classes pour gérer leurs emplois du temps</p>
-                            </div>
-                        </div>
-                    </div>
-                </main>
+        </main>
     </div>
 
     <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js"></script>
     <script src="/js/modern-layout.js"></script>
-    <script src="/js/modern-modals.js"></script>
-    <script th:inline="javascript">
-        // Afficher les messages avec modals modernes
-        /*[# th:if="${success}"]*/
-        ModernModal.success('Succès', /*[[${success}]]*/ '');
-        /*[/]*/
-        
-        /*[# th:if="${error}"]*/
-        ModernModal.error('Erreur', /*[[${error}]]*/ '');
-        /*[/]*/
+    <script>
+        let allClasses = [];
+        let activeEcole = null;
+
+        const COLORS = [
+            { bg: '#dbeafe', icon: '#1d4ed8' },
+            { bg: '#d1fae5', icon: '#065f46' },
+            { bg: '#fce7f3', icon: '#9d174d' },
+            { bg: '#fef3c7', icon: '#92400e' },
+            { bg: '#ede9fe', icon: '#5b21b6' },
+            { bg: '#fee2e2', icon: '#991b1b' },
+        ];
+
+        async function loadClasses() {
+            try {
+                const res = await fetch('/api/admin/classes');
+                if (!res.ok) throw new Error('HTTP ' + res.status);
+                allClasses = await res.json();
+                buildEcoleFilters();
+                renderClasses(allClasses);
+            } catch (err) {
+                document.getElementById('classesGrid').innerHTML =
+                    `<div class="col-12"><div class="alert alert-danger"><i class="fas fa-exclamation-circle me-2"></i>Erreur : ${err.message}</div></div>`;
+            }
+        }
+
+        function buildEcoleFilters() {
+            const ecoles = [...new Set(allClasses.map(c => c.ecole).filter(Boolean))];
+            const container = document.getElementById('ecoleFilters');
+            ecoles.forEach(ecole => {
+                const btn = document.createElement('button');
+                btn.className = 'btn btn-outline-secondary filter-btn';
+                btn.textContent = ecole;
+                btn.onclick = () => filterByEcole(ecole, btn);
+                container.appendChild(btn);
+            });
+        }
+
+        function filterByEcole(ecole, btn) {
+            activeEcole = ecole;
+            document.querySelectorAll('#ecoleFilters .filter-btn').forEach(b => b.classList.remove('active'));
+            btn.classList.add('active');
+            filterClasses();
+        }
+
+        function filterClasses() {
+            const q = document.getElementById('searchInput').value.toLowerCase();
+            let filtered = allClasses.filter(c => {
+                const matchSearch = !q ||
+                    (c.nom||'').toLowerCase().includes(q) ||
+                    (c.filiere||'').toLowerCase().includes(q) ||
+                    (c.niveau||'').toLowerCase().includes(q);
+                const matchEcole = !activeEcole || c.ecole === activeEcole;
+                return matchSearch && matchEcole;
+            });
+            renderClasses(filtered);
+        }
+
+        function renderClasses(list) {
+            const grid = document.getElementById('classesGrid');
+            document.getElementById('countInfo').textContent = list.length + ' classe(s)';
+
+            if (!list.length) {
+                grid.innerHTML = `<div class="col-12"><div class="empty-state">
+                    <i class="fas fa-calendar-times fa-3x text-muted mb-3"></i>
+                    <h5>Aucune classe trouvée</h5>
+                    <p class="text-muted">Modifiez vos filtres ou créez des classes.</p>
+                </div></div>`;
+                return;
+            }
+
+            grid.innerHTML = list.map((c, i) => {
+                const color = COLORS[i % COLORS.length];
+                const niveau = c.niveau || '';
+                const langue = c.langue || '';
+                const effectif = c.effectif || 0;
+                const filiere = c.filiere || '';
+                const ecole = c.ecole || '';
+
+                return `
+                <div class="col-md-6 col-lg-4">
+                    <a href="/admin/emplois-du-temps/classe/${c.idClasse}" class="classe-card">
+                        <div class="d-flex align-items-start gap-3">
+                            <div class="classe-icon" style="background:${color.bg}; color:${color.icon};">
+                                <i class="fas fa-calendar-alt"></i>
+                            </div>
+                            <div class="flex-grow-1 min-w-0">
+                                <div class="fw-semibold mb-1" style="color:var(--gray-900); font-size:1rem;">${c.nom}</div>
+                                <div class="text-muted small mb-2">${ecole}${filiere ? ' · ' + filiere : ''}</div>
+                                <div class="d-flex gap-1 flex-wrap">
+                                    ${niveau ? `<span class="badge-niveau">${niveau}</span>` : ''}
+                                    ${langue ? `<span class="badge-langue">${langue}</span>` : ''}
+                                </div>
+                            </div>
+                        </div>
+                        <div class="d-flex align-items-center justify-content-between mt-3 pt-3" style="border-top:1px solid var(--gray-100);">
+                            <span class="text-muted small"><i class="fas fa-users me-1"></i>${effectif} étudiants</span>
+                            <span class="text-primary small fw-semibold"><i class="fas fa-calendar-alt me-1"></i>Voir le planning</span>
+                        </div>
+                    </a>
+                </div>`;
+            }).join('');
+        }
+
+        document.addEventListener('DOMContentLoaded', loadClasses);
     </script>
 </body>
 </html>
