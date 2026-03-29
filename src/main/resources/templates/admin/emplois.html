@@ -7,62 +7,439 @@
     <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css" rel="stylesheet">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
     <link rel="stylesheet" href="/css/dashboard-professional.css">
+    <style>
+        .schedule-grid { width: 100%; border-collapse: collapse; font-size: 0.82rem; }
+        .schedule-grid th { background: #c2185b; color: #fff; padding: 8px 6px; text-align: center; white-space: nowrap; }
+        .schedule-grid td { border: 1px solid #e0e0e0; padding: 4px 6px; vertical-align: top; min-width: 120px; }
+        .schedule-grid .time-col { background: #f8f9fa; font-weight: 600; text-align: center; color: #555; white-space: nowrap; }
+        .cours-card { background: linear-gradient(135deg,#e91e8c22,#c2185b11); border-left: 3px solid #c2185b;
+                      border-radius: 4px; padding: 4px 6px; margin-bottom: 3px; }
+        .cours-card .ue-name { font-weight: 600; color: #c2185b; }
+        .cours-card .meta { color: #666; font-size: 0.78rem; }
+        .badge-classe { background: #e3f2fd; color: #1565c0; font-size: 0.72rem; padding: 1px 5px; border-radius: 3px; }
+        .stat-box { border-radius: 10px; padding: 16px 20px; text-align: center; }
+        .stat-box .stat-number { font-size: 2rem; font-weight: 700; }
+        .stat-box.green  { background: #e8f5e9; color: #2e7d32; }
+        .stat-box.orange { background: #fff3e0; color: #e65100; }
+        .stat-box.blue   { background: #e3f2fd; color: #1565c0; }
+        .loading-overlay { display: none; position: fixed; inset: 0; background: rgba(0,0,0,.4);
+                           z-index: 9999; align-items: center; justify-content: center; }
+        .loading-overlay.active { display: flex; }
+        .spinner-box { background: #fff; border-radius: 12px; padding: 30px 40px; text-align: center; }
+    </style>
 </head>
 <body>
-    <nav class="navbar navbar-expand-lg navbar-custom">
-        <div class="container-fluid">
-            <a class="navbar-brand" href="/dashboard/admin"><img src="/images/logo.jpeg" alt="Logo">WeSchedule</a>
-            <div class="collapse navbar-collapse">
-                <ul class="navbar-nav ms-auto">
-                    <li class="nav-item dropdown">
-                        <a class="nav-link p-0" href="#" data-bs-toggle="dropdown">
-                            <div class="user-info-nav">
-                                <div class="user-avatar-small"><i class="fas fa-user-shield"></i></div>
-                                <div class="user-details"><div class="user-name-small" th:text="${nomComplet}">Admin</div><div class="user-role-small">Administrateur</div></div>
-                            </div>
-                        </a>
-                        <ul class="dropdown-menu dropdown-menu-end">
-                            <li><a class="dropdown-item" href="/profile"><i class="fas fa-user"></i> Mon profil</a></li>
-                            <li><hr class="dropdown-divider"></li>
-                            <li><form th:action="@{/logout}" method="post" style="margin: 0;"><button type="submit" class="dropdown-item"><i class="fas fa-sign-out-alt"></i> Deconnexion</button></form></li>
-                        </ul>
-                    </li>
-                </ul>
-            </div>
-        </div>
-    </nav>
 
+<!-- Loading overlay -->
+<div class="loading-overlay" id="loadingOverlay">
+    <div class="spinner-box">
+        <div class="spinner-border text-danger mb-3" style="width:3rem;height:3rem;" role="status"></div>
+        <p class="mb-0 fw-semibold">Génération en cours...</p>
+        <small class="text-muted">Cela peut prendre quelques secondes</small>
+    </div>
+</div>
+
+<nav class="navbar navbar-expand-lg navbar-custom">
     <div class="container-fluid">
-        <div class="row">
-            <div class="col-lg-2 col-md-3 p-0">
-                <div class="sidebar">
-                    <div class="sidebar-menu">
-                        <div class="menu-section-title">Tableau de bord</div>
-                        <a href="/dashboard/admin" class="nav-link"><i class="fas fa-tachometer-alt"></i><span>Vue d'ensemble</span></a>
-                        <div class="menu-section-title">Gestion</div>
-                        <a href="/dashboard/admin/enseignants" class="nav-link"><i class="fas fa-chalkboard-teacher"></i><span>Enseignants</span></a>
-                        <a href="/dashboard/admin/salles" class="nav-link"><i class="fas fa-door-open"></i><span>Salles</span></a>
-                        <a href="/dashboard/admin/cours" class="nav-link"><i class="fas fa-book"></i><span>Cours</span></a>
-                        <a href="/dashboard/admin/emplois" class="nav-link active"><i class="fas fa-calendar-alt"></i><span>Emplois du temps</span></a>
-                        <div class="menu-section-title">Systeme</div>
-                        <a href="/dashboard/admin/rapports" class="nav-link"><i class="fas fa-chart-bar"></i><span>Rapports</span></a>
-                        <a href="/dashboard/admin/parametres" class="nav-link"><i class="fas fa-cog"></i><span>Parametres</span></a>
-                    </div>
+        <a class="navbar-brand" href="/dashboard/admin"><img src="/images/logo.jpeg" alt="Logo">WeSchedule</a>
+        <div class="collapse navbar-collapse">
+            <ul class="navbar-nav ms-auto">
+                <li class="nav-item dropdown">
+                    <a class="nav-link p-0" href="#" data-bs-toggle="dropdown">
+                        <div class="user-info-nav">
+                            <div class="user-avatar-small"><i class="fas fa-user-shield"></i></div>
+                            <div class="user-details">
+                                <div class="user-name-small" th:text="${nomComplet}">Admin</div>
+                                <div class="user-role-small">Administrateur</div>
+                            </div>
+                        </div>
+                    </a>
+                    <ul class="dropdown-menu dropdown-menu-end">
+                        <li><hr class="dropdown-divider"></li>
+                        <li><form th:action="@{/logout}" method="post" style="margin:0">
+                            <button type="submit" class="dropdown-item"><i class="fas fa-sign-out-alt"></i> Déconnexion</button>
+                        </form></li>
+                    </ul>
+                </li>
+            </ul>
+        </div>
+    </div>
+</nav>
+
+<div class="container-fluid">
+    <div class="row">
+        <!-- Sidebar -->
+        <div class="col-lg-2 col-md-3 p-0">
+            <div class="sidebar">
+                <div class="sidebar-menu">
+                    <div class="menu-section-title">Tableau de bord</div>
+                    <a href="/dashboard/admin" class="nav-link"><i class="fas fa-tachometer-alt"></i><span>Vue d'ensemble</span></a>
+                    <div class="menu-section-title">Gestion</div>
+                    <a href="/dashboard/admin/enseignants" class="nav-link"><i class="fas fa-chalkboard-teacher"></i><span>Enseignants</span></a>
+                    <a href="/dashboard/admin/salles" class="nav-link"><i class="fas fa-door-open"></i><span>Salles</span></a>
+                    <a href="/dashboard/admin/cours" class="nav-link"><i class="fas fa-book"></i><span>Cours</span></a>
+                    <a href="/dashboard/admin/emplois" class="nav-link active"><i class="fas fa-calendar-alt"></i><span>Emplois du temps</span></a>
+                    <div class="menu-section-title">Système</div>
+                    <a href="/dashboard/admin/rapports" class="nav-link"><i class="fas fa-chart-bar"></i><span>Rapports</span></a>
+                    <a href="/dashboard/admin/parametres" class="nav-link"><i class="fas fa-cog"></i><span>Paramètres</span></a>
                 </div>
             </div>
+        </div>
 
-            <div class="col-lg-10 col-md-9">
-                <div class="main-content">
-                    <h2 class="page-title">Emplois du temps</h2>
-                    <p class="page-subtitle">Planifier et organiser les emplois du temps</p>
-                    <div class="card-custom p-5 text-center mt-4">
-                        <div class="empty-state-icon"><i class="fas fa-calendar-alt"></i></div>
-                        <p class="text-muted">Fonctionnalite en cours de developpement</p>
+        <!-- Main content -->
+        <div class="col-lg-10 col-md-9">
+            <div class="main-content">
+                <div class="d-flex align-items-center justify-content-between mb-1">
+                    <div>
+                        <h2 class="page-title mb-0">Emplois du temps</h2>
+                        <p class="page-subtitle">Génération automatique et visualisation</p>
+                    </div>
+                    <button class="btn btn-danger" data-bs-toggle="modal" data-bs-target="#modalGenerer">
+                        <i class="fas fa-magic me-2"></i>Générer automatiquement
+                    </button>
+                </div>
+
+                <!-- Alertes -->
+                <div id="alertZone"></div>
+
+                <!-- Liste des emplois générés -->
+                <div class="card-custom p-4 mb-4">
+                    <h5 class="fw-semibold mb-3"><i class="fas fa-list me-2 text-danger"></i>Emplois du temps générés</h5>
+                    <div id="listEmplois">
+                        <div class="text-center text-muted py-4">
+                            <i class="fas fa-calendar-times fa-2x mb-2 d-block"></i>
+                            Aucun emploi du temps généré pour le moment.
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Visualisation de l'emploi sélectionné -->
+                <div id="sectionVisualisation" style="display:none">
+                    <div class="card-custom p-4">
+                        <div class="d-flex align-items-center justify-content-between mb-3">
+                            <h5 class="fw-semibold mb-0" id="titrePeriode">Emploi du temps</h5>
+                            <div class="d-flex gap-2 align-items-center">
+                                <label class="text-muted me-1 small">Filtrer par classe :</label>
+                                <select class="form-select form-select-sm" id="filtreClasse" style="width:180px" onchange="filtrerClasse()">
+                                    <option value="">Toutes les classes</option>
+                                </select>
+                            </div>
+                        </div>
+
+                        <!-- Statistiques -->
+                        <div class="row g-3 mb-4" id="statsZone" style="display:none">
+                            <div class="col-md-4">
+                                <div class="stat-box green">
+                                    <div class="stat-number" id="statPlanifie">0</div>
+                                    <div class="small">Séances planifiées</div>
+                                </div>
+                            </div>
+                            <div class="col-md-4">
+                                <div class="stat-box blue">
+                                    <div class="stat-number" id="statClasses">0</div>
+                                    <div class="small">Classes concernées</div>
+                                </div>
+                            </div>
+                            <div class="col-md-4">
+                                <div class="stat-box orange">
+                                    <div class="stat-number" id="statUEs">0</div>
+                                    <div class="small">UEs planifiées</div>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- Grille semaine -->
+                        <div class="table-responsive" id="tableContainer">
+                            <p class="text-muted text-center">Sélectionnez un emploi du temps pour l'afficher.</p>
+                        </div>
                     </div>
                 </div>
             </div>
         </div>
     </div>
-    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js"></script>
+</div>
+
+<!-- Modal génération -->
+<div class="modal fade" id="modalGenerer" tabindex="-1">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <div class="modal-header bg-danger text-white">
+                <h5 class="modal-title"><i class="fas fa-magic me-2"></i>Générer un emploi du temps</h5>
+                <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
+            </div>
+            <div class="modal-body">
+                <p class="text-muted small mb-3">
+                    L'algorithme va planifier automatiquement les séances de chaque UE en respectant
+                    les disponibilités des enseignants, les contraintes de salle et d'effectif.
+                </p>
+                <div class="mb-3">
+                    <label class="form-label fw-semibold">Date de début <span class="text-danger">*</span></label>
+                    <input type="date" class="form-control" id="inputDebut">
+                </div>
+                <div class="mb-3">
+                    <label class="form-label fw-semibold">Date de fin <span class="text-danger">*</span></label>
+                    <input type="date" class="form-control" id="inputFin">
+                </div>
+                <div class="alert alert-info small mb-0">
+                    <i class="fas fa-info-circle me-1"></i>
+                    Les créneaux générés sont : 8h-10h, 10h-12h, 14h-16h, 16h-18h (jours ouvrés uniquement).
+                </div>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Annuler</button>
+                <button type="button" class="btn btn-danger" onclick="lancerGeneration()">
+                    <i class="fas fa-play me-1"></i>Lancer la génération
+                </button>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js"></script>
+<script>
+    const JOURS = ['Lundi','Mardi','Mercredi','Jeudi','Vendredi'];
+    const CRENEAUX = ['08:00 - 10:00','10:00 - 12:00','14:00 - 16:00','16:00 - 18:00'];
+    const HEURE_DEBUTS = ['08:00','10:00','14:00','16:00'];
+
+    let allCreneaux = [];
+    let currentEdtId = null;
+
+    // Initialisation
+    document.addEventListener('DOMContentLoaded', () => {
+        chargerListeEmplois();
+        // Pré-remplir dates (semaine courante ou prochaine si dimanche)
+        const today = new Date();
+        const monday = new Date(today);
+        const dayOfWeek = today.getDay(); // 0=dim, 1=lun, ..., 6=sam
+        const daysToMonday = dayOfWeek === 0 ? 1 : dayOfWeek === 6 ? 2 : -(dayOfWeek - 1);
+        monday.setDate(today.getDate() + daysToMonday);
+        const friday = new Date(monday);
+        friday.setDate(monday.getDate() + 4);
+        document.getElementById('inputDebut').value = monday.toISOString().substring(0,10);
+        document.getElementById('inputFin').value   = friday.toISOString().substring(0,10);
+    });
+
+    async function chargerListeEmplois() {
+        try {
+            const res = await fetch('/api/admin/emplois');
+            const emplois = await res.json();
+            const container = document.getElementById('listEmplois');
+
+            if (!emplois || emplois.length === 0) {
+                container.innerHTML = `<div class="text-center text-muted py-4">
+                    <i class="fas fa-calendar-times fa-2x mb-2 d-block"></i>
+                    Aucun emploi du temps généré pour le moment.</div>`;
+                return;
+            }
+
+            let html = '<div class="table-responsive"><table class="table table-hover align-middle">';
+            html += `<thead class="table-light"><tr>
+                <th>Période</th><th>Début</th><th>Fin</th><th class="text-end">Actions</th>
+            </tr></thead><tbody>`;
+
+            emplois.forEach(e => {
+                html += `<tr>
+                    <td><i class="fas fa-calendar me-2 text-danger"></i>
+                        ${formatDate(e.periodeDebut)} → ${formatDate(e.periodeFin)}</td>
+                    <td>${formatDate(e.periodeDebut)}</td>
+                    <td>${formatDate(e.periodeFin)}</td>
+                    <td class="text-end">
+                        <button class="btn btn-sm btn-outline-primary me-1" onclick="voirEmploi('${e.id}', '${e.periodeDebut}', '${e.periodeFin}')">
+                            <i class="fas fa-eye me-1"></i>Voir
+                        </button>
+                        <button class="btn btn-sm btn-outline-danger" onclick="supprimerEmploi('${e.id}')">
+                            <i class="fas fa-trash"></i>
+                        </button>
+                    </td>
+                </tr>`;
+            });
+            html += '</tbody></table></div>';
+            container.innerHTML = html;
+        } catch (err) {
+            console.error('Erreur chargement liste', err);
+        }
+    }
+
+    async function lancerGeneration() {
+        const debut = document.getElementById('inputDebut').value;
+        const fin   = document.getElementById('inputFin').value;
+
+        if (!debut || !fin) {
+            showAlert('Veuillez renseigner les deux dates.', 'warning');
+            return;
+        }
+        if (fin < debut) {
+            showAlert('La date de fin doit être après la date de début.', 'warning');
+            return;
+        }
+
+        bootstrap.Modal.getInstance(document.getElementById('modalGenerer')).hide();
+        document.getElementById('loadingOverlay').classList.add('active');
+
+        try {
+            const res = await fetch('/api/admin/emplois/generer', {
+                method: 'POST',
+                headers: {'Content-Type':'application/json'},
+                body: JSON.stringify({periodeDebut: debut, periodeFin: fin})
+            });
+            const data = await res.json();
+            document.getElementById('loadingOverlay').classList.remove('active');
+
+            if (data.success) {
+                let msg = data.message;
+                if (data.avertissements && data.avertissements.length > 0) {
+                    msg += '<br><small class="text-muted">' +
+                        data.avertissements.map(a => '⚠ ' + a).join('<br>') + '</small>';
+                }
+                showAlert(msg, 'success');
+                await chargerListeEmplois();
+                await voirEmploi(data.emploiId, debut, fin);
+            } else {
+                showAlert(data.message, 'danger');
+            }
+        } catch (err) {
+            document.getElementById('loadingOverlay').classList.remove('active');
+            showAlert('Erreur lors de la génération : ' + err.message, 'danger');
+        }
+    }
+
+    async function voirEmploi(edtId, debut, fin) {
+        currentEdtId = edtId;
+        try {
+            const res = await fetch(`/api/admin/emplois/${edtId}/creneaux`);
+            allCreneaux = await res.json();
+
+            document.getElementById('titrePeriode').textContent =
+                `Emploi du temps du ${formatDate(debut)} au ${formatDate(fin)}`;
+            document.getElementById('sectionVisualisation').style.display = 'block';
+            document.getElementById('sectionVisualisation').scrollIntoView({behavior:'smooth'});
+
+            // Peupler le filtre classe
+            const classes = [...new Set(allCreneaux.map(c => c.classe).filter(Boolean))].sort();
+            const filtreClasse = document.getElementById('filtreClasse');
+            filtreClasse.innerHTML = '<option value="">Toutes les classes</option>';
+            classes.forEach(cl => {
+                filtreClasse.innerHTML += `<option value="${cl}">${cl}</option>`;
+            });
+
+            afficherStats(allCreneaux);
+            afficherGrille(allCreneaux, debut, fin);
+        } catch (err) {
+            showAlert('Impossible de charger les créneaux.', 'danger');
+        }
+    }
+
+    function filtrerClasse() {
+        const classe = document.getElementById('filtreClasse').value;
+        const filtered = classe ? allCreneaux.filter(c => c.classe === classe) : allCreneaux;
+        const edt = document.getElementById('listEmplois').querySelector('table');
+        // On relit les dates depuis le titre
+        const titre = document.getElementById('titrePeriode').textContent;
+        afficherGrille(filtered, null, null, titre);
+    }
+
+    function afficherStats(creneaux) {
+        const statsZone = document.getElementById('statsZone');
+        statsZone.style.display = 'flex';
+        document.getElementById('statPlanifie').textContent = creneaux.length;
+        document.getElementById('statClasses').textContent = new Set(creneaux.map(c => c.classe)).size;
+        document.getElementById('statUEs').textContent = new Set(creneaux.map(c => c.ue)).size;
+    }
+
+    function afficherGrille(creneaux, debut, fin) {
+        if (creneaux.length === 0) {
+            document.getElementById('tableContainer').innerHTML =
+                '<p class="text-muted text-center py-4">Aucune séance planifiée.</p>';
+            return;
+        }
+
+        // Grouper par date
+        const parDate = {};
+        creneaux.forEach(c => {
+            if (!parDate[c.date]) parDate[c.date] = {};
+            const key = c.heureDebut.substring(0,5);
+            if (!parDate[c.date][key]) parDate[c.date][key] = [];
+            parDate[c.date][key].push(c);
+        });
+
+        // Obtenir les dates triées
+        const dates = Object.keys(parDate).sort();
+
+        let html = '<div class="table-responsive"><table class="schedule-grid"><thead><tr>';
+        html += '<th style="width:110px">Créneau</th>';
+        dates.forEach(d => {
+            const dateObj = new Date(d + 'T00:00:00');
+            const jourNom = dateObj.toLocaleDateString('fr-FR', {weekday:'short', day:'numeric', month:'short'});
+            html += `<th>${jourNom}</th>`;
+        });
+        html += '</tr></thead><tbody>';
+
+        HEURE_DEBUTS.forEach((hd, idx) => {
+            html += '<tr>';
+            html += `<td class="time-col"><i class="fas fa-clock me-1"></i>${CRENEAUX[idx]}</td>`;
+            dates.forEach(d => {
+                const cells = (parDate[d] && parDate[d][hd]) || [];
+                if (cells.length === 0) {
+                    html += '<td></td>';
+                } else {
+                    html += '<td>';
+                    cells.forEach(c => {
+                        html += `<div class="cours-card">
+                            <div class="ue-name">${escHtml(c.ue)}</div>
+                            <div class="meta"><i class="fas fa-chalkboard-teacher me-1"></i>${escHtml(c.enseignant)}</div>
+                            <div class="meta"><i class="fas fa-door-open me-1"></i>${escHtml(c.salle)}</div>
+                            <span class="badge-classe">${escHtml(c.classe)}</span>
+                        </div>`;
+                    });
+                    html += '</td>';
+                }
+            });
+            html += '</tr>';
+        });
+
+        html += '</tbody></table></div>';
+        document.getElementById('tableContainer').innerHTML = html;
+    }
+
+    async function supprimerEmploi(id) {
+        if (!confirm('Supprimer cet emploi du temps et tous ses créneaux ?')) return;
+        try {
+            const res = await fetch(`/api/admin/emplois/${id}`, {method:'DELETE'});
+            const data = await res.json();
+            if (data.success) {
+                showAlert(data.message, 'success');
+                if (currentEdtId === id) {
+                    document.getElementById('sectionVisualisation').style.display = 'none';
+                    currentEdtId = null;
+                }
+                chargerListeEmplois();
+            } else {
+                showAlert(data.message, 'danger');
+            }
+        } catch (err) {
+            showAlert('Erreur lors de la suppression.', 'danger');
+        }
+    }
+
+    function showAlert(msg, type) {
+        const zone = document.getElementById('alertZone');
+        zone.innerHTML = `<div class="alert alert-${type} alert-dismissible fade show" role="alert">
+            ${msg}
+            <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+        </div>`;
+        setTimeout(() => { zone.innerHTML = ''; }, 8000);
+    }
+
+    function formatDate(str) {
+        if (!str) return '';
+        const d = new Date(str + 'T00:00:00');
+        return d.toLocaleDateString('fr-FR', {day:'2-digit', month:'2-digit', year:'numeric'});
+    }
+
+    function escHtml(str) {
+        if (!str) return '';
+        return str.replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;');
+    }
+</script>
 </body>
 </html>

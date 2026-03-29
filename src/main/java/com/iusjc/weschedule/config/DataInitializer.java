@@ -2,6 +2,7 @@ package com.iusjc.weschedule.config;
 
 import com.iusjc.weschedule.enums.Role;
 import com.iusjc.weschedule.models.*;
+import com.iusjc.weschedule.models.Salle;
 import com.iusjc.weschedule.repositories.*;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -37,9 +38,19 @@ public class DataInitializer {
             EtudiantRepository etudiantRepo,
             DisponibiliteEnseignantRepository disponibiliteRepo,
             CreneauDisponibiliteRepository creneauDispoRepo,
-            PlageHoraireRepository plageHoraireRepo) {
+            PlageHoraireRepository plageHoraireRepo,
+            SalleRepository salleRepo) {
         return args -> {
             log.info("Initialisation complete de la base de donnees...");
+
+            // Ajouter des salles de test si aucune n'existe
+            if (salleRepo.count() == 0) {
+                Salle s1 = new Salle(); s1.setNomSalle("Amphi A"); s1.setTypeSalle(com.iusjc.weschedule.enums.TypeSalle.AMPHITHEATRE); s1.setCapacite(100); salleRepo.save(s1);
+                Salle s2 = new Salle(); s2.setNomSalle("Salle 101"); s2.setTypeSalle(com.iusjc.weschedule.enums.TypeSalle.SALLE_DE_COURS); s2.setCapacite(50); salleRepo.save(s2);
+                Salle s3 = new Salle(); s3.setNomSalle("Salle 102"); s3.setTypeSalle(com.iusjc.weschedule.enums.TypeSalle.SALLE_DE_COURS); s3.setCapacite(40); salleRepo.save(s3);
+                Salle s4 = new Salle(); s4.setNomSalle("Labo Info"); s4.setTypeSalle(com.iusjc.weschedule.enums.TypeSalle.SALLE_INFORMATIQUE); s4.setCapacite(30); salleRepo.save(s4);
+                log.info("4 salles de test creees");
+            }
 
             // Vérifier si les données existent déjà
             if (adminRepo.count() > 0) {
@@ -49,48 +60,50 @@ public class DataInitializer {
                 Optional<Utilisateur> utilisateurOpt = utilisateurRepo.findByEmail("goodskrt2.0@gmail.com");
                 if (utilisateurOpt.isPresent() && utilisateurOpt.get() instanceof Enseignant enseignant) {
                     List<DisponibiliteEnseignant> disponibilites = disponibiliteRepo.findByEnseignant(enseignant);
-                    
-                    if (disponibilites.isEmpty()) {
-                        log.info("Aucune disponibilite trouvee, creation d'une disponibilite de test...");
-                        
-                        // Créer une disponibilité pour cette semaine
-                        LocalDate debutSemaine = LocalDate.now().with(java.time.DayOfWeek.MONDAY);
+
+                    // Toujours s'assurer qu'une disponibilité couvre la semaine courante ET la suivante
+                    for (int semaine = 0; semaine <= 1; semaine++) {
+                        LocalDate debutSemaine = LocalDate.now()
+                                .with(java.time.DayOfWeek.MONDAY)
+                                .plusWeeks(semaine);
                         LocalDate finSemaine = debutSemaine.plusDays(6);
 
-                        DisponibiliteEnseignant disponibilite = new DisponibiliteEnseignant();
-                        disponibilite.setEnseignant(enseignant);
-                        disponibilite.setDateDebut(debutSemaine);
-                        disponibilite.setDateFin(finSemaine);
-                        disponibiliteRepo.save(disponibilite);
+                        boolean dejaCouverte = disponibilites.stream().anyMatch(d ->
+                                !d.getDateDebut().isAfter(debutSemaine) &&
+                                !d.getDateFin().isBefore(debutSemaine));
 
-                        // Créer quelques créneaux pour lundi et mardi
-                        for (int i = 0; i < 2; i++) {
-                            LocalDate jour = debutSemaine.plusDays(i);
-                            
-                            CreneauDisponibilite creneau = new CreneauDisponibilite();
-                            creneau.setDisponibilite(disponibilite);
-                            creneau.setDate(jour);
-                            creneauDispoRepo.save(creneau);
+                        if (!dejaCouverte) {
+                            log.info("Creation disponibilite de test pour semaine du {}", debutSemaine);
+                            DisponibiliteEnseignant dispo = new DisponibiliteEnseignant();
+                            dispo.setEnseignant(enseignant);
+                            dispo.setDateDebut(debutSemaine);
+                            dispo.setDateFin(finSemaine);
+                            disponibiliteRepo.save(dispo);
 
-                            // Matin : 8h-10h
-                            PlageHoraire plageMatin = new PlageHoraire();
-                            plageMatin.setCreneauDisponibilite(creneau);
-                            plageMatin.setHeureDebut(LocalTime.of(8, 0));
-                            plageMatin.setHeureFin(LocalTime.of(10, 0));
-                            plageHoraireRepo.save(plageMatin);
+                            for (int i = 0; i < 5; i++) {
+                                LocalDate jour = debutSemaine.plusDays(i);
+                                CreneauDisponibilite creneau = new CreneauDisponibilite();
+                                creneau.setDisponibilite(dispo);
+                                creneau.setDate(jour);
+                                creneauDispoRepo.save(creneau);
 
-                            // Après-midi : 14h-16h
-                            PlageHoraire plageApresMidi = new PlageHoraire();
-                            plageApresMidi.setCreneauDisponibilite(creneau);
-                            plageApresMidi.setHeureDebut(LocalTime.of(14, 0));
-                            plageApresMidi.setHeureFin(LocalTime.of(16, 0));
-                            plageHoraireRepo.save(plageApresMidi);
+                                for (LocalTime[] plage : new LocalTime[][]{
+                                        {LocalTime.of(8,0), LocalTime.of(10,0)},
+                                        {LocalTime.of(10,0), LocalTime.of(12,0)},
+                                        {LocalTime.of(14,0), LocalTime.of(16,0)},
+                                        {LocalTime.of(16,0), LocalTime.of(18,0)}
+                                }) {
+                                    PlageHoraire ph = new PlageHoraire();
+                                    ph.setCreneauDisponibilite(creneau);
+                                    ph.setHeureDebut(plage[0]);
+                                    ph.setHeureFin(plage[1]);
+                                    plageHoraireRepo.save(ph);
+                                }
+                            }
+                            disponibilites = disponibiliteRepo.findByEnseignant(enseignant);
                         }
-                        
-                        log.info("Disponibilite de test creee pour la semaine du {} au {}", debutSemaine, finSemaine);
-                    } else {
-                        log.info("L'enseignant a deja {} disponibilite(s)", disponibilites.size());
                     }
+                    log.info("L'enseignant a {} disponibilite(s)", disponibilites.size());
                 }
                 return;
             }

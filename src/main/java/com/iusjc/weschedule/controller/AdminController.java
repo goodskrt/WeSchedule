@@ -2,6 +2,7 @@ package com.iusjc.weschedule.controller;
 
 import com.iusjc.weschedule.models.*;
 import com.iusjc.weschedule.service.DisponibiliteService;
+import com.iusjc.weschedule.service.EmploiDeTempsService;
 import com.iusjc.weschedule.service.EnseignantService;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -9,6 +10,7 @@ import org.springframework.http.ResponseEntity;
 import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.web.bind.annotation.*;
 
+import java.time.LocalDate;
 import java.util.*;
 
 @RestController
@@ -22,6 +24,9 @@ public class AdminController {
 
     @Autowired
     private DisponibiliteService disponibiliteService;
+
+    @Autowired
+    private EmploiDeTempsService emploiDeTempsService;
 
     // ==================== ENSEIGNANTS ====================
 
@@ -249,6 +254,114 @@ public class AdminController {
         } catch (Exception e) {
             log.error("Erreur lors de la récupération des disponibilités", e);
             return ResponseEntity.internalServerError().build();
+        }
+    }
+
+    // ==================== EMPLOIS DU TEMPS ====================
+
+    @GetMapping("/emplois")
+    public ResponseEntity<List<Map<String, Object>>> getAllEmplois() {
+        try {
+            List<EmploiDeTemps> emplois = emploiDeTempsService.getAllEmplois();
+            List<Map<String, Object>> result = emplois.stream().map(e -> {
+                Map<String, Object> data = new HashMap<>();
+                data.put("id", e.getIdEDT().toString());
+                data.put("periodeDebut", e.getPeriodeDebut() != null ? e.getPeriodeDebut().toString() : null);
+                data.put("periodeFin", e.getPeriodeFin() != null ? e.getPeriodeFin().toString() : null);
+                return data;
+            }).toList();
+            return ResponseEntity.ok(result);
+        } catch (Exception e) {
+            log.error("Erreur lors de la récupération des emplois du temps", e);
+            return ResponseEntity.internalServerError().build();
+        }
+    }
+
+    @PostMapping("/emplois/generer")
+    public ResponseEntity<Map<String, Object>> genererEmploi(@RequestBody Map<String, String> request) {
+        Map<String, Object> response = new HashMap<>();
+        try {
+            String debutStr = request.get("periodeDebut");
+            String finStr   = request.get("periodeFin");
+
+            if (debutStr == null || finStr == null) {
+                response.put("success", false);
+                response.put("message", "Les dates de début et de fin sont obligatoires.");
+                return ResponseEntity.badRequest().body(response);
+            }
+
+            LocalDate debut = LocalDate.parse(debutStr);
+            LocalDate fin   = LocalDate.parse(finStr);
+
+            if (fin.isBefore(debut)) {
+                response.put("success", false);
+                response.put("message", "La date de fin doit être après la date de début.");
+                return ResponseEntity.badRequest().body(response);
+            }
+
+            EmploiDeTempsService.GenerationResult result =
+                    emploiDeTempsService.genererEmploiDeTemps(debut, fin);
+
+            response.put("success", true);
+            response.put("emploiId", result.emploiDeTemps().getIdEDT().toString());
+            response.put("totalSeances", result.totalSeances());
+            response.put("seancesPlanifiees", result.seancesPlanifiees());
+            response.put("avertissements", result.avertissements());
+            response.put("message", String.format(
+                    "Emploi du temps généré : %d/%d séances planifiées.",
+                    result.seancesPlanifiees(), result.totalSeances()));
+            return ResponseEntity.ok(response);
+        } catch (Exception e) {
+            log.error("Erreur lors de la génération de l'emploi du temps", e);
+            response.put("success", false);
+            response.put("message", "Erreur : " + e.getMessage());
+            return ResponseEntity.internalServerError().body(response);
+        }
+    }
+
+    @GetMapping("/emplois/{id}/creneaux")
+    public ResponseEntity<List<Map<String, Object>>> getCreneauxEmploi(@PathVariable UUID id) {
+        try {
+            List<CreneauEmploi> creneaux = emploiDeTempsService.getCreneauxByEmploi(id);
+            List<Map<String, Object>> result = creneaux.stream().map(c -> {
+                Map<String, Object> data = new HashMap<>();
+                data.put("id", c.getId().toString());
+                data.put("date", c.getDate().toString());
+                data.put("heureDebut", c.getHeureDebut().toString());
+                data.put("heureFin", c.getHeureFin().toString());
+                data.put("ue", c.getUe() != null ? c.getUe().getIntitule() : "");
+                data.put("ueCode", c.getUe() != null ? c.getUe().getCode() : "");
+                data.put("enseignant", c.getEnseignant() != null
+                        ? c.getEnseignant().getPrenom() + " " + c.getEnseignant().getNom() : "");
+                data.put("classe", c.getClasse() != null ? c.getClasse().getNom() : "");
+                data.put("salle", c.getSalle() != null ? c.getSalle().getNomSalle() : "");
+                data.put("typeCours", c.getTypeCours() != null ? c.getTypeCours().toString() : "");
+                return data;
+            }).toList();
+            return ResponseEntity.ok(result);
+        } catch (Exception e) {
+            log.error("Erreur lors de la récupération des créneaux", e);
+            return ResponseEntity.internalServerError().build();
+        }
+    }
+
+    @DeleteMapping("/emplois/{id}")
+    public ResponseEntity<Map<String, Object>> supprimerEmploi(@PathVariable UUID id) {
+        Map<String, Object> response = new HashMap<>();
+        try {
+            emploiDeTempsService.supprimerEmploi(id);
+            response.put("success", true);
+            response.put("message", "Emploi du temps supprimé avec succès.");
+            return ResponseEntity.ok(response);
+        } catch (IllegalArgumentException e) {
+            response.put("success", false);
+            response.put("message", e.getMessage());
+            return ResponseEntity.notFound().build();
+        } catch (Exception e) {
+            log.error("Erreur lors de la suppression de l'emploi du temps", e);
+            response.put("success", false);
+            response.put("message", "Erreur : " + e.getMessage());
+            return ResponseEntity.internalServerError().body(response);
         }
     }
 
