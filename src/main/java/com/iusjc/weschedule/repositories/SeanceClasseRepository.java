@@ -24,6 +24,8 @@ public interface SeanceClasseRepository extends JpaRepository<SeanceClasse, UUID
     
     List<SeanceClasse> findByEnseignantAndDateBetween(Enseignant enseignant, LocalDate start, LocalDate end);
     
+    List<SeanceClasse> findByDateBetween(LocalDate start, LocalDate end);
+    
     List<SeanceClasse> findBySalle(Salle salle);
     
     List<SeanceClasse> findBySalleAndDate(Salle salle, LocalDate date);
@@ -50,4 +52,7 @@ public interface SeanceClasseRepository extends JpaRepository<SeanceClasse, UUID
     List<SeanceClasse> findByEmploiDuTempsAndDateAndHeureDebutLessThanAndHeureFinGreaterThan(
         EmploiDuTempsClasse emploiDuTemps, LocalDate date, LocalTime heureFin, LocalTime heureDebut
     );
+    
+    // Trouver les séances d'un cours dans un emploi du temps spécifique
+    List<SeanceClasse> findByEmploiDuTempsAndCours(EmploiDuTempsClasse emploiDuTemps, Cours cours);
 }

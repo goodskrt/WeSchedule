@@ -323,6 +323,7 @@
         
         const JOURS  = ['Lundi','Mardi','Mercredi','Jeudi','Vendredi','Samedi'];
         const HEURES = ['08:00','09:00','10:00','11:00','12:00','13:00','14:00','15:00','16:00','17:00','18:00','19:00'];
+        const PAUSE_INDEX = 4; // Index de 12h00-13h00
         
         let weekDates = [];
         let selectedSlots = [];
@@ -351,10 +352,20 @@
                 grid.appendChild(h);
             });
 
-            for (let hi = 0; hi < HEURES.length; hi++) {
+            for (let hi = 0; hi < HEURES.length - 1; hi++) {
                 const timeCell = document.createElement('div');
                 timeCell.className = 'tt-time';
-                timeCell.textContent = HEURES[hi];
+                const heureDebut = HEURES[hi].replace(':', 'h');
+                const heureFin = HEURES[hi + 1].replace(':', 'h');
+                timeCell.textContent = heureDebut + '-' + heureFin;
+                
+                // Marquer la pause
+                if (hi === PAUSE_INDEX) {
+                    timeCell.style.background = '#f3f4f6';
+                    timeCell.style.fontWeight = '700';
+                    timeCell.style.color = '#6b7280';
+                }
+                
                 grid.appendChild(timeCell);
 
                 for (let di = 0; di < 6; di++) {
@@ -362,7 +373,16 @@
                     cell.className = 'tt-cell';
                     cell.dataset.day = di;
                     cell.dataset.slot = hi;
-                    cell.onclick = (e) => onCellClick(di, hi, e);
+                    
+                    // Griser et désactiver la ligne de pause
+                    if (hi === PAUSE_INDEX) {
+                        cell.style.background = '#f3f4f6';
+                        cell.style.cursor = 'not-allowed';
+                        cell.innerHTML = '<span style="color: #9ca3af; font-size: 0.75rem; font-weight: 600;">PAUSE</span>';
+                    } else {
+                        cell.onclick = (e) => onCellClick(di, hi, e);
+                    }
+                    
                     grid.appendChild(cell);
                 }
             }
@@ -402,7 +422,7 @@
         function selectAll() {
             clearSelection();
             for (let day = 0; day < 6; day++) {
-                for (let slot = 0; slot < HEURES.length; slot++) {
+                for (let slot = 0; slot < HEURES.length - 1; slot++) {
                     selectedSlots.push({ day, slot });
                     const cell = document.querySelector('.tt-cell[data-day="' + day + '"][data-slot="' + slot + '"]');
                     if (cell) cell.classList.add('selected');

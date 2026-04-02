@@ -32,6 +32,26 @@
         .filter-btn { border-radius: 2rem; padding: 0.45rem 1rem; font-size: 0.85rem; font-weight: 500; }
         .filter-btn.active { background: var(--primary-color); color: white; border-color: var(--primary-color); }
         .empty-state { text-align: center; padding: 4rem 2rem; background: var(--white); border-radius: var(--radius-xl); }
+        .classe-checkbox {
+            position: absolute;
+            top: 1rem;
+            right: 1rem;
+            width: 20px;
+            height: 20px;
+            cursor: pointer;
+            z-index: 10;
+        }
+        .classe-card-wrapper {
+            position: relative;
+        }
+        .classe-card-content {
+            pointer-events: none;
+        }
+        .classe-card-content button,
+        .classe-card-content a,
+        .classe-card-content select {
+            pointer-events: auto;
+        }
     </style>
 </head>
 <body>
@@ -45,6 +65,28 @@
                 <div>
                     <h2 class="page-title">Emplois du Temps</h2>
                     <p class="page-subtitle">Gérez les plannings hebdomadaires par classe</p>
+                </div>
+                <div class="d-flex gap-2 align-items-center">
+                    <!-- Sélecteur de semaine avec navigation -->
+                    <div class="d-flex align-items-center gap-2 bg-white px-3 py-2 rounded-3 border">
+                        <button class="btn btn-sm btn-outline-secondary" onclick="changerSemaine(-1)" title="Semaine précédente">
+                            <i class="fas fa-chevron-left"></i>
+                        </button>
+                        <div class="text-center" style="min-width: 200px;">
+                            <div class="fw-semibold" id="semaineLabel">Semaine 14</div>
+                            <div class="text-muted small" id="datesLabel">01/04 - 07/04/2026</div>
+                        </div>
+                        <button class="btn btn-sm btn-outline-secondary" onclick="changerSemaine(1)" title="Semaine suivante">
+                            <i class="fas fa-chevron-right"></i>
+                        </button>
+                    </div>
+                    <select class="form-select" id="semestreGlobal" style="width: 150px;">
+                        <option value="1">Semestre 1</option>
+                        <option value="2">Semestre 2</option>
+                    </select>
+                    <button class="btn btn-primary" onclick="autoGenererGlobal()">
+                        <i class="fas fa-magic me-2"></i>Auto-générer Tout
+                    </button>
                 </div>
             </div>
 
@@ -154,30 +196,487 @@
 
                 return `
                 <div class="col-md-6 col-lg-4">
-                    <a href="/admin/emplois-du-temps/classe/${c.idClasse}" class="classe-card">
-                        <div class="d-flex align-items-start gap-3">
-                            <div class="classe-icon" style="background:${color.bg}; color:${color.icon};">
-                                <i class="fas fa-calendar-alt"></i>
-                            </div>
-                            <div class="flex-grow-1 min-w-0">
-                                <div class="fw-semibold mb-1" style="color:var(--gray-900); font-size:1rem;">${c.nom}</div>
-                                <div class="text-muted small mb-2">${ecole}${filiere ? ' · ' + filiere : ''}</div>
-                                <div class="d-flex gap-1 flex-wrap">
-                                    ${niveau ? `<span class="badge-niveau">${niveau}</span>` : ''}
-                                    ${langue ? `<span class="badge-langue">${langue}</span>` : ''}
+                    <div class="classe-card-wrapper">
+                        <input type="checkbox" class="classe-checkbox form-check-input" 
+                               id="check-${c.idClasse}" 
+                               data-classe-id="${c.idClasse}"
+                               onchange="updateSelectionCount()">
+                        <div class="classe-card">
+                            <div class="classe-card-content">
+                            <div class="d-flex align-items-start gap-3">
+                                <div class="classe-icon" style="background:${color.bg}; color:${color.icon};">
+                                    <i class="fas fa-calendar-alt"></i>
+                                </div>
+                                <div class="flex-grow-1 min-w-0">
+                                    <div class="fw-semibold mb-1" style="color:var(--gray-900); font-size:1rem;">${c.nom}</div>
+                                    <div class="text-muted small mb-2">${ecole}${filiere ? ' · ' + filiere : ''}</div>
+                                    <div class="d-flex gap-1 flex-wrap">
+                                        ${niveau ? `<span class="badge-niveau">${niveau}</span>` : ''}
+                                        ${langue ? `<span class="badge-langue">${langue}</span>` : ''}
+                                    </div>
                                 </div>
                             </div>
+                            <div class="mt-3 pt-3" style="border-top:1px solid var(--gray-100);">
+                                <div class="d-flex align-items-center gap-2 mb-2">
+                                    <span class="text-muted small"><i class="fas fa-users me-1"></i>${effectif} étudiants</span>
+                                </div>
+                                <div class="d-flex gap-2 align-items-center">
+                                    <select class="form-select form-select-sm" id="semestre-${c.idClasse}" style="flex: 0 0 auto; width: 120px;">
+                                        <option value="1">Semestre 1</option>
+                                        <option value="2">Semestre 2</option>
+                                    </select>
+                                    <button class="btn btn-sm btn-primary" onclick="autoGenerer('${c.idClasse}')" style="flex: 1;">
+                                        <i class="fas fa-magic me-1"></i>Auto-générer
+                                    </button>
+                                    <a href="/admin/emplois-du-temps/classe/${c.idClasse}" class="btn btn-sm btn-outline-primary">
+                                        <i class="fas fa-eye"></i>
+                                    </a>
+                                </div>
+                            </div>
+                            </div>
                         </div>
-                        <div class="d-flex align-items-center justify-content-between mt-3 pt-3" style="border-top:1px solid var(--gray-100);">
-                            <span class="text-muted small"><i class="fas fa-users me-1"></i>${effectif} étudiants</span>
-                            <span class="text-primary small fw-semibold"><i class="fas fa-calendar-alt me-1"></i>Voir le planning</span>
-                        </div>
-                    </a>
+                    </div>
                 </div>`;
             }).join('');
         }
+        
+        function updateSelectionCount() {
+            const checked = document.querySelectorAll('.classe-checkbox:checked').length;
+            const total = document.querySelectorAll('.classe-checkbox').length;
+            
+            if (checked > 0) {
+                document.getElementById('countInfo').textContent = `${checked} classe(s) sélectionnée(s) sur ${total}`;
+            } else {
+                document.getElementById('countInfo').textContent = `${total} classe(s)`;
+            }
+        }
+        
+        async function autoGenererGlobal() {
+            const semestreGlobal = document.getElementById('semestreGlobal').value;
+            const semaineGlobale = getSemaineGlobale();
+            const anneeGlobale = getAnneeGlobale();
+            const checkboxes = document.querySelectorAll('.classe-checkbox:checked');
+            
+            let classesToGenerate = [];
+            let confirmMessage = '';
+            
+            if (checkboxes.length === 0) {
+                // Aucune classe sélectionnée, générer pour toutes
+                confirmMessage = `
+                    <div class="alert alert-warning">
+                        <i class="fas fa-exclamation-triangle me-2"></i>
+                        <strong>Aucune classe sélectionnée</strong>
+                    </div>
+                    <p>Voulez-vous générer l'emploi du temps pour <strong>TOUTES les classes (${allClasses.length} classes)</strong> ?</p>
+                    <ul class="list-unstyled mb-0">
+                        <li><i class="fas fa-calendar-week me-2 text-primary"></i>Semaine : <strong>${semaineGlobale}</strong></li>
+                        <li><i class="fas fa-book me-2 text-primary"></i>Semestre : <strong>${semestreGlobal}</strong></li>
+                        <li><i class="fas fa-clock me-2 text-warning"></i>Durée estimée : <strong>${Math.ceil(allClasses.length * 5 / 60)} minutes</strong></li>
+                    </ul>
+                `;
+                classesToGenerate = allClasses.map(c => c.idClasse);
+            } else {
+                // Classes sélectionnées
+                confirmMessage = `
+                    <p>Voulez-vous générer l'emploi du temps pour <strong>${checkboxes.length} classe(s) sélectionnée(s)</strong> ?</p>
+                    <ul class="list-unstyled mb-0">
+                        <li><i class="fas fa-calendar-week me-2 text-primary"></i>Semaine : <strong>${semaineGlobale}</strong></li>
+                        <li><i class="fas fa-book me-2 text-primary"></i>Semestre : <strong>${semestreGlobal}</strong></li>
+                        <li><i class="fas fa-clock me-2 text-info"></i>Durée estimée : <strong>${Math.ceil(checkboxes.length * 5 / 60)} minutes</strong></li>
+                    </ul>
+                `;
+                classesToGenerate = Array.from(checkboxes).map(cb => cb.dataset.classeId);
+            }
+            
+            // Afficher le modal de confirmation
+            showConfirmationModal(confirmMessage, () => {
+                executeGeneration(classesToGenerate, semaineGlobale, anneeGlobale, semestreGlobal);
+            });
+        }
+        
+        function showConfirmationModal(message, onConfirm) {
+            const modal = document.createElement('div');
+            modal.className = 'modal fade show';
+            modal.style.display = 'block';
+            modal.style.backgroundColor = 'rgba(0,0,0,0.5)';
+            modal.innerHTML = `
+                <div class="modal-dialog modal-dialog-centered">
+                    <div class="modal-content">
+                        <div class="modal-header">
+                            <h5 class="modal-title">
+                                <i class="fas fa-magic me-2 text-primary"></i>
+                                Confirmation Auto-Génération
+                            </h5>
+                            <button type="button" class="btn-close" onclick="this.closest('.modal').remove()"></button>
+                        </div>
+                        <div class="modal-body">
+                            ${message}
+                        </div>
+                        <div class="modal-footer">
+                            <button type="button" class="btn btn-secondary" onclick="this.closest('.modal').remove()">
+                                <i class="fas fa-times me-2"></i>Annuler
+                            </button>
+                            <button type="button" class="btn btn-primary" onclick="this.closest('.modal').remove(); arguments[0]()">
+                                <i class="fas fa-check me-2"></i>Confirmer
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            `;
+            
+            // Ajouter l'événement au bouton confirmer
+            const confirmBtn = modal.querySelector('.btn-primary');
+            confirmBtn.onclick = () => {
+                modal.remove();
+                onConfirm();
+            };
+            
+            document.body.appendChild(modal);
+        }
+        
+        async function executeGeneration(classesToGenerate, semaine, annee, semestre) {
+            // Afficher une modal de progression
+            showProgressModal(classesToGenerate.length);
+            
+            let successCount = 0;
+            let errorCount = 0;
+            const results = [];
+            
+            for (let i = 0; i < classesToGenerate.length; i++) {
+                const classeId = classesToGenerate[i];
+                const classe = allClasses.find(c => c.idClasse === classeId);
+                
+                updateProgressModal(i + 1, classesToGenerate.length, classe?.nom || 'Classe');
+                
+                try {
+                    const result = await autoGenererClasse(classeId, semestre, semaine, annee);
+                    if (result.success) {
+                        successCount++;
+                        results.push({
+                            classe: classe?.nom,
+                            success: true,
+                            seancesAjoutees: result.seancesAjoutees,
+                            seancesTPE: result.seancesTPE
+                        });
+                    } else {
+                        errorCount++;
+                        results.push({
+                            classe: classe?.nom,
+                            success: false,
+                            message: result.message
+                        });
+                    }
+                } catch (error) {
+                    errorCount++;
+                    results.push({
+                        classe: classe?.nom,
+                        success: false,
+                        message: error.message
+                    });
+                }
+            }
+            
+            hideProgressModal();
+            showResultsModal(successCount, errorCount, results);
+        }
+        
+        async function autoGenererClasse(classeId, semestre, semaine = null, annee = null) {
+            if (!semaine || !annee) {
+                const now = new Date();
+                const onejan = new Date(now.getFullYear(), 0, 1);
+                semaine = Math.ceil((((now - onejan) / 86400000) + onejan.getDay() + 1) / 7);
+                annee = now.getFullYear();
+            }
+            
+            const response = await fetch('/admin/emplois-du-temps/auto-generer', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/x-www-form-urlencoded',
+                },
+                body: `classeId=${classeId}&semaine=${semaine}&annee=${annee}&semestre=${semestre}`
+            });
+            
+            return await response.json();
+        }
+        
+        function showProgressModal(total) {
+            const modal = document.createElement('div');
+            modal.id = 'progressModal';
+            modal.className = 'modal fade show';
+            modal.style.display = 'block';
+            modal.style.backgroundColor = 'rgba(0,0,0,0.5)';
+            modal.innerHTML = `
+                <div class="modal-dialog modal-dialog-centered">
+                    <div class="modal-content">
+                        <div class="modal-header">
+                            <h5 class="modal-title"><i class="fas fa-magic me-2"></i>Génération en cours...</h5>
+                        </div>
+                        <div class="modal-body text-center">
+                            <div class="spinner-border text-primary mb-3" role="status"></div>
+                            <p id="progressText">Initialisation...</p>
+                            <div class="progress">
+                                <div id="progressBar" class="progress-bar progress-bar-striped progress-bar-animated" 
+                                     role="progressbar" style="width: 0%"></div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            `;
+            document.body.appendChild(modal);
+        }
+        
+        function updateProgressModal(current, total, className) {
+            const percent = Math.round((current / total) * 100);
+            document.getElementById('progressText').textContent = 
+                `Génération ${current}/${total} : ${className}`;
+            document.getElementById('progressBar').style.width = percent + '%';
+        }
+        
+        function hideProgressModal() {
+            const modal = document.getElementById('progressModal');
+            if (modal) modal.remove();
+        }
+        
+        function showResultsModal(successCount, errorCount, results) {
+            const modal = document.createElement('div');
+            modal.className = 'modal fade show';
+            modal.style.display = 'block';
+            modal.style.backgroundColor = 'rgba(0,0,0,0.5)';
+            
+            const successList = results.filter(r => r.success).map(r => 
+                `<li class="text-success">
+                    <i class="fas fa-check-circle me-2"></i>${r.classe} 
+                    <small class="text-muted">(${r.seancesAjoutees} cours, ${r.seancesTPE} TPE)</small>
+                </li>`
+            ).join('');
+            
+            const errorList = results.filter(r => !r.success).map(r => 
+                `<li class="text-danger">
+                    <i class="fas fa-times-circle me-2"></i>${r.classe} 
+                    <small class="text-muted">(${r.message})</small>
+                </li>`
+            ).join('');
+            
+            modal.innerHTML = `
+                <div class="modal-dialog modal-dialog-centered modal-lg">
+                    <div class="modal-content">
+                        <div class="modal-header">
+                            <h5 class="modal-title">
+                                <i class="fas fa-check-circle text-success me-2"></i>
+                                Génération terminée
+                            </h5>
+                            <button type="button" class="btn-close" onclick="this.closest('.modal').remove()"></button>
+                        </div>
+                        <div class="modal-body">
+                            <div class="alert alert-info">
+                                <strong>${successCount}</strong> classe(s) générée(s) avec succès<br>
+                                <strong>${errorCount}</strong> classe(s) en erreur
+                            </div>
+                            ${successCount > 0 ? `
+                                <h6 class="text-success"><i class="fas fa-check me-2"></i>Succès</h6>
+                                <ul class="list-unstyled mb-3">${successList}</ul>
+                            ` : ''}
+                            ${errorCount > 0 ? `
+                                <h6 class="text-danger"><i class="fas fa-times me-2"></i>Erreurs</h6>
+                                <ul class="list-unstyled">${errorList}</ul>
+                            ` : ''}
+                        </div>
+                        <div class="modal-footer">
+                            <button type="button" class="btn btn-primary" onclick="this.closest('.modal').remove()">
+                                Fermer
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            `;
+            document.body.appendChild(modal);
+        }
+        
+        async function autoGenerer(classeId) {
+            const semestreSelect = document.getElementById(`semestre-${classeId}`);
+            const semestre = semestreSelect.value;
+            const classe = allClasses.find(c => c.idClasse === classeId);
+            
+            // Afficher modal de confirmation
+            const confirmMessage = `
+                <p>Voulez-vous générer l'emploi du temps pour la classe <strong>${classe?.nom || 'cette classe'}</strong> ?</p>
+                <ul class="list-unstyled mb-0">
+                    <li><i class="fas fa-calendar-week me-2 text-primary"></i>Semaine : <strong>${getSemaineGlobale()}</strong></li>
+                    <li><i class="fas fa-book me-2 text-primary"></i>Semestre : <strong>${semestre}</strong></li>
+                    <li><i class="fas fa-clock me-2 text-info"></i>Durée estimée : <strong>~5 secondes</strong></li>
+                </ul>
+            `;
+            
+            showConfirmationModal(confirmMessage, async () => {
+                const btn = event.target.closest('button');
+                const originalHTML = btn.innerHTML;
+                
+                btn.disabled = true;
+                btn.innerHTML = '<i class="fas fa-spinner fa-spin me-1"></i>Génération...';
+                
+                try {
+                    const result = await autoGenererClasse(classeId, semestre);
+                    
+                    if (result.success) {
+                        showSuccessModal(
+                            classe?.nom || 'Classe',
+                            result.seancesAjoutees || 0,
+                            result.seancesTPE || 0,
+                            result.seancesEchouees || 0
+                        );
+                    } else {
+                        showErrorModal(classe?.nom || 'Classe', result.message || 'Erreur inconnue');
+                    }
+                } catch (error) {
+                    showErrorModal(classe?.nom || 'Classe', error.message);
+                } finally {
+                    btn.disabled = false;
+                    btn.innerHTML = originalHTML;
+                }
+            });
+        }
+        
+        function showSuccessModal(className, seancesAjoutees, seancesTPE, seancesEchouees) {
+            const modal = document.createElement('div');
+            modal.className = 'modal fade show';
+            modal.style.display = 'block';
+            modal.style.backgroundColor = 'rgba(0,0,0,0.5)';
+            modal.innerHTML = `
+                <div class="modal-dialog modal-dialog-centered">
+                    <div class="modal-content">
+                        <div class="modal-header bg-success text-white">
+                            <h5 class="modal-title">
+                                <i class="fas fa-check-circle me-2"></i>
+                                Génération Réussie
+                            </h5>
+                            <button type="button" class="btn-close btn-close-white" onclick="this.closest('.modal').remove()"></button>
+                        </div>
+                        <div class="modal-body">
+                            <p class="mb-3">L'emploi du temps de <strong>${className}</strong> a été généré avec succès.</p>
+                            <div class="alert alert-light border">
+                                <ul class="list-unstyled mb-0">
+                                    <li class="mb-2"><i class="fas fa-book text-primary me-2"></i><strong>${seancesAjoutees}</strong> séance(s) de cours ajoutées</li>
+                                    <li class="mb-2"><i class="fas fa-pencil-alt text-info me-2"></i><strong>${seancesTPE}</strong> séance(s) TPE ajoutées</li>
+                                    ${seancesEchouees > 0 ? `<li><i class="fas fa-exclamation-triangle text-warning me-2"></i><strong>${seancesEchouees}</strong> cours non placé(s)</li>` : ''}
+                                </ul>
+                            </div>
+                        </div>
+                        <div class="modal-footer">
+                            <button type="button" class="btn btn-primary" onclick="this.closest('.modal').remove()">
+                                <i class="fas fa-check me-2"></i>OK
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            `;
+            document.body.appendChild(modal);
+        }
+        
+        function showErrorModal(className, errorMessage) {
+            const modal = document.createElement('div');
+            modal.className = 'modal fade show';
+            modal.style.display = 'block';
+            modal.style.backgroundColor = 'rgba(0,0,0,0.5)';
+            modal.innerHTML = `
+                <div class="modal-dialog modal-dialog-centered">
+                    <div class="modal-content">
+                        <div class="modal-header bg-danger text-white">
+                            <h5 class="modal-title">
+                                <i class="fas fa-times-circle me-2"></i>
+                                Erreur de Génération
+                            </h5>
+                            <button type="button" class="btn-close btn-close-white" onclick="this.closest('.modal').remove()"></button>
+                        </div>
+                        <div class="modal-body">
+                            <p class="mb-2">Impossible de générer l'emploi du temps pour <strong>${className}</strong>.</p>
+                            <div class="alert alert-danger">
+                                <i class="fas fa-exclamation-circle me-2"></i>${errorMessage}
+                            </div>
+                        </div>
+                        <div class="modal-footer">
+                            <button type="button" class="btn btn-secondary" onclick="this.closest('.modal').remove()">
+                                <i class="fas fa-times me-2"></i>Fermer
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            `;
+            document.body.appendChild(modal);
+        }
 
-        document.addEventListener('DOMContentLoaded', loadClasses);
+        let currentWeekNumber = 1;
+        let currentYear = new Date().getFullYear();
+
+        function initSemaineSelector() {
+            const now = new Date();
+            const onejan = new Date(now.getFullYear(), 0, 1);
+            currentWeekNumber = Math.ceil((((now - onejan) / 86400000) + onejan.getDay() + 1) / 7);
+            currentYear = now.getFullYear();
+            updateSemaineDisplay();
+        }
+
+        function changerSemaine(delta) {
+            currentWeekNumber += delta;
+            
+            // Gérer le passage d'année
+            if (currentWeekNumber < 1) {
+                currentWeekNumber = 52;
+                currentYear--;
+            } else if (currentWeekNumber > 52) {
+                currentWeekNumber = 1;
+                currentYear++;
+            }
+            
+            updateSemaineDisplay();
+        }
+
+        function updateSemaineDisplay() {
+            // Calculer le lundi de la semaine
+            const firstDayOfYear = new Date(currentYear, 0, 1);
+            const daysOffset = (currentWeekNumber - 1) * 7;
+            const targetDate = new Date(firstDayOfYear.getTime() + daysOffset * 24 * 60 * 60 * 1000);
+            
+            // Trouver le lundi de cette semaine
+            const dayOfWeek = targetDate.getDay();
+            const diff = dayOfWeek === 0 ? -6 : 1 - dayOfWeek; // Si dimanche (0), reculer de 6 jours
+            const monday = new Date(targetDate);
+            monday.setDate(targetDate.getDate() + diff);
+            
+            // Calculer le dimanche (6 jours après le lundi)
+            const sunday = new Date(monday);
+            sunday.setDate(monday.getDate() + 6);
+            
+            // Formater les dates
+            const formatDate = (date) => {
+                const day = String(date.getDate()).padStart(2, '0');
+                const month = String(date.getMonth() + 1).padStart(2, '0');
+                const year = date.getFullYear();
+                return `${day}/${month}/${year}`;
+            };
+            
+            const formatShortDate = (date) => {
+                const day = String(date.getDate()).padStart(2, '0');
+                const month = String(date.getMonth() + 1).padStart(2, '0');
+                return `${day}/${month}`;
+            };
+            
+            // Mettre à jour l'affichage
+            document.getElementById('semaineLabel').textContent = `Semaine ${currentWeekNumber}`;
+            document.getElementById('datesLabel').textContent = `${formatShortDate(monday)} - ${formatDate(sunday)}`;
+        }
+
+        function getSemaineGlobale() {
+            return currentWeekNumber;
+        }
+
+        function getAnneeGlobale() {
+            return currentYear;
+        }
+
+        document.addEventListener('DOMContentLoaded', () => {
+            initSemaineSelector();
+            loadClasses();
+        });
     </script>
 </body>
 </html>

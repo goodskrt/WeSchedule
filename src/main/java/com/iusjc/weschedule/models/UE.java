@@ -12,8 +12,8 @@ import java.util.UUID;
 @Data
 @NoArgsConstructor
 @AllArgsConstructor
-@EqualsAndHashCode(exclude = {"classes"})
-@ToString(exclude = {"classes"})
+@EqualsAndHashCode(exclude = {"classes", "enseignants"})
+@ToString(exclude = {"classes", "enseignants"})
 public class UE {
     @Id
     @GeneratedValue
@@ -43,4 +43,7 @@ public class UE {
         inverseJoinColumns = @JoinColumn(name = "classe_id")
     )
     private Set<Classe> classes;
+
+    @ManyToMany(mappedBy = "uesEnseignees", fetch = FetchType.LAZY)
+    private Set<Enseignant> enseignants;
 }

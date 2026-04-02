@@ -73,6 +73,7 @@ public class AdminEmploiDuTempsController {
             @PathVariable @NonNull UUID classeId,
             @RequestParam(required = false) Integer semaine,
             @RequestParam(required = false) Integer annee,
+            @RequestParam(required = false, defaultValue = "1") Integer semestre,
             Model model,
             RedirectAttributes redirectAttributes) {
         
@@ -102,6 +103,7 @@ public class AdminEmploiDuTempsController {
             model.addAttribute("classe", classe);
             model.addAttribute("semaine", semaine);
             model.addAttribute("annee", annee);
+            model.addAttribute("semestre", semestre);
             model.addAttribute("lundi", lundi);
             model.addAttribute("dimanche", dimanche);
             model.addAttribute("emploiDuTemps", emploiDuTemps);
@@ -128,8 +130,12 @@ public class AdminEmploiDuTempsController {
                 model.addAttribute("seancesParJour", seancesParJour);
             }
 
-            // Données pour les formulaires
-            List<Cours> cours = coursRepository.findAll();
+            // Filtrer les cours selon le semestre sélectionné
+            List<Cours> cours = coursRepository.findAll().stream()
+                    .filter(c -> c.getClasse() != null && c.getClasse().getIdClasse().equals(classeId))
+                    .filter(c -> c.getUe() != null && c.getUe().getSemestre() != null && c.getUe().getSemestre().equals(semestre))
+                    .toList();
+            
             List<Enseignant> enseignants = enseignantRepository.findAll();
             List<Salle> salles = salleRepository.findAll();
 
@@ -154,6 +160,7 @@ public class AdminEmploiDuTempsController {
             @PathVariable @NonNull UUID classeId,
             @RequestParam Integer semaine,
             @RequestParam Integer annee,
+            @RequestParam(required = false, defaultValue = "1") Integer semestre,
             Model model,
             RedirectAttributes redirectAttributes) {
         
@@ -170,11 +177,16 @@ public class AdminEmploiDuTempsController {
             model.addAttribute("classe", classe);
             model.addAttribute("semaine", semaine);
             model.addAttribute("annee", annee);
+            model.addAttribute("semestre", semestre);
             model.addAttribute("lundi", lundi);
             model.addAttribute("dimanche", dimanche);
 
-            // Données pour les formulaires
-            List<Cours> cours = coursRepository.findAll();
+            // Filtrer les cours selon le semestre sélectionné
+            List<Cours> cours = coursRepository.findAll().stream()
+                    .filter(c -> c.getClasse() != null && c.getClasse().getIdClasse().equals(classeId))
+                    .filter(c -> c.getUe() != null && c.getUe().getSemestre() != null && c.getUe().getSemestre().equals(semestre))
+                    .toList();
+            
             List<Enseignant> enseignants = enseignantRepository.findAll();
             List<Salle> salles = salleRepository.findAll();
 
@@ -433,13 +445,15 @@ public class AdminEmploiDuTempsController {
     
     /**
      * Auto-générer l'emploi du temps pour une classe
+     * Basé sur: CSP (Constraint Satisfaction) + Glouton + Backtracking
      */
     @PostMapping("/auto-generer")
     @ResponseBody
     public Map<String, Object> autoGenererEmploiDuTemps(
             @RequestParam UUID classeId,
             @RequestParam Integer semaine,
-            @RequestParam Integer annee) {
+            @RequestParam Integer annee,
+            @RequestParam(required = false, defaultValue = "1") Integer semestre) {
         
         Map<String, Object> response = new HashMap<>();
         
@@ -456,8 +470,8 @@ public class AdminEmploiDuTempsController {
                 emploiDuTemps = emploiDuTempsService.creerEmploiDuTemps(classeId, lundi);
             }
             
-            // Lancer la génération automatique
-            Map<String, Object> resultat = autoGenerationService.genererEmploiDuTemps(emploiDuTemps.getId());
+            // Lancer la génération automatique avec filtre sur le semestre
+            Map<String, Object> resultat = autoGenerationService.genererEmploiDuTemps(emploiDuTemps.getId(), semestre);
             
             return resultat;
             
@@ -467,4 +481,6 @@ public class AdminEmploiDuTempsController {
             return response;
         }
     }
+    
+
 }

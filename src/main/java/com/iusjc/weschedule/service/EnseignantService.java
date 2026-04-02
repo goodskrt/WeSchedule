@@ -29,6 +29,9 @@ public class EnseignantService {
 
     @Autowired
     private DisponibiliteEnseignantRepository disponibiliteRepository;
+    
+    @Autowired
+    private CoursRepository coursRepository;
 
     @Autowired
     private PasswordEncoder passwordEncoder;
@@ -92,7 +95,7 @@ public class EnseignantService {
         // Créer l'enseignant
         Enseignant enseignant = new Enseignant();
         enseignant.setNom(nom.trim());
-        enseignant.setPrenom(prenom.trim());
+        enseignant.setPrenom(prenom != null ? prenom.trim() : "");
         enseignant.setEmail(email.trim().toLowerCase());
         enseignant.setPhone(phone != null ? phone.trim() : null);
         enseignant.setGrade(grade != null ? grade.trim() : null);
@@ -133,7 +136,7 @@ public class EnseignantService {
         }
 
         enseignant.setNom(nom.trim());
-        enseignant.setPrenom(prenom.trim());
+        enseignant.setPrenom(prenom != null ? prenom.trim() : "");
         enseignant.setEmail(email.trim().toLowerCase());
         enseignant.setPhone(phone != null ? phone.trim() : null);
         enseignant.setGrade(grade != null ? grade.trim() : null);
@@ -165,7 +168,7 @@ public class EnseignantService {
         }
 
         enseignant.setNom(nom.trim());
-        enseignant.setPrenom(prenom.trim());
+        enseignant.setPrenom(prenom != null ? prenom.trim() : "");
         enseignant.setEmail(email.trim().toLowerCase());
         enseignant.setPhone(phone != null ? phone.trim() : null);
         enseignant.setGrade(grade != null ? grade.trim() : null);
@@ -198,15 +201,29 @@ public class EnseignantService {
         Enseignant enseignant = enseignantRepository.findById(id)
             .orElseThrow(() -> new IllegalArgumentException("Enseignant non trouvé"));
         
-        // Supprimer les relations avec les UEs via requête native
-        enseignantRepository.deleteUERelations(id);
+        // Supprimer les relations avec les UEs (nettoyer les associations ManyToMany)
+        enseignant.setUesEnseignees(new HashSet<>());
+        enseignant.setEcoles(new HashSet<>());
+        enseignant.setSpecialites(new HashSet<>());
         
-        // Supprimer les disponibilités
-        disponibiliteRepository.deleteByEnseignant(enseignant);
+        // Dissocier les cours sans les supprimer
+        coursRepository.detachFromEnseignant(id);
+        
+        // Supprimer les créneaux de disponibilité en cascades
+        if (enseignant.getDisponibilites() != null && !enseignant.getDisponibilites().isEmpty()) {
+            // Supprimer explicitement tous les créneaux avant les disponibilités
+            for (DisponibiliteEnseignant disponibilite : new HashSet<>(enseignant.getDisponibilites())) {
+                if (disponibilite.getCreneauxParJour() != null) {
+                    disponibilite.getCreneauxParJour().clear();
+                }
+            }
+            // Vider les disponibilités (orphanRemoval supprimera les orphans)
+            enseignant.getDisponibilites().clear();
+        }
         
         // Supprimer l'enseignant
-        enseignantRepository.deleteById(id);
-        log.info("Enseignant {} supprimé", id);
+        enseignantRepository.delete(enseignant);
+        log.info("Enseignant {} supprimé avec succès", id);
     }
 
     /**

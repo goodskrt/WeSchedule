@@ -29,7 +29,7 @@ public class ExcelCoursService {
     @Autowired private EnseignantRepository enseignantRepository;
 
     private static final String[] HEADERS = {
-        "Intitulé", "Type (CM/TD/TP)", "Classe", "Code UE", "Enseignant (Nom Prénom)", "Durée totale (h)", "Durée restante (h)", "Description"
+        "Intitulé", "Type (CM/TD/TP)", "Classe", "Code UE", "Enseignant (Nom Prénom)", "Durée totale (h)", "Durée séance/jour (h)", "Durée restante (h)", "Description"
     };
 
     // ─── EXPORT ──────────────────────────────────────────────────────────────
@@ -60,7 +60,7 @@ public class ExcelCoursService {
             // Onglet données
             Sheet sheet = wb.createSheet("Cours");
             Row headerRow = sheet.createRow(0);
-            int[] widths = {8000, 4000, 5000, 4000, 6000, 4000, 4000, 8000};
+            int[] widths = {8000, 4000, 5000, 4000, 6000, 4000, 4000, 4000, 8000};
             for (int i = 0; i < HEADERS.length; i++) {
                 Cell cell = headerRow.createCell(i);
                 cell.setCellValue(HEADERS[i]);
@@ -81,8 +81,9 @@ public class ExcelCoursService {
                     ens = c.getEnseignant().getNom() + " " + c.getEnseignant().getPrenom();
                 cell(row, 4, ens, style);
                 cell(row, 5, c.getDureeTotal() != null ? String.valueOf(c.getDureeTotal()) : "", style);
-                cell(row, 6, c.getDureeRestante() != null ? String.valueOf(c.getDureeRestante()) : "", style);
-                cell(row, 7, c.getDescription() != null ? c.getDescription() : "", style);
+                cell(row, 6, c.getDureeSeanceParJour() != null ? String.valueOf(c.getDureeSeanceParJour()) : "", style);
+                cell(row, 7, c.getDureeRestante() != null ? String.valueOf(c.getDureeRestante()) : "", style);
+                cell(row, 8, c.getDescription() != null ? c.getDescription() : "", style);
                 rowNum++;
             }
 
@@ -102,8 +103,9 @@ public class ExcelCoursService {
             cell(ex, 3, "INF101", dataStyle);
             cell(ex, 4, "Dupont Martin", dataStyle);
             cell(ex, 5, "60", dataStyle);
-            cell(ex, 6, "60", dataStyle);
-            cell(ex, 7, "Description optionnelle", dataStyle);
+            cell(ex, 6, "4", dataStyle);
+            cell(ex, 7, "60", dataStyle);
+            cell(ex, 8, "Description optionnelle", dataStyle);
 
             ByteArrayOutputStream out = new ByteArrayOutputStream();
             wb.write(out);
@@ -137,8 +139,9 @@ public class ExcelCoursService {
                     String ueCode      = str(row, 3).toUpperCase();
                     String enseignant  = str(row, 4);
                     String dureeTotStr = str(row, 5);
-                    String dureeRestStr= str(row, 6);
-                    String description = str(row, 7);
+                    String dureeSeanceStr = str(row, 6);
+                    String dureeRestStr= str(row, 7);
+                    String description = str(row, 8);
 
                     if (intitule.isBlank()) {
                         result.addErreur(lineNum, "Intitulé obligatoire");
@@ -185,6 +188,16 @@ public class ExcelCoursService {
                         result.addErreur(lineNum, "Durée totale invalide");
                         continue;
                     }
+                    
+                    // Durée séance par jour (optionnel)
+                    Integer dureeSeanceParJour = null;
+                    if (!dureeSeanceStr.isBlank()) {
+                        try { dureeSeanceParJour = Integer.parseInt(dureeSeanceStr.trim()); }
+                        catch (Exception ignored) {
+                            result.addAvertissement(lineNum, "Durée séance/jour invalide → ignorée");
+                        }
+                    }
+                    
                     int dureeRestante = dureeTotal;
                     if (!dureeRestStr.isBlank()) {
                         try { dureeRestante = Math.min(Integer.parseInt(dureeRestStr.trim()), dureeTotal); }
@@ -199,6 +212,7 @@ public class ExcelCoursService {
                     cours.setClasse(classeOpt.get());
                     cours.setUe(ueOpt.get());
                     cours.setDureeTotal(dureeTotal);
+                    cours.setDureeSeanceParJour(dureeSeanceParJour);
                     cours.setDureeRestante(dureeRestante);
                     if (!description.isBlank()) cours.setDescription(description.trim());
 

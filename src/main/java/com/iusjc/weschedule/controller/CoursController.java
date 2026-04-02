@@ -3,6 +3,7 @@ package com.iusjc.weschedule.controller;
 import com.iusjc.weschedule.enums.TypeCours;
 import com.iusjc.weschedule.models.Classe;
 import com.iusjc.weschedule.models.Cours;
+import com.iusjc.weschedule.models.Enseignant;
 import com.iusjc.weschedule.models.UE;
 import com.iusjc.weschedule.repositories.ClasseRepository;
 import com.iusjc.weschedule.repositories.CoursRepository;
@@ -78,25 +79,21 @@ public class CoursController {
     @ResponseBody
     @Transactional(readOnly = true)
     public ResponseEntity<List<Map<String, Object>>> enseignantsParUE(@PathVariable UUID ueId) {
-        // Récupérer tous les cours de cette UE
-        List<Cours> cours = coursRepository.findAll().stream()
-                .filter(c -> c.getUe() != null && c.getUe().getIdUE().equals(ueId))
-                .filter(c -> c.getEnseignant() != null)
+        // Récupérer tous les enseignants qui ont cette UE dans leur liste uesEnseignees
+        List<Enseignant> enseignants = enseignantRepository.findAll().stream()
+                .filter(e -> e.getUesEnseignees() != null && 
+                            e.getUesEnseignees().stream()
+                                .anyMatch(ue -> ue.getIdUE().equals(ueId)))
                 .toList();
         
-        // Extraire les enseignants uniques
-        Set<UUID> enseignantIds = new HashSet<>();
+        // Construire la liste de résultats
         List<Map<String, Object>> result = new ArrayList<>();
-        
-        for (Cours c : cours) {
-            if (c.getEnseignant() != null && !enseignantIds.contains(c.getEnseignant().getIdUser())) {
-                enseignantIds.add(c.getEnseignant().getIdUser());
-                Map<String, Object> m = new LinkedHashMap<>();
-                m.put("id",     c.getEnseignant().getIdUser().toString());
-                m.put("nom",    c.getEnseignant().getNom());
-                m.put("prenom", c.getEnseignant().getPrenom());
-                result.add(m);
-            }
+        for (Enseignant enseignant : enseignants) {
+            Map<String, Object> m = new LinkedHashMap<>();
+            m.put("id", enseignant.getIdUser().toString());
+            m.put("nom", enseignant.getNom());
+            m.put("prenom", enseignant.getPrenom());
+            result.add(m);
         }
         
         // Trier par nom
@@ -166,6 +163,7 @@ public class CoursController {
             @RequestParam UUID ueId,
             @RequestParam(required = false) UUID enseignantId,
             @RequestParam Integer dureeTotal,
+            @RequestParam(required = false) Integer dureeSeanceParJour,
             @RequestParam(required = false) String description,
             RedirectAttributes ra) {
         try {
@@ -174,6 +172,7 @@ public class CoursController {
             cours.setTypeCours(TypeCours.valueOf(typeCours));
             cours.setDureeTotal(dureeTotal);
             cours.setDureeRestante(dureeTotal);
+            cours.setDureeSeanceParJour(dureeSeanceParJour);
             cours.setDescription(description != null && !description.isBlank() ? description.trim() : null);
 
             classeRepository.findById(classeId).ifPresent(cours::setClasse);
@@ -227,6 +226,7 @@ public class CoursController {
             @RequestParam(required = false) UUID enseignantId,
             @RequestParam Integer dureeTotal,
             @RequestParam Integer dureeRestante,
+            @RequestParam(required = false) Integer dureeSeanceParJour,
             @RequestParam(required = false) String description,
             RedirectAttributes ra) {
         try {
@@ -236,6 +236,7 @@ public class CoursController {
             cours.setTypeCours(TypeCours.valueOf(typeCours));
             cours.setDureeTotal(dureeTotal);
             cours.setDureeRestante(Math.min(dureeRestante, dureeTotal));
+            cours.setDureeSeanceParJour(dureeSeanceParJour);
             cours.setDescription(description != null && !description.isBlank() ? description.trim() : null);
 
             classeRepository.findById(classeId).ifPresent(cours::setClasse);

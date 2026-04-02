@@ -3,23 +3,43 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Consulter Disponibilité - WeSchedule</title>
+    <title>Détail Disponibilité - WeSchedule</title>
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
     <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css" rel="stylesheet">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
     <link rel="stylesheet" href="/css/modern-layout.css">
     <style>
         .page-header {
-            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            background: linear-gradient(135deg, #06b6d4 0%, #0891b2 100%);
             color: white;
             padding: 2rem;
             border-radius: var(--radius-xl);
             margin-bottom: 2rem;
             box-shadow: var(--shadow-lg);
         }
+        .enseignant-info {
+            background: rgba(255,255,255,0.15);
+            border-radius: var(--radius-lg);
+            padding: 1rem 1.25rem;
+            margin-top: 1rem;
+            display: flex;
+            align-items: center;
+            gap: 1rem;
+        }
+        .enseignant-avatar {
+            width: 48px;
+            height: 48px;
+            border-radius: 50%;
+            background: rgba(255,255,255,0.3);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-weight: 700;
+            font-size: 1.1rem;
+        }
         .week-info-card {
-            background: linear-gradient(135deg, #f0f4ff 0%, #e8eaff 100%);
-            border: 2px solid #667eea;
+            background: linear-gradient(135deg, #f0f9ff 0%, #e0f2fe 100%);
+            border: 2px solid #06b6d4;
             border-radius: var(--radius-xl);
             padding: 1.5rem;
             margin-bottom: 2rem;
@@ -28,7 +48,7 @@
         .week-info-title {
             font-size: 1.3rem;
             font-weight: 700;
-            color: #667eea;
+            color: #0891b2;
             margin-bottom: 0.5rem;
         }
         .week-info-dates {
@@ -48,7 +68,7 @@
             box-shadow: var(--shadow-md);
         }
         .tt-head {
-            background: linear-gradient(135deg, #667eea, #764ba2);
+            background: linear-gradient(135deg, #06b6d4, #0891b2);
             color: white;
             padding: 1rem 0.5rem;
             text-align: center;
@@ -56,7 +76,7 @@
             font-size: 0.85rem;
         }
         .tt-head.corner {
-            background: #5568d3;
+            background: #0284c7;
             display: flex;
             align-items: center;
             justify-content: center;
@@ -79,8 +99,8 @@
             padding: 4px;
         }
         .tt-cell.disponible {
-            background: linear-gradient(135deg, rgba(102, 126, 234, 0.2), rgba(118, 75, 162, 0.2));
-            border: 2px solid #667eea;
+            background: linear-gradient(135deg, rgba(6, 182, 212, 0.2), rgba(8, 145, 178, 0.2));
+            border: 2px solid #06b6d4;
         }
         .tt-cell.disponible::after {
             content: '✓';
@@ -88,7 +108,7 @@
             top: 50%;
             left: 50%;
             transform: translate(-50%, -50%);
-            color: #667eea;
+            color: #0891b2;
             font-weight: bold;
             font-size: 1.3rem;
         }
@@ -109,7 +129,7 @@
         .stat-icon {
             width: 50px;
             height: 50px;
-            background: linear-gradient(135deg, #667eea, #764ba2);
+            background: linear-gradient(135deg, #06b6d4, #0891b2);
             border-radius: 50%;
             display: flex;
             align-items: center;
@@ -121,7 +141,7 @@
         .stat-value {
             font-size: 2rem;
             font-weight: 700;
-            color: #667eea;
+            color: #0891b2;
             margin-bottom: 0.25rem;
         }
         .stat-label {
@@ -149,38 +169,52 @@
             border: 2px solid var(--gray-300);
         }
         .legend-box.disponible {
-            background: linear-gradient(135deg, rgba(102, 126, 234, 0.2), rgba(118, 75, 162, 0.2));
-            border-color: #667eea;
+            background: linear-gradient(135deg, rgba(6, 182, 212, 0.2), rgba(8, 145, 178, 0.2));
+            border-color: #06b6d4;
         }
     </style>
 </head>
 <body>
-    <div th:if="${adminView}" th:replace="~{fragments/sidebar :: admin-sidebar('enseignants')}"></div>
-    <div th:unless="${adminView}" th:replace="~{fragments/sidebar :: enseignant-sidebar('disponibilites')}"></div>
+    <div th:replace="~{fragments/sidebar :: admin-sidebar('enseignants')}"></div>
     <div class="ws-wrapper">
-        <div th:if="${adminView}" th:replace="~{fragments/header :: admin-header}"></div>
-        <div th:unless="${adminView}" th:replace="~{fragments/header :: enseignant-header}"></div>
+        <div th:replace="~{fragments/header :: admin-header}"></div>
         <main class="ws-main-content">
+            <!-- Breadcrumb -->
+            <nav aria-label="breadcrumb" class="mb-3">
+                <ol class="breadcrumb">
+                    <li class="breadcrumb-item"><a href="/dashboard/admin/enseignants">Enseignants</a></li>
+                    <li class="breadcrumb-item">
+                        <a th:href="@{/dashboard/admin/enseignants/{id}(id=${enseignantId})}" 
+                           th:text="${enseignantNom}">Enseignant</a>
+                    </li>
+                    <li class="breadcrumb-item">
+                        <a th:href="@{/dashboard/admin/enseignants/{id}/disponibilites(id=${enseignantId})}">Disponibilités</a>
+                    </li>
+                    <li class="breadcrumb-item active">Détail</li>
+                </ol>
+            </nav>
+
             <!-- Page Header -->
             <div class="page-header">
-                <div class="d-flex justify-content-between align-items-center">
+                <div class="d-flex justify-content-between align-items-start">
                     <div>
                         <h2 class="mb-2" style="font-size: 1.75rem; font-weight: 700;">
-                            <i class="fas fa-eye me-2"></i>Consultation de disponibilité
+                            <i class="fas fa-calendar-week me-2"></i>Détail de la disponibilité
                         </h2>
-                        <p class="mb-0 opacity-90">Visualisez vos créneaux de disponibilité pour la semaine</p>
+                        <p class="mb-0 opacity-90">Visualisation des créneaux de disponibilité de l'enseignant</p>
+                        
+                        <!-- Info enseignant -->
+                        <div class="enseignant-info">
+                            <div class="enseignant-avatar" th:text="${enseignantInitiales}">EN</div>
+                            <div>
+                                <div style="font-weight: 600; font-size: 0.95rem;" th:text="${enseignantNom}">Nom Enseignant</div>
+                                <div style="font-size: 0.8rem; opacity: 0.85;" th:text="${enseignantEmail}">email@example.com</div>
+                            </div>
+                        </div>
                     </div>
-                    <div class="d-flex gap-2">
-                        <a th:if="${!adminView}" th:href="@{/dashboard/enseignant/disponibilites/{id}/modifier(id=${disponibilite.id})}" class="btn btn-light">
-                            <i class="fas fa-edit me-1"></i> Modifier
-                        </a>
-                        <a th:if="${adminView}" th:href="@{/dashboard/admin/enseignants/{id}/disponibilites(id=${enseignantId})}" class="btn btn-light">
-                            <i class="fas fa-arrow-left me-1"></i> Retour
-                        </a>
-                        <a th:unless="${adminView}" href="/dashboard/enseignant/disponibilites" class="btn btn-light">
-                            <i class="fas fa-arrow-left me-1"></i> Retour
-                        </a>
-                    </div>
+                    <a th:href="@{/dashboard/admin/enseignants/{id}/disponibilites(id=${enseignantId})}" class="btn btn-light">
+                        <i class="fas fa-arrow-left me-1"></i> Retour
+                    </a>
                 </div>
             </div>
 
@@ -241,14 +275,8 @@
             </div>
 
             <!-- Actions -->
-            <div class="d-flex gap-2">
-                <a th:if="${!adminView}" th:href="@{/dashboard/enseignant/disponibilites/{id}/modifier(id=${disponibilite.id})}" class="btn btn-primary btn-lg">
-                    <i class="fas fa-edit me-2"></i> Modifier cette disponibilité
-                </a>
-                <a th:if="${adminView}" th:href="@{/dashboard/admin/enseignants/{id}/disponibilites(id=${enseignantId})}" class="btn btn-secondary btn-lg">
-                    <i class="fas fa-arrow-left me-2"></i> Retour à la liste
-                </a>
-                <a th:unless="${adminView}" href="/dashboard/enseignant/disponibilites" class="btn btn-secondary btn-lg">
+            <div class="d-flex gap-2 justify-content-center">
+                <a th:href="@{/dashboard/admin/enseignants/{id}/disponibilites(id=${enseignantId})}" class="btn btn-secondary btn-lg">
                     <i class="fas fa-arrow-left me-2"></i> Retour à la liste
                 </a>
             </div>
@@ -258,11 +286,9 @@
     <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js"></script>
     <script src="/js/modern-layout.js"></script>
     <script th:inline="javascript">
-        // Récupérer les données depuis le serveur
         const emploiDuTemps = /*[[${emploiDuTempsJson}]]*/ {};
         const JOURS = ['Lundi', 'Mardi', 'Mercredi', 'Jeudi', 'Vendredi', 'Samedi'];
         const HEURES = ['08:00','09:00','10:00','11:00','12:00','13:00','14:00','15:00','16:00','17:00','18:00','19:00'];
-        const PAUSE_INDEX = 4; // Index de 12h00-13h00
 
         console.log('Emploi du temps chargé:', emploiDuTemps);
 
@@ -296,38 +322,25 @@
                 grid.appendChild(h);
             });
 
-            for (let hi = 0; hi < HEURES.length - 1; hi++) {
+            for (let hi = 0; hi < HEURES.length; hi++) {
+                const heureDebut = parseInt(HEURES[hi].split(':')[0], 10);
+                const heureFin = heureDebut + 1;
+                
                 const timeCell = document.createElement('div');
                 timeCell.className = 'tt-time';
-                const heureDebut = HEURES[hi].replace(':', 'h');
-                const heureFin = HEURES[hi + 1].replace(':', 'h');
-                timeCell.textContent = heureDebut + '-' + heureFin;
-                
-                // Marquer la pause
-                if (hi === PAUSE_INDEX) {
-                    timeCell.style.background = '#f3f4f6';
-                    timeCell.style.fontWeight = '700';
-                    timeCell.style.color = '#6b7280';
-                }
-                
+                timeCell.textContent = `${heureDebut}h00-${heureFin}h00`;
                 grid.appendChild(timeCell);
 
                 for (let di = 0; di < 6; di++) {
                     const cell = document.createElement('div');
                     cell.className = 'tt-cell';
                     
-                    // Griser la ligne de pause
-                    if (hi === PAUSE_INDEX) {
-                        cell.style.background = '#f3f4f6';
-                        cell.innerHTML = '<span style="color: #9ca3af; font-size: 0.75rem; font-weight: 600;">PAUSE</span>';
-                    } else if (dates[di]) {
+                    if (dates[di]) {
                         const plages = emploiDuTemps[dates[di]] || [];
-                        const heureDebut = hi + 8;
-                        const heureFin = heureDebut + 1;
                         
                         const isDisponible = plages.some(plage => {
-                            const plageDebut = parseInt(plage.heureDebut.split(':')[0]);
-                            const plageFin = parseInt(plage.heureFin.split(':')[0]);
+                            const plageDebut = parseInt(plage.heureDebut.split(':')[0], 10);
+                            const plageFin = parseInt(plage.heureFin.split(':')[0], 10);
                             return heureDebut >= plageDebut && heureFin <= plageFin;
                         });
                         

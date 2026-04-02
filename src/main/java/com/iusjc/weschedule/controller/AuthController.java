@@ -13,9 +13,12 @@ import com.iusjc.weschedule.models.Utilisateur;
 import com.iusjc.weschedule.repositories.EnseignantRepository;
 import com.iusjc.weschedule.repositories.SalleRepository;
 import com.iusjc.weschedule.repositories.CoursRepository;
+import com.iusjc.weschedule.models.DisponibiliteEnseignant;
+import com.iusjc.weschedule.models.PlageHoraire;
 import com.iusjc.weschedule.repositories.ClasseRepository;
 import com.iusjc.weschedule.repositories.UERepository;
 import com.iusjc.weschedule.service.AuthService;
+import com.iusjc.weschedule.service.DisponibiliteService;
 import com.iusjc.weschedule.service.EnseignantService;
 import com.iusjc.weschedule.service.PasswordResetService;
 import com.iusjc.weschedule.security.UserPrincipal;
@@ -37,6 +40,8 @@ import org.springframework.validation.BindingResult;
 import org.springframework.web.bind.annotation.*;
 import org.springframework.web.servlet.mvc.support.RedirectAttributes;
 
+import java.time.LocalDate;
+import java.time.format.DateTimeFormatter;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
@@ -57,6 +62,9 @@ public class AuthController {
 
     @Autowired
     private EnseignantService enseignantService;
+
+    @Autowired
+    private DisponibiliteService disponibiliteService;
     
     @Autowired
     private SalleRepository salleRepository;
@@ -261,6 +269,65 @@ public class AuthController {
             model.addAttribute("nomComplet", userPrincipal.getNomComplet());
             model.addAttribute("enseignantId", id);
             return "admin/enseignant-disponibilites";
+        }
+        return "redirect:/login";
+    }
+
+    /**
+     * Dashboard Admin - Voir disponibilité en mode emploi du temps
+     */
+    @GetMapping("/dashboard/admin/enseignants/{enseignantId}/disponibilites/{id}/voir")
+    public String dashboardAdminVoirDisponibilite(@PathVariable String enseignantId,
+                                                  @PathVariable UUID id,
+                                                  Authentication auth,
+                                                  Model model) {
+        if (auth != null && auth.getPrincipal() instanceof UserPrincipal userPrincipal) {
+
+            Optional<DisponibiliteEnseignant> disponOpt = disponibiliteService.getDisponibiliteById(id);
+            if (disponOpt.isEmpty()) {
+                return "redirect:/dashboard/admin/enseignants/" + enseignantId + "/disponibilites";
+            }
+
+            DisponibiliteEnseignant disponibilite = disponOpt.get();
+            if (disponibilite.getEnseignant() == null ||
+                !disponibilite.getEnseignant().getIdUser().toString().equals(enseignantId)) {
+                return "redirect:/dashboard/admin/enseignants/" + enseignantId + "/disponibilites";
+            }
+
+            // Récupérer les infos de l'enseignant
+            Enseignant enseignant = disponibilite.getEnseignant();
+            String enseignantNom = (enseignant.getPrenom() != null ? enseignant.getPrenom() : "") + " " + (enseignant.getNom() != null ? enseignant.getNom() : "");
+            String enseignantEmail = enseignant.getEmail();
+            String prenom = enseignant.getPrenom() != null ? enseignant.getPrenom().trim() : "";
+            String nom = enseignant.getNom() != null ? enseignant.getNom().trim() : "";
+            String initialesPrenom = prenom.isEmpty() ? "" : prenom.substring(0, 1).toUpperCase();
+            String initialesNom = nom.isEmpty() ? "" : nom.substring(0, 1).toUpperCase();
+            String enseignantInitiales = (initialesPrenom + initialesNom).isEmpty() ? "NN" : (initialesPrenom + initialesNom);
+            Map<LocalDate, java.util.List<PlageHoraire>> emploiDuTemps = disponibiliteService.getEmploiDuTempsSemaine(id);
+            Map<String, java.util.List<Map<String, String>>> emploiDuTempsJson = new java.util.LinkedHashMap<>();
+            emploiDuTemps.forEach((date, plages) -> {
+                String dateStr = date.toString();
+                java.util.List<Map<String, String>> plagesJson = new java.util.ArrayList<>();
+                for (PlageHoraire plage : plages) {
+                    Map<String, String> plageJson = new java.util.HashMap<>();
+                    plageJson.put("heureDebut", plage.getHeureDebut().format(DateTimeFormatter.ofPattern("HH:mm")));
+                    plageJson.put("heureFin", plage.getHeureFin().format(DateTimeFormatter.ofPattern("HH:mm")));
+                    plagesJson.add(plageJson);
+                }
+                emploiDuTempsJson.put(dateStr, plagesJson);
+            });
+
+            model.addAttribute("user", userPrincipal.getUtilisateur());
+            model.addAttribute("nomComplet", userPrincipal.getNomComplet());
+            model.addAttribute("enseignantId", enseignantId);
+            model.addAttribute("enseignantNom", enseignantNom);
+            model.addAttribute("enseignantEmail", enseignantEmail);
+            model.addAttribute("enseignantInitiales", enseignantInitiales);
+            model.addAttribute("disponibilite", disponibilite);
+            model.addAttribute("emploiDuTemps", emploiDuTemps);
+            model.addAttribute("emploiDuTempsJson", emploiDuTempsJson);
+
+            return "admin/disponibilite-detail";
         }
         return "redirect:/login";
     }

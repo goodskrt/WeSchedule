@@ -234,8 +234,8 @@
                             <input type="text" class="form-control" id="nom" name="nom" th:value="${enseignant != null ? enseignant.nom : ''}" required>
                         </div>
                         <div class="col-md-6 mb-3">
-                            <label for="prenom" class="form-label"><i class="fas fa-user me-1"></i>Prénom <span class="text-danger">*</span></label>
-                            <input type="text" class="form-control" id="prenom" name="prenom" th:value="${enseignant != null ? enseignant.prenom : ''}" required>
+                            <label for="prenom" class="form-label"><i class="fas fa-user me-1"></i>Prénom</label>
+                            <input type="text" class="form-control" id="prenom" name="prenom" th:value="${enseignant != null ? enseignant.prenom : ''}">
                         </div>
                     </div>
                     <div class="row">

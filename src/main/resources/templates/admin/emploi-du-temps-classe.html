@@ -10,14 +10,86 @@
     <link rel="stylesheet" href="/css/modern-layout.css">
     <style>
         .timetable-wrap { overflow-x: auto; }
-        .timetable { display:grid; grid-template-columns:64px repeat(6,1fr); border-radius:var(--radius-xl); overflow:hidden; border:1px solid var(--gray-200); background:var(--gray-200); gap:1px; min-width:800px; }
-        .tt-head { background:linear-gradient(135deg,#059669,#10b981); color:white; padding:.75rem .5rem; text-align:center; font-weight:600; font-size:.82rem; }
-        .tt-head.corner { background:#047857; }
-        .tt-time { background:#f8fafc; padding:.5rem .25rem; text-align:center; font-size:.7rem; color:var(--gray-500); display:flex; align-items:center; justify-content:center; font-weight:500; }
-        .tt-cell { background:white; min-height:52px; cursor:pointer; transition:background .15s; position:relative; padding:3px; user-select:none; }
-        .tt-cell:hover { background:#f0fdf4; }
-        .tt-cell.selected { background:#bfdbfe !important; border:2px solid #2563eb; box-shadow: inset 0 0 0 1px #2563eb; }
-        .seance-block { border-radius:6px; padding:.3rem .45rem; font-size:.72rem; line-height:1.3; height:100%; cursor:pointer; transition:opacity .15s; display:flex; flex-direction:column; justify-content:space-between; }
+        .timetable { 
+            display:grid; 
+            grid-template-columns:70px repeat(6,1fr); 
+            border-radius:var(--radius-xl); 
+            overflow:hidden; 
+            border:1px solid var(--gray-200); 
+            background:var(--gray-200); 
+            gap:1px; 
+            min-width:800px;
+            box-shadow: var(--shadow-md);
+        }
+        .tt-head { 
+            background:linear-gradient(135deg, #667eea, #764ba2); 
+            color:white; 
+            padding:1rem .5rem; 
+            text-align:center; 
+            font-weight:600; 
+            font-size:.85rem; 
+        }
+        .tt-head.corner { 
+            background:#5568d3;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+        .tt-time { 
+            background:#f8fafc; 
+            padding:.75rem .5rem; 
+            text-align:center; 
+            font-size:.75rem; 
+            color:var(--gray-600); 
+            display:flex; 
+            align-items:center; 
+            justify-content:center; 
+            font-weight:600; 
+        }
+        .tt-time.pause { 
+            background: linear-gradient(135deg, #fbbf24, #f59e0b);
+            color: white;
+            font-weight: 700;
+        }
+        .tt-cell { 
+            background:white; 
+            min-height:60px; 
+            cursor:pointer; 
+            transition:all .2s; 
+            position:relative; 
+            padding:4px; 
+            user-select:none; 
+        }
+        .tt-cell:hover { 
+            background: linear-gradient(135deg, rgba(102, 126, 234, 0.15), rgba(118, 75, 162, 0.15));
+            box-shadow: inset 0 0 0 2px rgba(102, 126, 234, 0.3);
+        }
+        .tt-cell.selected { 
+            background:linear-gradient(135deg, rgba(102, 126, 234, 0.3), rgba(118, 75, 162, 0.3));
+            border:2px solid #667eea;
+        }
+        .tt-cell.pause {
+            background: repeating-linear-gradient(
+                45deg,
+                #fef3c7,
+                #fef3c7 10px,
+                #fde68a 10px,
+                #fde68a 20px
+            );
+            cursor: not-allowed;
+        }
+        .seance-block { 
+            border-radius:6px; 
+            padding:.3rem .45rem; 
+            font-size:.72rem; 
+            line-height:1.3; 
+            height:100%; 
+            cursor:pointer; 
+            transition:opacity .15s; 
+            display:flex; 
+            flex-direction:column; 
+            justify-content:space-between; 
+        }
         .seance-block:hover { opacity:.85; }
         .seance-block.cm { background:#dbeafe; border-left:3px solid #2563eb; color:#1e3a8a; }
         .seance-block.td { background:#fef3c7; border-left:3px solid #d97706; color:#78350f; }
@@ -25,10 +97,30 @@
         .seance-title { font-weight:700; white-space:nowrap; overflow:hidden; text-overflow:ellipsis; }
         .seance-meta  { opacity:.8; white-space:nowrap; overflow:hidden; text-overflow:ellipsis; }
         .legend-dot { width:12px; height:12px; border-radius:3px; display:inline-block; }
-        .week-nav { background:white; border-radius:var(--radius-xl); padding:1rem 1.5rem; box-shadow:var(--shadow-sm); border:1px solid var(--gray-200); }
-        .stat-pill { background:white; border-radius:var(--radius-lg); padding:.6rem 1rem; border:1px solid var(--gray-200); box-shadow:var(--shadow-sm); text-align:center; }
-        .stat-pill .val { font-size:1.4rem; font-weight:700; color:var(--primary-color); }
-        .stat-pill .lbl { font-size:.72rem; color:var(--gray-500); }
+        .week-nav { 
+            background:white; 
+            border-radius:var(--radius-xl); 
+            padding:1rem 1.5rem; 
+            box-shadow:var(--shadow-sm); 
+            border:1px solid var(--gray-200); 
+        }
+        .stat-pill { 
+            background:linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            border-radius:var(--radius-lg); 
+            padding:1.25rem 1rem; 
+            box-shadow:var(--shadow-md); 
+            text-align:center; 
+        }
+        .stat-pill .val { 
+            font-size:2rem; 
+            font-weight:700; 
+            margin-bottom: 0.25rem;
+        }
+        .stat-pill .lbl { 
+            font-size:.85rem; 
+            opacity: 0.9;
+        }
     </style>
 </head>
 <body>
@@ -65,9 +157,6 @@
                 <button class="btn btn-warning" onclick="autoGenerer()">
                     <i class="fas fa-magic me-1"></i> Auto-générer
                 </button>
-                <button class="btn btn-primary" onclick="openAddModal()">
-                    <i class="fas fa-plus me-1"></i> Ajouter une séance
-                </button>
                 <div class="dropdown">
                     <button class="btn btn-outline-secondary dropdown-toggle" data-bs-toggle="dropdown">
                         <i class="fas fa-ellipsis-v"></i>
@@ -92,20 +181,32 @@
 
         <!-- Week navigation -->
         <div class="week-nav d-flex align-items-center justify-content-between mb-3">
-            <a th:href="@{/admin/emplois-du-temps/classe/{id}(id=${classe.idClasse}, semaine=${semaine - 1}, annee=${annee})}"
+            <a th:href="@{/admin/emplois-du-temps/classe/{id}(id=${classe.idClasse}, semaine=${semaine - 1}, annee=${annee}, semestre=${semestre})}"
                class="btn btn-outline-secondary btn-sm">
                 <i class="fas fa-chevron-left"></i>
             </a>
-            <div class="text-center">
-                <div class="fw-semibold" style="font-size:.95rem;">
-                    Semaine <span th:text="${semaine}">1</span> &mdash; <span th:text="${annee}">2026</span>
-                </div>
-                <div class="text-muted small">
-                    Du <span th:text="${#temporals.format(lundi,'dd/MM/yyyy')}">01/01</span>
-                    au <span th:text="${#temporals.format(dimanche,'dd/MM/yyyy')}">07/01</span>
+            <div class="text-center flex-grow-1">
+                <div class="d-flex align-items-center justify-content-center gap-3">
+                    <div>
+                        <div class="fw-semibold" style="font-size:.95rem;">
+                            Semaine <span th:text="${semaine}">1</span> &mdash; <span th:text="${annee}">2026</span>
+                        </div>
+                        <div class="text-muted small">
+                            Du <span th:text="${#temporals.format(lundi,'dd/MM/yyyy')}">01/01</span>
+                            au <span th:text="${#temporals.format(dimanche,'dd/MM/yyyy')}">07/01</span>
+                        </div>
+                    </div>
+                    <div class="vr" style="height: 40px;"></div>
+                    <div>
+                        <label class="form-label mb-1 small text-muted">Semestre</label>
+                        <select class="form-select form-select-sm" id="semestreSelect" onchange="onSemestreChange()" style="width: 120px;">
+                            <option value="1" th:selected="${semestre == 1}">Semestre 1</option>
+                            <option value="2" th:selected="${semestre == 2}">Semestre 2</option>
+                        </select>
+                    </div>
                 </div>
             </div>
-            <a th:href="@{/admin/emplois-du-temps/classe/{id}(id=${classe.idClasse}, semaine=${semaine + 1}, annee=${annee})}"
+            <a th:href="@{/admin/emplois-du-temps/classe/{id}(id=${classe.idClasse}, semaine=${semaine + 1}, annee=${annee}, semestre=${semestre})}"
                class="btn btn-outline-secondary btn-sm">
                 <i class="fas fa-chevron-right"></i>
             </a>
@@ -283,29 +384,29 @@
 
 <!-- Modal confirmation auto-génération -->
 <div class="modal fade" id="autoGenererModal" tabindex="-1">
-    <div class="modal-dialog">
+    <div class="modal-dialog modal-dialog-centered">
         <div class="modal-content">
-            <div class="modal-header border-0 pb-0">
-                <h5 class="modal-title text-warning"><i class="fas fa-magic me-2"></i>Auto-générer l'emploi du temps</h5>
+            <div class="modal-header">
+                <h5 class="modal-title">
+                    <i class="fas fa-magic me-2 text-primary"></i>
+                    Confirmation Auto-Génération
+                </h5>
                 <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
             </div>
-            <div class="modal-body pt-2">
-                <p>Cette fonction va générer automatiquement les séances en fonction :</p>
-                <ul class="small">
-                    <li>Des cours avec heures restantes à planifier</li>
-                    <li>Des disponibilités des enseignants</li>
-                    <li>Des salles disponibles</li>
-                    <li>Priorité aux cours avec gros quota horaire</li>
+            <div class="modal-body">
+                <p>Voulez-vous générer automatiquement l'emploi du temps pour <strong th:text="${classe.nom}">cette classe</strong> ?</p>
+                <ul class="list-unstyled mb-0">
+                    <li><i class="fas fa-calendar-week me-2 text-primary"></i>Semaine : <strong><span th:text="${semaine}">1</span></strong></li>
+                    <li><i class="fas fa-book me-2 text-primary"></i>Semestre : <strong><span th:text="${semestre}">1</span></strong></li>
+                    <li><i class="fas fa-clock me-2 text-info"></i>Durée estimée : <strong>~5 secondes</strong></li>
                 </ul>
-                <div class="alert alert-warning small mb-0">
-                    <i class="fas fa-info-circle me-1"></i>
-                    Les séances existantes ne seront pas modifiées. Seuls les créneaux libres seront remplis.
-                </div>
             </div>
-            <div class="modal-footer border-0 pt-0">
-                <button class="btn btn-secondary btn-sm" data-bs-dismiss="modal">Annuler</button>
-                <button class="btn btn-warning btn-sm" onclick="confirmAutoGenerer()">
-                    <i class="fas fa-magic me-1"></i> Générer
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">
+                    <i class="fas fa-times me-2"></i>Annuler
+                </button>
+                <button type="button" class="btn btn-primary" onclick="confirmAutoGenerer()">
+                    <i class="fas fa-check me-2"></i>Confirmer
                 </button>
             </div>
         </div>
@@ -314,21 +415,27 @@
 
 <!-- Modal résultat auto-génération -->
 <div class="modal fade" id="autoGenererResultModal" tabindex="-1">
-    <div class="modal-dialog">
+    <div class="modal-dialog modal-dialog-centered">
         <div class="modal-content">
-            <div class="modal-header border-0 pb-0">
-                <h5 class="modal-title"><i class="fas fa-check-circle me-2 text-success"></i>Génération terminée</h5>
-                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+            <div class="modal-header bg-success text-white" id="resultModalHeader">
+                <h5 class="modal-title">
+                    <i class="fas fa-check-circle me-2"></i>
+                    Génération Réussie
+                </h5>
+                <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
             </div>
-            <div class="modal-body pt-2">
+            <div class="modal-body">
                 <div id="autoGenererResultContent"></div>
             </div>
-            <div class="modal-footer border-0 pt-0">
-                <button class="btn btn-primary btn-sm" data-bs-dismiss="modal">Fermer</button>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-primary" data-bs-dismiss="modal">
+                    <i class="fas fa-check me-2"></i>OK
+                </button>
             </div>
         </div>
     </div>
 </div>
+
 
 <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js"></script>
 <script src="/js/modern-layout.js"></script>
@@ -337,12 +444,24 @@
     const CLASSE_ID  = /*[[${classe.idClasse}]]*/ '';
     const SEMAINE    = /*[[${semaine}]]*/ 1;
     const ANNEE      = /*[[${annee}]]*/ 2026;
+    const SEMESTRE   = /*[[${semestre}]]*/ 1;
     const LUNDI_STR  = /*[[${#temporals.format(lundi,'yyyy-MM-dd')}]]*/ '';
     let EMPLOI_ID  = /*[[${emploiDuTemps != null ? emploiDuTemps.id : null}]]*/ null;
     /*]]>*/
 
     const JOURS  = ['Lundi','Mardi','Mercredi','Jeudi','Vendredi','Samedi'];
-    const HEURES = ['08:00','09:00','10:00','11:00','12:00','13:00','14:00','15:00','16:00','17:00'];
+    const HEURES = ['08:00','09:00','10:00','11:00','12:00','13:00','14:00','15:00','16:00'];
+    const PAUSE_INDEX = 4; // Index de 12h00-13h00
+
+    function formatHeure(h) {
+        if (!h || typeof h !== 'string') return '';
+        const [hh, mm] = h.split(':');
+        return `${parseInt(hh, 10)}h${(mm || '00').padStart(2, '0')}`;
+    }
+
+    function formatPlage(hDeb, hFin) {
+        return `${formatHeure(hDeb)}-${formatHeure(hFin)}`;
+    }
 
     let seancesData = {};
     let allCours = [], allEnseignants = [], allSalles = [], allUEs = [];
@@ -388,7 +507,9 @@
 
     function populateSelects() {
         const selUE = document.getElementById('selUE');
-        allUEs.forEach(u => {
+        // Filtrer les UEs par semestre
+        const uesFiltrees = allUEs.filter(u => u.semestre === SEMESTRE);
+        uesFiltrees.forEach(u => {
             const opt = new Option(u.code + ' - ' + u.intitule, u.idUE);
             selUE.appendChild(opt);
         });
@@ -403,7 +524,7 @@
             selHD.appendChild(new Option(h, h)); 
             selHF.appendChild(new Option(h, h));
         });
-        selHF.appendChild(new Option('18:00', '18:00'));
+        selHF.appendChild(new Option('17:00', '17:00'));
     }
     
     function updateHeureFin() {
@@ -411,8 +532,8 @@
         const idx = HEURES.indexOf(hd);
         if (idx >= 0 && idx < HEURES.length - 1) {
             document.getElementById('selHeureFin').value = HEURES[idx + 1];
-        } else if (hd === '17:00') {
-            document.getElementById('selHeureFin').value = '18:00';
+        } else if (hd === '16:00') {
+            document.getElementById('selHeureFin').value = '17:00';
         }
     }
 
@@ -451,7 +572,15 @@
         for (let hi = 0; hi < HEURES.length; hi++) {
             const timeCell = document.createElement('div');
             timeCell.className = 'tt-time';
-            timeCell.textContent = HEURES[hi];
+            const start = HEURES[hi];
+            const end = (hi < HEURES.length - 1) ? HEURES[hi + 1] : '17:00';
+            timeCell.textContent = formatPlage(start, end);
+            
+            // Marquer la pause avec la classe CSS
+            if (hi === PAUSE_INDEX) {
+                timeCell.classList.add('pause');
+            }
+            
             grid.appendChild(timeCell);
 
             for (let di = 0; di < 6; di++) {
@@ -463,7 +592,16 @@
                 cell.id = 'cell-' + dateStr + '-' + HEURES[hi].replace(':', '');
                 cell.dataset.date = dateStr;
                 cell.dataset.heure = HEURES[hi];
-                cell.onclick = (e) => onCellClick(dateStr, HEURES[hi], e);
+                
+                // Griser et désactiver la ligne de pause avec la classe CSS
+                if (hi === PAUSE_INDEX) {
+                    cell.classList.add('pause');
+                    cell.style.cursor = 'not-allowed';
+                    cell.innerHTML = '<span style="color: #9ca3af; font-size: 0.75rem; font-weight: 600;">PAUSE</span>';
+                } else {
+                    cell.onclick = (e) => onCellClick(dateStr, HEURES[hi], e);
+                }
+                
                 grid.appendChild(cell);
             }
         }
@@ -699,7 +837,7 @@
         const maxHeureIdx = Math.max(...heureIndices);
         
         const heureDebut = HEURES[minHeureIdx];
-        const heureFin = maxHeureIdx < HEURES.length - 1 ? HEURES[maxHeureIdx + 1] : '18:00';
+        const heureFin = maxHeureIdx < HEURES.length - 1 ? HEURES[maxHeureIdx + 1] : '17:00';
         
         document.getElementById('selHeureDebut').value = heureDebut;
         document.getElementById('selHeureFin').value = heureFin;
@@ -741,7 +879,8 @@
             const d = new Date(slot.date + 'T12:00:00');
             const dayName = JOURS[d.getDay() - 1] || 'Jour';
             const dateStr = d.toLocaleDateString('fr-FR', {day:'2-digit', month:'2-digit'});
-            container.innerHTML = `<span class="badge bg-primary">${dayName} ${dateStr} à ${slot.heure}</span>`;
+            const heureFin = (HEURES[HEURES.indexOf(slot.heure) + 1]) || '17:00';
+            container.innerHTML = `<span class="badge bg-primary">${dayName} ${dateStr} : ${formatPlage(slot.heure, heureFin)}</span>`;
             infoDiv.classList.add('d-none');
         } else {
             // Grouper par date pour un affichage plus compact
@@ -756,7 +895,8 @@
                 const dayName = JOURS[d.getDay() - 1] || 'Jour';
                 const dateStr = d.toLocaleDateString('fr-FR', {day:'2-digit', month:'2-digit'});
                 heures.sort();
-                const heureRange = heures.length > 2 ? `${heures[0]}-${heures[heures.length-1]}` : heures.join(', ');
+                const formattedHeures = heures.map(h => formatHeure(h));
+                const heureRange = heures.length > 2 ? `${formatPlage(heures[0], HEURES[HEURES.indexOf(heures[heures.length - 1]) + 1] || '17:00')}` : formattedHeures.join(', ');
                 return `<span class="badge bg-primary me-1 mb-1">${dayName} ${dateStr} : ${heureRange}</span>`;
             }).join('');
             
@@ -878,7 +1018,7 @@
                     // Utiliser les heures du créneau pour chaque séance
                     const slotHeureDebut = slot.heure;
                     const slotHeureIdx = HEURES.indexOf(slotHeureDebut);
-                    const slotHeureFin = slotHeureIdx >= 0 && slotHeureIdx < HEURES.length - 1 ? HEURES[slotHeureIdx + 1] : '18:00';
+                    const slotHeureFin = slotHeureIdx >= 0 && slotHeureIdx < HEURES.length - 1 ? HEURES[slotHeureIdx + 1] : '17:00';
                     
                     const params = new URLSearchParams({
                         coursId, 
@@ -1111,6 +1251,12 @@
         }
     }
     
+    function onSemestreChange() {
+        const semestre = document.getElementById('semestreSelect').value;
+        window.location.href = '/admin/emplois-du-temps/classe/' + CLASSE_ID + 
+            '?semaine=' + SEMAINE + '&annee=' + ANNEE + '&semestre=' + semestre;
+    }
+    
     function autoGenerer() {
         autoGenererModal.show();
     }
@@ -1120,14 +1266,16 @@
         
         // Afficher un loader
         const resultContent = document.getElementById('autoGenererResultContent');
-        resultContent.innerHTML = '<div class="text-center py-4"><div class="spinner-border text-warning" role="status"></div><p class="mt-2 text-muted">Génération en cours...</p></div>';
+        const resultHeader = document.getElementById('resultModalHeader');
+        resultContent.innerHTML = '<div class="text-center py-4"><div class="spinner-border text-primary" role="status"></div><p class="mt-2 text-muted">Génération en cours...</p></div>';
         autoGenererResultModal.show();
         
         try {
             const params = new URLSearchParams({
                 classeId: CLASSE_ID,
                 semaine: SEMAINE,
-                annee: ANNEE
+                annee: ANNEE,
+                semestre: SEMESTRE
             });
             
             const res = await fetch('/admin/emplois-du-temps/auto-generer', {
@@ -1140,44 +1288,65 @@
             
             if (data.success) {
                 const seancesAjoutees = data.seancesAjoutees || 0;
+                const seancesTPE = data.seancesTPE || 0;
                 const seancesEchouees = data.seancesEchouees || 0;
                 
-                resultContent.innerHTML = `
-                    <div class="alert alert-success">
+                // Header succès
+                resultHeader.className = 'modal-header bg-success text-white';
+                resultHeader.innerHTML = `
+                    <h5 class="modal-title">
                         <i class="fas fa-check-circle me-2"></i>
-                        <strong>${data.message}</strong>
-                    </div>
-                    <div class="row g-3">
-                        <div class="col-6">
-                            <div class="stat-pill">
-                                <div class="val text-success">${seancesAjoutees}</div>
-                                <div class="lbl">Séances ajoutées</div>
-                            </div>
-                        </div>
-                        <div class="col-6">
-                            <div class="stat-pill">
-                                <div class="val text-danger">${seancesEchouees}</div>
-                                <div class="lbl">Échecs</div>
-                            </div>
-                        </div>
+                        Génération Réussie
+                    </h5>
+                    <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
+                `;
+                
+                resultContent.innerHTML = `
+                    <p class="mb-3">L'emploi du temps a été généré avec succès.</p>
+                    <div class="alert alert-light border">
+                        <ul class="list-unstyled mb-0">
+                            <li class="mb-2"><i class="fas fa-book text-primary me-2"></i><strong>${seancesAjoutees}</strong> séance(s) de cours ajoutées</li>
+                            <li class="mb-2"><i class="fas fa-pencil-alt text-info me-2"></i><strong>${seancesTPE}</strong> séance(s) TPE ajoutées</li>
+                            ${seancesEchouees > 0 ? `<li><i class="fas fa-exclamation-triangle text-warning me-2"></i><strong>${seancesEchouees}</strong> cours non placé(s)</li>` : ''}
+                        </ul>
                     </div>
                 `;
                 
                 // Recharger les séances
                 await loadSeances();
             } else {
+                // Header erreur
+                resultHeader.className = 'modal-header bg-danger text-white';
+                resultHeader.innerHTML = `
+                    <h5 class="modal-title">
+                        <i class="fas fa-times-circle me-2"></i>
+                        Erreur de Génération
+                    </h5>
+                    <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
+                `;
+                
                 resultContent.innerHTML = `
+                    <p class="mb-2">Impossible de générer l'emploi du temps.</p>
                     <div class="alert alert-danger">
-                        <i class="fas fa-exclamation-triangle me-2"></i>
-                        <strong>Erreur :</strong> ${data.message}
+                        <i class="fas fa-exclamation-circle me-2"></i>${data.message}
                     </div>
                 `;
             }
         } catch(e) {
+            // Header erreur
+            resultHeader.className = 'modal-header bg-danger text-white';
+            resultHeader.innerHTML = `
+                <h5 class="modal-title">
+                    <i class="fas fa-times-circle me-2"></i>
+                    Erreur de Génération
+                </h5>
+                <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
+            `;
+            
             resultContent.innerHTML = `
+                <p class="mb-2">Une erreur est survenue lors de la génération.</p>
                 <div class="alert alert-danger">
-                    <i class="fas fa-exclamation-triangle me-2"></i>
-                    <strong>Erreur :</strong> ${e.message}
+                    <i class="fas fa-exclamation-circle me-2"></i>${e.message}
                 </div>
             `;
         }

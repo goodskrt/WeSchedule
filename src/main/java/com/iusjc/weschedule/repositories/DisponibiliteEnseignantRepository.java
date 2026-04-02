@@ -3,7 +3,6 @@ package com.iusjc.weschedule.repositories;
 import com.iusjc.weschedule.models.DisponibiliteEnseignant;
 import com.iusjc.weschedule.models.Enseignant;
 import org.springframework.data.jpa.repository.JpaRepository;
-import org.springframework.data.jpa.repository.Modifying;
 import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.repository.query.Param;
 import org.springframework.stereotype.Repository;
@@ -19,8 +18,4 @@ public interface DisponibiliteEnseignantRepository extends JpaRepository<Disponi
     
     List<DisponibiliteEnseignant> findByEnseignantAndDateDebutLessThanEqualAndDateFinGreaterThanEqual(
         Enseignant enseignant, LocalDate dateFin, LocalDate dateDebut);
-    
-    @Modifying
-    @Query("DELETE FROM DisponibiliteEnseignant d WHERE d.enseignant = :enseignant")
-    void deleteByEnseignant(@Param("enseignant") Enseignant enseignant);
 }

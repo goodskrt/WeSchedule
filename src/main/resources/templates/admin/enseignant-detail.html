@@ -283,16 +283,19 @@
         }
 
         function render() {
-            const initials = ((enseignant.prenom||'X')[0] + (enseignant.nom||'X')[0]).toUpperCase();
+            const firstChar = enseignant.prenom && enseignant.prenom.length > 0 ? enseignant.prenom[0] : 'X';
+            const lastChar = enseignant.nom && enseignant.nom.length > 0 ? enseignant.nom[0] : 'X';
+            const initials = (firstChar + lastChar).toUpperCase();
             const color = COLORS[(enseignant.nom||'').charCodeAt(0) % COLORS.length];
+            const fullName = `${enseignant.prenom || ''} ${enseignant.nom || ''}`.trim() || '—';
 
             // Hero
             document.getElementById('heroAvatar').textContent = initials;
-            document.getElementById('heroName').textContent   = enseignant.prenom + ' ' + enseignant.nom;
+            document.getElementById('heroName').textContent   = fullName;
             document.getElementById('heroGrade').textContent  = enseignant.grade || 'Grade non défini';
             document.getElementById('heroEmail').textContent  = enseignant.email;
-            document.getElementById('breadcrumbName').textContent = enseignant.prenom + ' ' + enseignant.nom;
-            document.getElementById('deleteNom').textContent  = enseignant.prenom + ' ' + enseignant.nom;
+            document.getElementById('breadcrumbName').textContent = fullName;
+            document.getElementById('deleteNom').textContent  = fullName;
 
             // Stats
             document.getElementById('nbUes').textContent    = enseignant.ues ? enseignant.ues.length : 0;

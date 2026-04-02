@@ -8,8 +8,8 @@ import java.util.Set;
 @Entity
 @Table(name = "enseignants")
 @Data
-@EqualsAndHashCode(callSuper = false, exclude = {"uesEnseignees", "disponibilites", "ecoles"})
-@ToString(exclude = {"uesEnseignees", "disponibilites", "ecoles"})
+@EqualsAndHashCode(callSuper = false, exclude = {"uesEnseignees", "disponibilites", "ecoles", "cours"})
+@ToString(exclude = {"uesEnseignees", "disponibilites", "ecoles", "cours"})
 public class Enseignant extends Utilisateur {
     private String grade;
     
@@ -37,6 +37,9 @@ public class Enseignant extends Utilisateur {
     )
     private Set<Ecole> ecoles;
     
-    @OneToMany(mappedBy = "enseignant", cascade = CascadeType.ALL, fetch = FetchType.LAZY)
+    @OneToMany(mappedBy = "enseignant", cascade = CascadeType.ALL, orphanRemoval = true, fetch = FetchType.LAZY)
     private Set<DisponibiliteEnseignant> disponibilites;
+    
+    @OneToMany(mappedBy = "enseignant", fetch = FetchType.LAZY)
+    private Set<Cours> cours;
 }

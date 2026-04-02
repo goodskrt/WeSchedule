@@ -127,6 +127,7 @@ public class DisponibiliteController {
             model.addAttribute("disponibilite", disponibilite);
             model.addAttribute("emploiDuTemps", emploiDuTemps);
             model.addAttribute("emploiDuTempsJson", emploiDuTempsJson);
+            model.addAttribute("adminView", false);
             
             log.info("Modèle préparé avec {} dates", emploiDuTempsJson.size());
             

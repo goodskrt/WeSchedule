@@ -1,6 +1,5 @@
 package com.iusjc.weschedule.service;
 
-import com.iusjc.weschedule.enums.TypeCours;
 import com.iusjc.weschedule.models.*;
 import com.iusjc.weschedule.repositories.*;
 import lombok.extern.slf4j.Slf4j;
@@ -8,447 +7,552 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
-import java.time.DayOfWeek;
 import java.time.LocalDate;
+import java.time.LocalDateTime;
 import java.time.LocalTime;
 import java.util.*;
 import java.util.stream.Collectors;
 
+/**
+ * Service d'auto-génération d'emploi du temps basé sur :
+ * - CSP (Constraint Satisfaction Problem)
+ * - Approche gloutonne (greedy algorithm)
+ * - Backtracking pour résoudre les blocages
+ */
 @Service
 @Slf4j
+@Transactional
 public class AutoGenerationEmploiDuTempsService {
 
     @Autowired
-    private CoursRepository coursRepository;
-    
-    @Autowired
-    private DisponibiliteEnseignantRepository disponibiliteRepository;
-    
-    @Autowired
-    private PlageHoraireRepository plageHoraireRepository;
-    
-    @Autowired
-    private CreneauDisponibiliteRepository creneauDisponibiliteRepository;
-    
-    @Autowired
-    private EmploiDuTempsService emploiDuTempsService;
-    
+    private EmploiDuTempsClasseRepository emploiDuTempsRepository;
+
     @Autowired
     private SeanceClasseRepository seanceRepository;
 
-    // Créneaux horaires disponibles (Lundi-Samedi, 8h-12h et 13h-17h)
-    private static final LocalTime[] HEURES_DEBUT = {
-        LocalTime.of(8, 0), LocalTime.of(9, 0), LocalTime.of(10, 0), LocalTime.of(11, 0),
-        LocalTime.of(13, 0), LocalTime.of(14, 0), LocalTime.of(15, 0), LocalTime.of(16, 0)
-    };
-    
-    private static final LocalTime[] HEURES_FIN = {
-        LocalTime.of(9, 0), LocalTime.of(10, 0), LocalTime.of(11, 0), LocalTime.of(12, 0),
-        LocalTime.of(14, 0), LocalTime.of(15, 0), LocalTime.of(16, 0), LocalTime.of(17, 0)
-    };
+    @Autowired
+    private CoursRepository coursRepository;
 
-    @Transactional
-    public Map<String, Object> genererEmploiDuTemps(UUID emploiDuTempsId) {
+    @Autowired
+    private DisponibiliteEnseignantRepository disponibiliteRepository;
+
+    @Autowired
+    private SalleRepository salleRepository;
+
+    @Autowired
+    private EmploiDuTempsService emploiDuTempsService;
+
+    /**
+     * Génère automatiquement l'emploi du temps pour une classe
+     * VERSION OPTIMISÉE pour réduire le temps de génération
+     */
+    public Map<String, Object> genererEmploiDuTemps(UUID emploiDuTempsId, Integer semestre) {
+        Map<String, Object> result = new HashMap<>();
+        
         try {
-            log.info("Début génération automatique pour emploi du temps {}", emploiDuTempsId);
-            
-            EmploiDuTempsClasse emploiDuTemps = emploiDuTempsService.getEmploiDuTempsById(emploiDuTempsId);
-            Classe classe = emploiDuTemps.getClasse();
-            
-            // Récupérer tous les cours de la classe
-            List<Cours> cours = coursRepository.findByClasse(classe);
-            
-            // Filtrer les cours qui ont encore des heures restantes
-            List<Cours> coursAplanifier = cours.stream()
-                .filter(c -> c.getDureeRestante() != null && c.getDureeRestante() > 0)
-                .filter(c -> c.getEnseignant() != null)
-                .collect(Collectors.toList());
-            
-            if (coursAplanifier.isEmpty()) {
-                return Map.of("success", false, "message", "Aucun cours à planifier");
-            }
-            
-            log.info("Nombre de cours à planifier: {}", coursAplanifier.size());
-            
+            EmploiDuTempsClasse emploiDuTemps = emploiDuTempsRepository.findById(emploiDuTempsId)
+                    .orElseThrow(() -> new IllegalArgumentException("Emploi du temps non trouvé"));
+
             int seancesAjoutees = 0;
             int seancesEchouees = 0;
+
+            // Générer tous les candidats une seule fois
+            List<SeanceCandidate> candidates = genererCandidats(emploiDuTemps, semestre);
             
-            // Calculer le nombre total de créneaux disponibles par enseignant pour la semaine
-            Map<UUID, Integer> creneauxDisponiblesParEnseignant = new HashMap<>();
-            Map<UUID, List<CreneauDisponible>> creneauxParEnseignant = new HashMap<>();
-            
-            for (Cours c : coursAplanifier) {
-                Enseignant enseignant = c.getEnseignant();
-                if (!creneauxParEnseignant.containsKey(enseignant.getIdUser())) {
-                    List<DisponibiliteEnseignant> disponibilites = disponibiliteRepository
-                        .findByEnseignantAndDateDebutLessThanEqualAndDateFinGreaterThanEqual(
-                            enseignant, emploiDuTemps.getDateFin(), emploiDuTemps.getDateDebut());
-                    
-                    List<CreneauDisponible> creneaux = getCreneauxDisponibles(
-                        disponibilites, emploiDuTemps.getDateDebut(), emploiDuTemps.getDateFin());
-                    
-                    creneauxParEnseignant.put(enseignant.getIdUser(), creneaux);
-                    creneauxDisponiblesParEnseignant.put(enseignant.getIdUser(), creneaux.size());
-                    
-                    log.info("Enseignant {} : {} créneaux disponibles", enseignant.getNom(), creneaux.size());
-                }
-            }
-            
-            // Continuer tant qu'il y a des disponibilités et des cours à planifier
-            boolean continuer = true;
-            int iteration = 0;
-            int echecsConsecutifs = 0;
-            
-            while (continuer && iteration < 100) { // Limite de sécurité
-                iteration++;
-                boolean progresThisIteration = false;
-                
-                log.info("=== Itération {} ===", iteration);
-                
-                // Traiter jour par jour (Lundi à Samedi)
-                LocalDate dateDebut = emploiDuTemps.getDateDebut();
-                for (int jourOffset = 0; jourOffset < 7; jourOffset++) {
-                    LocalDate dateJour = dateDebut.plusDays(jourOffset);
-                    
-                    // Ignorer le dimanche
-                    if (dateJour.getDayOfWeek() == DayOfWeek.SUNDAY) {
-                        continue;
-                    }
-                    
-                    // Mettre à jour la liste des cours à planifier
-                    coursAplanifier = cours.stream()
-                        .filter(c -> c.getDureeRestante() != null && c.getDureeRestante() > 0)
-                        .filter(c -> c.getEnseignant() != null)
-                        .collect(Collectors.toList());
-                    
-                    if (coursAplanifier.isEmpty()) {
-                        log.info("Tous les cours sont planifiés");
-                        continuer = false;
-                        break;
-                    }
-                    
-                    // Trouver les enseignants disponibles ce jour avec leurs cours
-                    List<CoursEnseignantInfo> coursDisponiblesCeJour = new ArrayList<>();
-                    
-                    for (Cours c : coursAplanifier) {
-                        Enseignant enseignant = c.getEnseignant();
-                        List<CreneauDisponible> creneaux = creneauxParEnseignant.get(enseignant.getIdUser());
-                        
-                        // Vérifier si l'enseignant a des créneaux ce jour
-                        boolean disponibleCeJour = creneaux.stream()
-                            .anyMatch(cr -> cr.date.equals(dateJour));
-                        
-                        if (disponibleCeJour) {
-                            CoursEnseignantInfo info = new CoursEnseignantInfo();
-                            info.cours = c;
-                            info.enseignant = enseignant;
-                            info.nbCreneauxSemaine = creneauxParEnseignant.get(enseignant.getIdUser()).size();
-                            info.dureeRestante = c.getDureeRestante();
-                            coursDisponiblesCeJour.add(info);
-                        }
-                    }
-                    
-                    if (coursDisponiblesCeJour.isEmpty()) {
-                        log.debug("{} - Aucun enseignant disponible", dateJour);
-                        continue;
-                    }
-                    
-                    // Trier par : 1) Moins de créneaux disponibles, 2) Plus de durée restante
-                    coursDisponiblesCeJour.sort((a, b) -> {
-                        int cmp = Integer.compare(a.nbCreneauxSemaine, b.nbCreneauxSemaine);
-                        if (cmp != 0) return cmp;
-                        return Integer.compare(b.dureeRestante, a.dureeRestante);
-                    });
-                    
-                    // Prendre le premier (prioritaire)
-                    CoursEnseignantInfo prioritaire = coursDisponiblesCeJour.get(0);
-                    
-                    log.info("{} - Enseignant prioritaire: {} ({} créneaux, {} heures restantes pour {})",
-                        dateJour,
-                        prioritaire.enseignant.getNom(),
-                        prioritaire.nbCreneauxSemaine,
-                        prioritaire.dureeRestante,
-                        prioritaire.cours.getUe().getIntitule());
-                    
-                    // Assigner des séances pour cet enseignant ce jour
-                    int heuresAssignees = assignerSeancesPourJour(
-                        emploiDuTempsId,
-                        prioritaire,
-                        dateJour,
-                        creneauxParEnseignant,
-                        cours
-                    );
-                    
-                    if (heuresAssignees > 0) {
-                        seancesAjoutees += heuresAssignees;
-                        progresThisIteration = true;
-                        echecsConsecutifs = 0;
+            if (candidates.isEmpty()) {
+                log.info("Aucun cours à programmer pour ce semestre");
+            } else {
+                // Trier par ordre de priorité (une seule fois)
+                candidates.sort(Comparator
+                        .comparingDouble(SeanceCandidate::getPriorityScore).reversed()
+                        .thenComparingInt((a) -> -a.getCours().getDureeRestante()));
+
+                log.info("Tentative de placement de {} cours", candidates.size());
+
+                // Essayer de placer chaque cours une seule fois
+                for (SeanceCandidate candidate : candidates) {
+                    if (essayerAffecterSeance(emploiDuTemps, candidate)) {
+                        seancesAjoutees++;
+                        log.info("✓ Cours {} placé avec succès", candidate.getCours().getIntitule());
                     } else {
-                        log.debug("{} - Aucune séance assignée pour {}", dateJour, prioritaire.enseignant.getNom());
+                        seancesEchouees++;
+                        log.warn("✗ Impossible de placer le cours {}", candidate.getCours().getIntitule());
                     }
+                }
+            }
+            
+            // Remplir les trous avec TPE
+            log.info("=== REMPLISSAGE DES TROUS AVEC TPE ===");
+            int seancesTPE = remplirTrousAvecTPE(emploiDuTemps);
+            log.info("Séances TPE ajoutées : {}", seancesTPE);
+
+            result.put("success", true);
+            result.put("message", "Génération terminée avec succès");
+            result.put("seancesAjoutees", seancesAjoutees);
+            result.put("seancesEchouees", seancesEchouees);
+            result.put("seancesTPE", seancesTPE);
+
+        } catch (Exception e) {
+            log.error("Erreur lors de la génération", e);
+            result.put("success", false);
+            result.put("message", "Erreur: " + e.getMessage());
+        }
+
+        return result;
+    }
+    
+    /**
+     * Remplit les trous dans l'emploi du temps avec des séances TPE
+     * Crée un cours TPE générique si nécessaire
+     * HORAIRES: 8h-17h (pas de séances 17h-18h)
+     * TPE: SANS salle assignée
+     * JOURS: Lundi à Samedi (6 jours)
+     */
+    private int remplirTrousAvecTPE(EmploiDuTempsClasse emploiDuTemps) {
+        int seancesTPEAjoutees = 0;
+        LocalDate lundi = emploiDuTemps.getDateDebut();
+        
+        // Créer ou récupérer un cours TPE générique pour cette classe
+        Cours coursTPE = getOrCreateCoursTPE(emploiDuTemps.getClasse());
+        
+        // Parcourir tous les jours de la semaine (Lundi à Samedi = 6 jours)
+        for (int jour = 0; jour < 6; jour++) {
+            LocalDate date = lundi.plusDays(jour);
+            
+            // Parcourir toutes les heures de 8h à 17h (pas 17h-18h)
+            LocalTime currentHeure = LocalTime.of(8, 0);
+            
+            while (currentHeure.isBefore(LocalTime.of(17, 0))) {
+                // Trouver le prochain créneau libre
+                LocalTime debutTrou = currentHeure;
+                LocalTime finTrou = debutTrou.plusHours(1);
+                
+                // Vérifier si c'est la pause déjeuner (sauf le samedi)
+                if (jour < 5 && isOverlappingLunchBreak(debutTrou, finTrou)) {
+                    currentHeure = LocalTime.of(13, 0);
+                    continue;
                 }
                 
-                // Si aucun progrès cette itération, incrémenter les échecs
-                if (!progresThisIteration) {
-                    echecsConsecutifs++;
-                    seancesEchouees++;
-                    log.warn("Itération {} sans progrès (échec {})", iteration, echecsConsecutifs);
+                // Vérifier si le créneau est libre
+                List<SeanceClasse> seancesExistantes = seanceRepository
+                        .findByEmploiDuTempsAndDateAndHeureDebutLessThanAndHeureFinGreaterThan(
+                                emploiDuTemps, date, finTrou, debutTrou);
+                
+                if (seancesExistantes.isEmpty()) {
+                    // Créneau libre, créer une séance TPE
+                    SeanceClasse seanceTPE = new SeanceClasse();
+                    seanceTPE.setEmploiDuTemps(emploiDuTemps);
+                    seanceTPE.setDate(date);
+                    seanceTPE.setHeureDebut(debutTrou);
+                    seanceTPE.setHeureFin(finTrou);
+                    seanceTPE.setCours(coursTPE); // Utiliser le cours TPE générique
+                    seanceTPE.setEnseignant(null);
+                    seanceTPE.setJourSemaine(jour);
+                    seanceTPE.setRemarques("TPE - Travail Personnel de l'Étudiant");
+                    seanceTPE.setSalle(null); // TPE SANS salle
                     
-                    // Arrêter après 3 échecs consécutifs
-                    if (echecsConsecutifs >= 3) {
-                        log.info("Arrêt après {} échecs consécutifs", echecsConsecutifs);
-                        continuer = false;
-                    }
-                } else {
-                    continuer = true; // Il y a eu du progrès, continuer
+                    seanceRepository.save(seanceTPE);
+                    seancesTPEAjoutees++;
+                    log.debug("TPE ajouté : {} de {} à {} (sans salle)", date, debutTrou, finTrou);
                 }
-            }
-            
-            log.info("Génération terminée après {} itérations: {} séances ajoutées, {} échecs", 
-                iteration, seancesAjoutees, seancesEchouees);
-            
-            return Map.of(
-                "success", true,
-                "message", seancesAjoutees + " séances générées avec succès",
-                "seancesAjoutees", seancesAjoutees,
-                "seancesEchouees", seancesEchouees
-            );
-            
-        } catch (Exception e) {
-            log.error("Erreur lors de la génération automatique", e);
-            return Map.of("success", false, "message", "Erreur: " + e.getMessage());
-        }
-    }
-    
-    /**
-     * Assigner des séances pour un enseignant sur un jour donné
-     * Stratégie : 2h CM + 2h TD, ou 4h CM, ou 4h TP, ou ce qui est disponible
-     */
-    private int assignerSeancesPourJour(
-            UUID emploiDuTempsId,
-            CoursEnseignantInfo prioritaire,
-            LocalDate dateJour,
-            Map<UUID, List<CreneauDisponible>> creneauxParEnseignant,
-            List<Cours> tousLesCours) {
-        
-        int heuresAssignees = 0;
-        Enseignant enseignant = prioritaire.enseignant;
-        
-        // Récupérer tous les cours de cet enseignant pour cette classe
-        List<Cours> coursEnseignant = tousLesCours.stream()
-            .filter(c -> c.getEnseignant() != null)
-            .filter(c -> c.getEnseignant().getIdUser().equals(enseignant.getIdUser()))
-            .filter(c -> c.getDureeRestante() > 0)
-            .collect(Collectors.toList());
-        
-        if (coursEnseignant.isEmpty()) {
-            return 0;
-        }
-        
-        // Trier par durée restante décroissante
-        coursEnseignant.sort((a, b) -> Integer.compare(b.getDureeRestante(), a.getDureeRestante()));
-        
-        // Stratégie : essayer 2h CM + 2h TD, sinon 4h du même type
-        Cours coursCM = coursEnseignant.stream()
-            .filter(c -> c.getTypeCours() == TypeCours.CM)
-            .findFirst().orElse(null);
-        
-        Cours coursTD = coursEnseignant.stream()
-            .filter(c -> c.getTypeCours() == TypeCours.TD)
-            .findFirst().orElse(null);
-        
-        Cours coursTP = coursEnseignant.stream()
-            .filter(c -> c.getTypeCours() == TypeCours.TP)
-            .findFirst().orElse(null);
-        
-        List<CreneauDisponible> creneauxJour = creneauxParEnseignant.get(enseignant.getIdUser()).stream()
-            .filter(cr -> cr.date.equals(dateJour))
-            .collect(Collectors.toList());
-        
-        if (creneauxJour.isEmpty()) {
-            log.debug("Aucun créneau disponible ce jour pour {}", enseignant.getNom());
-            return 0;
-        }
-        
-        int creneauxDisponibles = creneauxJour.size();
-        log.debug("{} créneaux disponibles pour {}", creneauxDisponibles, enseignant.getNom());
-        
-        // Stratégie 1 : 2h CM + 2h TD (si au moins 4 créneaux)
-        if (creneauxDisponibles >= 4 && 
-            coursCM != null && coursCM.getDureeRestante() >= 2 &&
-            coursTD != null && coursTD.getDureeRestante() >= 2) {
-            
-            log.info("Stratégie: 2h CM + 2h TD");
-            heuresAssignees += assignerBlocSeances(emploiDuTempsId, coursCM, enseignant, creneauxJour, 2);
-            heuresAssignees += assignerBlocSeances(emploiDuTempsId, coursTD, enseignant, creneauxJour, 2);
-        }
-        // Stratégie 2 : 4h CM (si au moins 4 créneaux)
-        else if (creneauxDisponibles >= 4 && coursCM != null && coursCM.getDureeRestante() >= 4) {
-            log.info("Stratégie: 4h CM");
-            heuresAssignees += assignerBlocSeances(emploiDuTempsId, coursCM, enseignant, creneauxJour, 4);
-        }
-        // Stratégie 3 : 4h TP (si au moins 4 créneaux)
-        else if (creneauxDisponibles >= 4 && coursTP != null && coursTP.getDureeRestante() >= 4) {
-            log.info("Stratégie: 4h TP");
-            heuresAssignees += assignerBlocSeances(emploiDuTempsId, coursTP, enseignant, creneauxJour, 4);
-        }
-        // Stratégie 4 : 4h TD (si au moins 4 créneaux)
-        else if (creneauxDisponibles >= 4 && coursTD != null && coursTD.getDureeRestante() >= 4) {
-            log.info("Stratégie: 4h TD");
-            heuresAssignees += assignerBlocSeances(emploiDuTempsId, coursTD, enseignant, creneauxJour, 4);
-        }
-        // Stratégie 5 : Assigner ce qui est possible avec les créneaux disponibles
-        else {
-            // Prendre le cours avec le plus de durée restante
-            Cours coursRestant = coursEnseignant.get(0);
-            int heuresAPlanifier = Math.min(creneauxDisponibles, coursRestant.getDureeRestante());
-            
-            if (heuresAPlanifier > 0) {
-                log.info("Stratégie: {}h {} (créneaux disponibles: {})", 
-                    heuresAPlanifier, coursRestant.getTypeCours(), creneauxDisponibles);
-                heuresAssignees += assignerBlocSeances(emploiDuTempsId, coursRestant, enseignant, creneauxJour, heuresAPlanifier);
+                
+                currentHeure = currentHeure.plusHours(1);
             }
         }
         
-        return heuresAssignees;
+        return seancesTPEAjoutees;
     }
     
     /**
-     * Assigner un bloc de séances consécutives
+     * Récupère ou crée un cours TPE générique pour une classe
      */
-    private int assignerBlocSeances(
-            UUID emploiDuTempsId,
-            Cours cours,
-            Enseignant enseignant,
-            List<CreneauDisponible> creneauxJour,
-            int nbHeures) {
+    private Cours getOrCreateCoursTPE(Classe classe) {
+        // Chercher un cours TPE existant pour cette classe
+        List<Cours> coursDeLaClasse = coursRepository.findByClasse(classe);
+        for (Cours cours : coursDeLaClasse) {
+            if (cours.getTypeCours() == com.iusjc.weschedule.enums.TypeCours.TPE) {
+                return cours;
+            }
+        }
         
-        int heuresAssignees = 0;
-        EmploiDuTempsClasse emploiDuTemps = emploiDuTempsService.getEmploiDuTempsById(emploiDuTempsId);
+        // Créer un nouveau cours TPE générique
+        Cours coursTPE = new Cours();
+        coursTPE.setIntitule("TPE - Travail Personnel de l'Étudiant");
+        coursTPE.setTypeCours(com.iusjc.weschedule.enums.TypeCours.TPE);
+        coursTPE.setDureeTotal(0); // Pas de durée totale pour TPE
+        coursTPE.setDureeRestante(0);
+        coursTPE.setDureeSeanceParJour(1);
+        coursTPE.setClasse(classe);
+        coursTPE.setUe(null); // TPE n'est pas lié à une UE
+        coursTPE.setEnseignant(null);
+        coursTPE.setDescription("Cours générique pour les séances de Travail Personnel de l'Étudiant");
         
-        for (int i = 0; i < nbHeures && !creneauxJour.isEmpty(); i++) {
-            CreneauDisponible creneau = creneauxJour.remove(0);
+        coursRepository.save(coursTPE);
+        log.info("Cours TPE générique créé pour la classe {}", classe.getNom());
+        
+        return coursTPE;
+    }
+
+    /**
+     * Génère la liste des candidats (matière/type) possibles
+     * CSP: Filtre basé sur le volume restant et faisabilité
+     */
+    private List<SeanceCandidate> genererCandidats(EmploiDuTempsClasse emploiDuTemps, Integer semestre) {
+        List<SeanceCandidate> candidates = new ArrayList<>();
+
+        log.info("=== DEBUT GENERATION CANDIDATS ===");
+        log.info("Classe : {}", emploiDuTemps.getClasse().getNom());
+        log.info("Semestre : {}", semestre);
+
+        // Récupérer tous les cours de la classe filtrés par semestre
+        List<Cours> coursDeLaClasse = coursRepository.findByClasse(emploiDuTemps.getClasse());
+        log.info("Cours trouvés pour la classe : {}", coursDeLaClasse.size());
+        
+        List<Cours> coursSemestre = coursDeLaClasse.stream()
+                .filter(c -> c.getUe() != null && c.getUe().getSemestre() != null && c.getUe().getSemestre().equals(semestre))
+                .toList();
+        log.info("Cours du semestre {} : {}", semestre, coursSemestre.size());
+
+        for (Cours cours : coursSemestre) {
+            log.info("Analyse cours : {} | Enseignant : {} | DureeRestante : {} | DureeSeance : {}", 
+                cours.getIntitule(), 
+                cours.getEnseignant() != null ? cours.getEnseignant().getNom() : "NULL",
+                cours.getDureeRestante(),
+                cours.getDureeSeanceParJour());
             
-            // Vérifier les conflits
-            if (hasConflict(emploiDuTemps, enseignant, creneau.date, creneau.heureDebut, creneau.heureFin)) {
-                log.warn("Conflit détecté pour {} à {}", creneau.date, creneau.heureDebut);
+            // CSP: Vérifier le volume restant
+            if (cours.getDureeRestante() == null || cours.getDureeRestante() <= 0) {
+                log.info("  -> REJETÉ : Volume restant nul ou négatif");
+                continue;
+            }
+
+            // CSP: Vérifier la durée de séance est définie
+            if (cours.getDureeSeanceParJour() == null || cours.getDureeSeanceParJour() <= 0) {
+                log.warn("  -> REJETÉ : Cours {} n'a pas de dureeSeanceParJour définie", cours.getIntitule());
+                continue;
+            }
+
+            // CSP: Vérifier que le volume restant ≥ durée de séance
+            if (cours.getDureeRestante() < cours.getDureeSeanceParJour()) {
+                log.info("  -> REJETÉ : Volume insuffisant pour {}: {} < {}", 
+                    cours.getIntitule(), cours.getDureeRestante(), cours.getDureeSeanceParJour());
                 continue;
             }
             
-            try {
-                emploiDuTempsService.ajouterSeance(
-                    emploiDuTempsId,
-                    cours.getIdCours(),
-                    enseignant.getIdUser(),
-                    null, // Pas de salle
-                    creneau.date,
-                    creneau.heureDebut,
-                    creneau.heureFin,
-                    "Généré automatiquement"
-                );
-                
-                heuresAssignees++;
-                log.info("  → Séance ajoutée: {} {} à {}", cours.getTypeCours(), cours.getUe().getIntitule(), creneau.heureDebut);
-                
-            } catch (Exception e) {
-                log.error("Erreur lors de l'ajout de séance: {}", e.getMessage());
+            // CSP: Vérifier que l'enseignant est assigné
+            if (cours.getEnseignant() == null) {
+                log.warn("  -> REJETÉ : Pas d'enseignant assigné");
+                continue;
+            }
+
+            // CSP: Vérifier les disponibilités de l'enseignant
+            if (!hasTeacherAvailability(cours, emploiDuTemps)) {
+                log.warn("  -> REJETÉ : Enseignant {} n'a pas de disponibilité", 
+                    cours.getEnseignant().getNom());
+                continue;
+            }
+
+            // CSP: Vérifier qu'il existe au moins une salle disponible
+            if (!hasRoomAvailable(emploiDuTemps)) {
+                log.warn("  -> REJETÉ : Aucune salle disponible dans le système");
+                continue;
+            }
+
+            // Calcul du score de priorité (glouton)
+            double priorityScore = calculatePriorityScore(cours, emploiDuTemps);
+            candidates.add(new SeanceCandidate(cours, priorityScore));
+            log.info("  -> ACCEPTÉ comme candidat (score: {})", priorityScore);
+        }
+
+        log.info("=== FIN GENERATION CANDIDATS : {} candidats ===", candidates.size());
+        return candidates;
+    }
+
+    /**
+     * Calcule le score de priorité pour la sélection gloutonne (VERSION SIMPLIFIÉE)
+     */
+    private double calculatePriorityScore(Cours cours, EmploiDuTempsClasse emploiDuTemps) {
+        double score = 0;
+
+        // Urgence: volume restant élevé
+        if (cours.getDureeTotal() != null && cours.getDureeTotal() > 0) {
+            score += (double) cours.getDureeRestante() / cours.getDureeTotal() * 100;
+        }
+
+        // Bonus pour les cours avec moins d'heures (plus faciles à placer)
+        score += (20 - cours.getDureeSeanceParJour()) * 5;
+
+        return score;
+    }
+
+    /**
+     * Vérifie si un créneau est disponible (CSP)
+     */
+    private boolean isSlotAvailable(Cours cours, LocalDate date, LocalTime debut, LocalTime fin, 
+                                    EmploiDuTempsClasse emploiDuTemps) {
+        // CSP: Vérifier que la classe n'a rien à cette heure
+        List<SeanceClasse> seancesClasse = seanceRepository
+                .findByEmploiDuTempsAndDateAndHeureDebutLessThanAndHeureFinGreaterThan(
+                        emploiDuTemps, date, fin, debut);
+        if (!seancesClasse.isEmpty()) {
+            return false;
+        }
+
+        // CSP: Vérifier que l'enseignant est disponible à cette date
+        List<DisponibiliteEnseignant> disponibilites = disponibiliteRepository
+                .findByEnseignant(cours.getEnseignant());
+        
+        boolean hasAvailability = disponibilites.stream()
+                .anyMatch(d -> !date.isBefore(d.getDateDebut()) && !date.isAfter(d.getDateFin()));
+        
+        if (!hasAvailability) {
+            return false;
+        }
+
+        // CSP: Vérifier qu'une salle est disponible
+        List<Salle> salles = salleRepository.findAll();
+        for (Salle salle : salles) {
+            List<SeanceClasse> seancesSalle = seanceRepository
+                    .findBySalleAndDateAndHeureDebutLessThanAndHeureFinGreaterThan(
+                            salle, date, fin, debut);
+            if (seancesSalle.isEmpty()) {
+                return true;
             }
         }
         
-        return heuresAssignees;
+        return false;
     }
-    
-    // Classe interne pour stocker les infos de cours/enseignant
-    private static class CoursEnseignantInfo {
-        Cours cours;
-        Enseignant enseignant;
-        int nbCreneauxSemaine;
-        int dureeRestante;
-    }
-    
-    private List<CreneauDisponible> getCreneauxDisponibles(
-            List<DisponibiliteEnseignant> disponibilites, LocalDate dateDebut, LocalDate dateFin) {
+
+    /**
+     * Essaye d'affecter une séance (VERSION OPTIMISÉE)
+     * CONTRAINTE 1: Un cours ne peut être programmé que sur UN SEUL jour par semaine
+     * CONTRAINTE 2: Un CM et son TP ne peuvent pas être programmés la même semaine
+     * HORAIRES: 8h-17h
+     */
+    private boolean essayerAffecterSeance(EmploiDuTempsClasse emploiDuTemps, SeanceCandidate candidate) {
+        Cours cours = candidate.getCours();
+        int dureeSeanceParJour = cours.getDureeSeanceParJour();
+        LocalDate lundi = emploiDuTemps.getDateDebut();
+
+        // CONTRAINTE 1: Vérifier si le cours est déjà programmé
+        List<SeanceClasse> seancesExistantes = seanceRepository.findByEmploiDuTempsAndCours(emploiDuTemps, cours);
+        if (!seancesExistantes.isEmpty()) {
+            return false;
+        }
         
-        List<CreneauDisponible> creneaux = new ArrayList<>();
-        
-        for (DisponibiliteEnseignant dispo : disponibilites) {
-            List<CreneauDisponibilite> creneauxJour = creneauDisponibiliteRepository.findByDisponibilite(dispo);
+        // CONTRAINTE 2: Vérifier qu'un cours de la même UE n'est pas déjà programmé
+        if (cours.getUe() != null) {
+            List<Cours> coursMemeUE = coursRepository.findByClasse(emploiDuTemps.getClasse()).stream()
+                .filter(c -> c.getUe() != null && c.getUe().getIdUE().equals(cours.getUe().getIdUE()))
+                .filter(c -> !c.getIdCours().equals(cours.getIdCours()))
+                .toList();
             
-            for (CreneauDisponibilite creneauJour : creneauxJour) {
-                LocalDate date = creneauJour.getDate();
-                
-                // Vérifier que la date est dans la semaine de l'emploi du temps
-                if (date.isBefore(dateDebut) || date.isAfter(dateFin)) {
-                    continue;
+            for (Cours autreCoursUE : coursMemeUE) {
+                List<SeanceClasse> seancesAutreCours = seanceRepository.findByEmploiDuTempsAndCours(emploiDuTemps, autreCoursUE);
+                if (!seancesAutreCours.isEmpty()) {
+                    return false;
                 }
-                
-                // Ignorer le dimanche
-                if (date.getDayOfWeek() == DayOfWeek.SUNDAY) {
-                    continue;
+            }
+        }
+
+        // OPTIMISATION: Essayer seulement les créneaux du matin (8h-12h) et après-midi (13h-17h)
+        // au lieu de toutes les heures
+        List<LocalTime> heuresDebut = List.of(
+            LocalTime.of(8, 0),   // Matin
+            LocalTime.of(13, 0)   // Après-midi
+        );
+
+        // Essayer chaque jour
+        for (int jour = 0; jour < 5; jour++) {
+            LocalDate date = lundi.plusDays(jour);
+            
+            // Essayer les créneaux optimisés
+            for (LocalTime debut : heuresDebut) {
+                if (tryPlacerSeancesSuccessives(emploiDuTemps, cours, date, debut, dureeSeanceParJour)) {
+                    return true;
                 }
+            }
+        }
+
+        return false;
+    }
+    
+    /**
+     * Tente de placer des séances successives pour un cours à partir d'un créneau donné
+     * Les séances sont de 1h chacune, placées successivement (sans trou) 
+     * jusqu'à atteindre la dureeSeanceParJour (durée totale par jour)
+     * CONTRAINTE: Toutes les séances d'un cours doivent être sur le MÊME JOUR
+     * HORAIRES: 8h-17h (pas de séances 17h-18h)
+     */
+    private boolean tryPlacerSeancesSuccessives(EmploiDuTempsClasse emploiDuTemps, Cours cours, 
+                                                 LocalDate dateDebut, LocalTime heureDebut, 
+                                                 int dureeSeanceParJour) {
+        int volumeRestant = cours.getDureeRestante();
+        List<SeanceClasse> seancesACreer = new ArrayList<>();
+        LocalDate lundi = emploiDuTemps.getDateDebut();
+        LocalDate currentDate = dateDebut;
+        LocalTime currentHeure = heureDebut;
+        int volumeTraite = 0;
+        int jourIndex = (int) (currentDate.toEpochDay() - lundi.toEpochDay());
+        
+        // CONTRAINTE: Toutes les séances doivent être sur le même jour
+        // Chaque séance dure 1h, on en crée jusqu'à atteindre dureeSeanceParJour
+        while (volumeTraite < volumeRestant && volumeTraite < dureeSeanceParJour) {
+            LocalTime heureFin = currentHeure.plusHours(1); // Séances de 1h
+            
+            // Si la séance dépasse 17h, on ne peut plus placer de séances ce jour
+            if (heureFin.isAfter(LocalTime.of(17, 0))) {
+                break; // Arrêter, on ne peut pas continuer
+            }
+            
+            // Si la séance chevauche la pause déjeuner, passer à 13h
+            if (isOverlappingLunchBreak(currentHeure, heureFin)) {
+                currentHeure = LocalTime.of(13, 0);
+                continue;
+            }
+            
+            // Vérifier que le créneau est disponible
+            if (!isSlotAvailable(cours, currentDate, currentHeure, heureFin, emploiDuTemps)) {
+                // Créneau occupé, on ne peut pas continuer (séances doivent être successives)
+                break;
+            }
+            
+            // Créer la séance de 1h (sans la sauvegarder encore)
+            SeanceClasse seance = new SeanceClasse();
+            seance.setEmploiDuTemps(emploiDuTemps);
+            seance.setDate(currentDate);
+            seance.setHeureDebut(currentHeure);
+            seance.setHeureFin(heureFin);
+            seance.setCours(cours);
+            seance.setEnseignant(cours.getEnseignant());
+            seance.setJourSemaine(jourIndex);
+            
+            seancesACreer.add(seance);
+            volumeTraite += 1; // Chaque séance = 1h
+            
+            // Passer à la séance suivante (immédiatement après, sans trou)
+            currentHeure = heureFin;
+        }
+        
+        // Si on n'a pas pu placer au moins une séance, échec
+        if (seancesACreer.isEmpty()) {
+            return false;
+        }
+        
+        // Vérifier qu'on a bien atteint la durée minimale requise par jour
+        // OU qu'on a épuisé le volume restant
+        if (volumeTraite < dureeSeanceParJour && volumeTraite < volumeRestant) {
+            // On n'a pas pu placer toutes les séances nécessaires pour ce jour
+            // (pas assez de place dans la journée)
+            log.debug("Impossible de placer {} séances successives pour {} à partir de {} (seulement {} placées)", 
+                dureeSeanceParJour, cours.getIntitule(), heureDebut, volumeTraite);
+            return false;
+        }
+        
+        // Sauvegarder l'état actuel pour backtracking
+        Integer volumeAncien = cours.getDureeRestante();
+        
+        try {
+            // Trouver une salle disponible pour toutes les séances
+            List<Salle> salles = salleRepository.findAll();
+            Salle salleTrouvee = null;
+            
+            for (Salle salle : salles) {
+                boolean salleDisponiblePourTout = true;
                 
-                List<PlageHoraire> plages = plageHoraireRepository.findByCreneauDisponibilite(creneauJour);
-                
-                for (PlageHoraire plage : plages) {
-                    // Découper les plages en créneaux d'1 heure
-                    LocalTime debut = plage.getHeureDebut();
-                    LocalTime fin = plage.getHeureFin();
-                    
-                    while (debut.isBefore(fin)) {
-                        LocalTime finCreneau = debut.plusHours(1);
-                        if (finCreneau.isAfter(fin)) {
-                            finCreneau = fin;
-                        }
-                        
-                        // Éviter la pause déjeuner (12h-13h)
-                        if (!(debut.equals(LocalTime.of(12, 0)) || 
-                              (debut.isBefore(LocalTime.of(13, 0)) && finCreneau.isAfter(LocalTime.of(12, 0))))) {
-                            creneaux.add(new CreneauDisponible(date, debut, finCreneau));
-                        }
-                        
-                        debut = finCreneau;
+                // Vérifier que la salle est disponible pour toutes les séances
+                for (SeanceClasse seance : seancesACreer) {
+                    List<SeanceClasse> seancesSalle = seanceRepository
+                            .findBySalleAndDateAndHeureDebutLessThanAndHeureFinGreaterThan(
+                                    salle, seance.getDate(), seance.getHeureFin(), seance.getHeureDebut());
+                    if (!seancesSalle.isEmpty()) {
+                        salleDisponiblePourTout = false;
+                        break;
                     }
                 }
+                
+                if (salleDisponiblePourTout) {
+                    salleTrouvee = salle;
+                    break;
+                }
             }
-        }
-        
-        // Trier les créneaux par date et heure
-        creneaux.sort(Comparator.comparing((CreneauDisponible c) -> c.date)
-            .thenComparing(c -> c.heureDebut));
-        
-        return creneaux;
-    }
-    
-    private boolean hasConflict(EmploiDuTempsClasse emploiDuTemps, Enseignant enseignant,
-                                LocalDate date, LocalTime heureDebut, LocalTime heureFin) {
-        
-        // Vérifier conflit classe
-        List<SeanceClasse> seancesClasse = seanceRepository
-            .findByEmploiDuTempsAndDateAndHeureDebutLessThanAndHeureFinGreaterThan(
-                emploiDuTemps, date, heureFin, heureDebut);
-        
-        if (!seancesClasse.isEmpty()) {
+            
+            if (salleTrouvee == null) {
+                return false; // Aucune salle disponible
+            }
+            
+            // Sauvegarder toutes les séances
+            for (SeanceClasse seance : seancesACreer) {
+                seance.setSalle(salleTrouvee);
+                seanceRepository.save(seance);
+                log.debug("✓ Séance ajoutée: {} le {} de {} à {}", 
+                    cours.getIntitule(), seance.getDate(), seance.getHeureDebut(), seance.getHeureFin());
+            }
+            
+            // Mettre à jour le volume restant
+            cours.setDureeRestante(cours.getDureeRestante() - volumeTraite);
+            coursRepository.save(cours);
+            
+            log.info("✓ {} séances de 1h successives créées pour {} (volume traité: {}h sur le jour {})", 
+                seancesACreer.size(), cours.getIntitule(), volumeTraite, currentDate);
+            
             return true;
+            
+        } catch (Exception e) {
+            // Backtracking: Restaurer l'état
+            cours.setDureeRestante(volumeAncien);
+            coursRepository.save(cours);
+            log.warn("Backtracking: Annulation de {} séances pour {}", seancesACreer.size(), cours.getIntitule());
+            return false;
         }
-        
-        // Vérifier conflit enseignant
-        List<SeanceClasse> seancesEnseignant = seanceRepository
-            .findByEnseignantAndDateAndHeureDebutLessThanAndHeureFinGreaterThan(
-                enseignant, date, heureFin, heureDebut);
-        
-        return !seancesEnseignant.isEmpty();
     }
     
-    // Classe interne pour représenter un créneau disponible
-    private static class CreneauDisponible {
-        LocalDate date;
-        LocalTime heureDebut;
-        LocalTime heureFin;
+    /**
+     * Vérifie si un créneau chevauche la pause déjeuner (12h-13h)
+     */
+    private boolean isOverlappingLunchBreak(LocalTime debut, LocalTime fin) {
+        LocalTime lunchStart = LocalTime.of(12, 0);
+        LocalTime lunchEnd = LocalTime.of(13, 0);
         
-        CreneauDisponible(LocalDate date, LocalTime heureDebut, LocalTime heureFin) {
-            this.date = date;
-            this.heureDebut = heureDebut;
-            this.heureFin = heureFin;
+        // Chevauchement si : debut < 13h ET fin > 12h
+        return debut.isBefore(lunchEnd) && fin.isAfter(lunchStart);
+    }
+
+    /**
+     * CSP: Vérifie si l'enseignant a des disponibilités
+     */
+    private boolean hasTeacherAvailability(Cours cours, EmploiDuTempsClasse emploiDuTemps) {
+        List<DisponibiliteEnseignant> dispo = disponibiliteRepository
+                .findByEnseignant(cours.getEnseignant());
+        return !dispo.isEmpty();
+    }
+
+    /**
+     * CSP: Vérifie s'il y a au moins une salle disponible
+     */
+    private boolean hasRoomAvailable(EmploiDuTempsClasse emploiDuTemps) {
+        List<Salle> salles = salleRepository.findAll();
+        return !salles.isEmpty();
+    }
+
+    /**
+     * Classe interne pour représenter un candidat de séance
+     */
+    private static class SeanceCandidate {
+        private final Cours cours;
+        private final double priorityScore;
+
+        public SeanceCandidate(Cours cours, double priorityScore) {
+            this.cours = cours;
+            this.priorityScore = priorityScore;
+        }
+
+        public Cours getCours() {
+            return cours;
+        }
+
+        public double getPriorityScore() {
+            return priorityScore;
         }
     }
 }

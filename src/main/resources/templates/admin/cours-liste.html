@@ -103,6 +103,11 @@
                     <option value="">Toutes les UEs</option>
                     <option th:each="u : ${ues}" th:value="${u.idUE}" th:text="${u.code + ' - ' + u.intitule}"></option>
                 </select>
+                <select id="semestreFilter" class="form-select form-select-sm" style="min-width:120px;width:auto;" onchange="filterCours()">
+                    <option value="">Tous semestres</option>
+                    <option value="1">Semestre 1</option>
+                    <option value="2">Semestre 2</option>
+                </select>
                 <select id="typeFilter" class="form-select form-select-sm" style="min-width:110px;width:auto;" onchange="filterCours()">
                     <option value="">Tous les types</option>
                     <option value="CM">CM</option>
@@ -140,7 +145,8 @@
                      th:data-type="${c.typeCours != null ? c.typeCours.name() : ''}"
                      th:data-classe="${c.classe != null ? c.classe.idClasse : ''}"
                      th:data-ecole="${c.classe != null and c.classe.ecole != null ? c.classe.ecole.idEcole : ''}"
-                     th:data-ue="${c.ue != null ? c.ue.idUE : ''}">
+                     th:data-ue="${c.ue != null ? c.ue.idUE : ''}"
+                     th:data-semestre="${c.ue != null and c.ue.semestre != null ? c.ue.semestre : ''}">
                     <div class="row align-items-center">
 
                         <!-- Avatar + intitulé -->
@@ -190,6 +196,12 @@
                                     </small>
                                     <small class="text-muted">
                                         (<span th:text="${c.dureeRestante}">0</span>h restantes)
+                                    </small>
+                                </div>
+                                <div th:if="${c.dureeSeanceParJour != null and c.dureeSeanceParJour > 0}" class="mt-1">
+                                    <small class="text-muted">
+                                        <i class="fas fa-calendar-day me-1"></i>
+                                        <span th:text="${c.dureeSeanceParJour}">0</span>h/jour
                                     </small>
                                 </div>
                             </div>
@@ -273,7 +285,7 @@
                         </div>
                         <small class="text-muted">
                             <i class="fas fa-info-circle me-1"></i>
-                            Colonnes : Intitulé, Type (CM/TD/TP), Classe, Code UE, Enseignant, Durée totale, Durée restante, Description.
+                            Colonnes : Intitulé, Type (CM/TD/TP), Classe, Code UE, Enseignant, Durée totale, Durée séance/jour, Durée restante, Description.
                             Téléchargez d'abord le modèle via <strong>Exporter</strong>.
                         </small>
                     </div>
@@ -296,16 +308,18 @@
             const ecoleId = document.getElementById('ecoleFilter').value;
             const classe  = document.getElementById('classeFilter').value;
             const ue      = document.getElementById('ueFilter').value;
+            const semestre = document.getElementById('semestreFilter').value;
             const type    = document.getElementById('typeFilter').value.toUpperCase();
             const cards   = document.querySelectorAll('#coursList .cours-card');
             let visible   = 0;
             cards.forEach(card => {
                 const intitule = (card.dataset.intitule || '').toLowerCase();
                 const ok = intitule.includes(search)
-                        && (!ecoleId || card.dataset.ecole === ecoleId)
-                        && (!classe  || card.dataset.classe === classe)
-                        && (!ue      || card.dataset.ue === ue)
-                        && (!type    || card.dataset.type === type);
+                        && (!ecoleId   || card.dataset.ecole === ecoleId)
+                        && (!classe    || card.dataset.classe === classe)
+                        && (!ue        || card.dataset.ue === ue)
+                        && (!semestre  || card.dataset.semestre === semestre)
+                        && (!type      || card.dataset.type === type);
                 card.style.display = ok ? '' : 'none';
                 if (ok) visible++;
             });
@@ -333,7 +347,7 @@
         }
 
         function resetFiltres() {
-            ['searchInput','ecoleFilter','classeFilter','ueFilter','typeFilter'].forEach(id => {
+            ['searchInput','ecoleFilter','classeFilter','ueFilter','semestreFilter','typeFilter'].forEach(id => {
                 const el = document.getElementById(id); if (el) el.value = '';
             });
             document.getElementById('classeFilter').innerHTML = '<option value="">Toutes les classes</option>';

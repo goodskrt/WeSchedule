@@ -12,7 +12,11 @@ import java.time.LocalDateTime;
 import java.util.UUID;
 
 @Entity
-@Table(name = "cours")
+@Table(name = "cours",
+    uniqueConstraints = @UniqueConstraint(
+        columnNames = {"ue_id", "classe_id", "type_cours"}
+    )
+)
 @Data
 @NoArgsConstructor
 @AllArgsConstructor
@@ -29,6 +33,9 @@ public class Cours {
 
     /** Durée totale prévue pour ce cours (en heures) */
     private Integer dureeTotal;
+
+    /** Durée d'une séance par jour (en heures) */
+    private Integer dureeSeanceParJour;
 
     /** Heures restantes à planifier (décrémentées au fil des séances) */
     private Integer dureeRestante;

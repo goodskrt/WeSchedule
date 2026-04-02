@@ -173,11 +173,14 @@ public class AdminController {
 
             // Validation
             if (nom == null || nom.trim().isEmpty() || 
-                prenom == null || prenom.trim().isEmpty() || 
                 email == null || email.trim().isEmpty()) {
                 response.put("success", false);
-                response.put("message", "Nom, prénom et email sont obligatoires");
+                response.put("message", "Nom et email sont obligatoires");
                 return ResponseEntity.badRequest().body(response);
+            }
+
+            if (prenom == null) {
+                prenom = "";
             }
 
             Enseignant saved = enseignantService.creerEnseignant(nom, prenom, email, phone, grade, ueIds);
@@ -694,6 +697,7 @@ public class AdminController {
                     ue.put("idUE", c.getUe().getIdUE().toString());
                     ue.put("code", c.getUe().getCode());
                     ue.put("intitule", c.getUe().getIntitule());
+                    ue.put("semestre", c.getUe().getSemestre());
                     m.put("ue", ue);
                 }
                 if (c.getEnseignant() != null) {
