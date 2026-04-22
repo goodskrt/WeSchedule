@@ -14,6 +14,7 @@
         <main class="ws-main-content">
             <h2 class="page-title">Rapports et Statistiques</h2>
             <p class="page-subtitle">Consulter les rapports et analyses du systeme</p>
+            <div th:replace="~{fragments/admin-stats :: stat-row(${pageStats})}"></div>
             <div class="card-custom p-5 text-center mt-4">
                 <div class="empty-state-icon"><i class="fas fa-chart-bar"></i></div>
                 <p class="text-muted">Fonctionnalite en cours de developpement</p>

@@ -113,6 +113,9 @@
         .grid-7-5 { display: grid; grid-template-columns: 7fr 5fr; gap: 1rem; margin-bottom: 1.75rem; }
         @media (max-width: 1100px) { .grid-4 { grid-template-columns: repeat(2,1fr); } .grid-7-5 { grid-template-columns: 1fr; } }
         @media (max-width: 768px)  { .grid-4,.grid-3,.grid-2 { grid-template-columns: 1fr; } }
+        @media (max-width: 1200px) { .dashboard-stat-grid { grid-template-columns: repeat(3, 1fr) !important; } }
+        @media (max-width: 768px)  { .dashboard-stat-grid { grid-template-columns: repeat(2, 1fr) !important; } }
+        @media (max-width: 1200px) { .grid-3[style*="repeat(4"] { grid-template-columns: repeat(2, 1fr) !important; } }
     </style>
 </head>
 <body>
@@ -130,9 +133,9 @@
                 <div class="welcome-date" id="currentDate"></div>
             </div>
 
-            <!-- Stats principales -->
+            <!-- Stats principales (compteurs réels issus de la base) -->
             <p class="section-label">Vue d'ensemble</p>
-            <div style="display:grid;grid-template-columns:repeat(5,1fr);gap:1rem;margin-bottom:1.75rem;">
+            <div class="dashboard-stat-grid" style="display:grid;grid-template-columns:repeat(auto-fill,minmax(148px,1fr));gap:1rem;margin-bottom:1.75rem;">
                 <a href="/dashboard/admin/enseignants" class="stat-card">
                     <div class="stat-icon" style="background:linear-gradient(135deg,#6366f1,#4f46e5);">
                         <i class="fas fa-chalkboard-teacher"></i>
@@ -169,6 +172,15 @@
                         <div class="stat-label">Classes</div>
                     </div>
                 </a>
+                <a href="/admin/etudiants" class="stat-card">
+                    <div class="stat-icon" style="background:linear-gradient(135deg,#14b8a6,#0d9488);">
+                        <i class="fas fa-user-graduate"></i>
+                    </div>
+                    <div>
+                        <div class="stat-number" th:text="${totalEtudiants}">0</div>
+                        <div class="stat-label">Étudiants</div>
+                    </div>
+                </a>
                 <a href="/admin/ues" class="stat-card">
                     <div class="stat-icon" style="background:linear-gradient(135deg,#8b5cf6,#7c3aed);">
                         <i class="fas fa-layer-group"></i>
@@ -176,6 +188,16 @@
                     <div>
                         <div class="stat-number" th:text="${totalUes}">0</div>
                         <div class="stat-label">UEs</div>
+                    </div>
+                </a>
+                <a href="/admin/equipements" class="stat-card">
+                    <div class="stat-icon" style="background:linear-gradient(135deg,#64748b,#475569);">
+                        <i class="fas fa-laptop"></i>
+                    </div>
+                    <div>
+                        <div class="stat-number" th:text="${totalEquipements}">0</div>
+                        <div class="stat-label">Équipements</div>
+                        <div class="stat-trend text-muted" style="font-size:0.72rem;" th:text="${totalTypesEquipement} + ' type(s)'">0 types</div>
                     </div>
                 </a>
             </div>
@@ -186,7 +208,7 @@
                 <!-- Accès rapide -->
                 <div>
                     <p class="section-label">Accès rapide</p>
-                    <div class="grid-2" style="margin-bottom:0;">
+                    <div class="grid-2" style="margin-bottom:0; grid-template-columns:repeat(2,1fr);">
                         <a href="/dashboard/admin/enseignants" class="quick-card">
                             <div class="quick-icon" style="background:rgba(99,102,241,0.1);color:#6366f1;">
                                 <i class="fas fa-users"></i>
@@ -223,6 +245,15 @@
                                 <p class="quick-desc">Gérer les classes et niveaux</p>
                             </div>
                         </a>
+                        <a href="/admin/etudiants" class="quick-card">
+                            <div class="quick-icon" style="background:rgba(20,184,166,0.12);color:#0d9488;">
+                                <i class="fas fa-user-graduate"></i>
+                            </div>
+                            <div>
+                                <div class="quick-title">Étudiants</div>
+                                <p class="quick-desc">Fiches étudiants et affectations</p>
+                            </div>
+                        </a>
                         <a href="/admin/ues" class="quick-card">
                             <div class="quick-icon" style="background:rgba(139,92,246,0.1);color:#8b5cf6;">
                                 <i class="fas fa-layer-group"></i>
@@ -241,67 +272,50 @@
                                 <p class="quick-desc">Planifier et organiser les séances</p>
                             </div>
                         </a>
+                        <a href="/admin/equipements" class="quick-card">
+                            <div class="quick-icon" style="background:rgba(71,85,105,0.12);color:#475569;">
+                                <i class="fas fa-laptop"></i>
+                            </div>
+                            <div>
+                                <div class="quick-title">Équipements</div>
+                                <p class="quick-desc">Matériel, types et affectation aux salles</p>
+                            </div>
+                        </a>
                     </div>
                 </div>
 
-                <!-- Activité récente -->
+                <!-- Synthèse (mêmes compteurs que ci-dessus — pas de données simulées) -->
                 <div>
-                    <p class="section-label">Activité récente</p>
+                    <p class="section-label">Planning &amp; effectifs</p>
                     <div class="activity-card">
                         <div class="activity-header">
-                            <span class="activity-title"><i class="fas fa-history me-2 text-primary"></i>Dernières actions</span>
+                            <span class="activity-title"><i class="fas fa-database me-2 text-primary"></i>Données en base</span>
                         </div>
                         <div class="activity-item">
-                            <div class="activity-dot" style="background:linear-gradient(135deg,#6366f1,#4f46e5);">
-                                <i class="fas fa-user-plus" style="font-size:0.75rem;"></i>
+                            <div class="activity-dot" style="background:linear-gradient(135deg,#14b8a6,#0d9488);">
+                                <i class="fas fa-user-graduate" style="font-size:0.75rem;"></i>
                             </div>
                             <div>
-                                <div class="activity-text">Système initialisé</div>
-                                <div class="activity-time">Données chargées depuis la base</div>
-                            </div>
-                        </div>
-                        <div class="activity-item">
-                            <div class="activity-dot" style="background:linear-gradient(135deg,#10b981,#059669);">
-                                <i class="fas fa-book" style="font-size:0.75rem;"></i>
-                            </div>
-                            <div>
-                                <div class="activity-text">
-                                    <span th:text="${totalCours}">0</span> cours disponibles
-                                </div>
-                                <div class="activity-time">Tous semestres confondus</div>
-                            </div>
-                        </div>
-                        <div class="activity-item">
-                            <div class="activity-dot" style="background:linear-gradient(135deg,#06b6d4,#0891b2);">
-                                <i class="fas fa-door-open" style="font-size:0.75rem;"></i>
-                            </div>
-                            <div>
-                                <div class="activity-text">
-                                    <span th:text="${totalSalles}">0</span> salles enregistrées
-                                </div>
-                                <div class="activity-time">Capacités et localisations renseignées</div>
-                            </div>
-                        </div>
-                        <div class="activity-item">
-                            <div class="activity-dot" style="background:linear-gradient(135deg,#f59e0b,#d97706);">
-                                <i class="fas fa-graduation-cap" style="font-size:0.75rem;"></i>
-                            </div>
-                            <div>
-                                <div class="activity-text">
-                                    <span th:text="${totalClasses}">0</span> classes actives
-                                </div>
-                                <div class="activity-time">Niveaux 1 à 5</div>
+                                <div class="activity-text"><span th:text="${totalEtudiants}">0</span> étudiant(s)</div>
+                                <div class="activity-time">Fiches enregistrées</div>
                             </div>
                         </div>
                         <div class="activity-item">
                             <div class="activity-dot" style="background:linear-gradient(135deg,#ec4899,#db2777);">
-                                <i class="fas fa-chalkboard-teacher" style="font-size:0.75rem;"></i>
+                                <i class="fas fa-calendar-check" style="font-size:0.75rem;"></i>
                             </div>
                             <div>
-                                <div class="activity-text">
-                                    <span th:text="${totalEnseignants}">0</span> enseignants inscrits
-                                </div>
-                                <div class="activity-time">Francophone &amp; Anglophone</div>
+                                <div class="activity-text"><span th:text="${totalEmploisDuTemps}">0</span> emploi(s) du temps classe</div>
+                                <div class="activity-time">Emplois du temps par classe</div>
+                            </div>
+                        </div>
+                        <div class="activity-item">
+                            <div class="activity-dot" style="background:linear-gradient(135deg,#8b5cf6,#7c3aed);">
+                                <i class="fas fa-clock" style="font-size:0.75rem;"></i>
+                            </div>
+                            <div>
+                                <div class="activity-text"><span th:text="${totalSeances}">0</span> séance(s) planifiée(s)</div>
+                                <div class="activity-time">Séances enregistrées</div>
                             </div>
                         </div>
                     </div>
@@ -310,7 +324,7 @@
 
             <!-- Répartition des ressources -->
             <p class="section-label">Répartition des ressources</p>
-            <div class="grid-3">
+            <div class="grid-3" style="grid-template-columns: repeat(4, 1fr);">
                 <!-- Cours par type -->
                 <div class="progress-card">
                     <div class="d-flex align-items-center gap-2 mb-3">
@@ -342,6 +356,21 @@
                         <span style="font-size:0.88rem;font-weight:700;color:var(--gray-800);">Salles par type</span>
                     </div>
                     <div id="sallesProgress"><p class="text-muted small">Chargement…</p></div>
+                </div>
+
+                <!-- Équipements par statut -->
+                <div class="progress-card">
+                    <div class="d-flex align-items-center gap-2 mb-3">
+                        <div style="width:32px;height:32px;border-radius:8px;background:linear-gradient(135deg,#64748b,#475569);display:flex;align-items:center;justify-content:center;color:white;font-size:0.8rem;">
+                            <i class="fas fa-laptop"></i>
+                        </div>
+                        <span style="font-size:0.88rem;font-weight:700;color:var(--gray-800);">Équipements</span>
+                    </div>
+                    <div id="equipementsProgress"><p class="text-muted small">Chargement…</p></div>
+                    <div class="progress-item mt-2 pt-2 border-top">
+                        <div class="progress-label"><span>Sans salle (stock)</span><span id="pct-eq-stock">—</span></div>
+                        <div class="progress-track"><div class="progress-fill" id="bar-eq-stock" style="width:0%;background:linear-gradient(90deg,#94a3b8,#64748b);"></div></div>
+                    </div>
                 </div>
 
                 <!-- Taux de couverture -->
@@ -445,6 +474,44 @@
                     });
                 }, 150);
 
+                // ── Équipements par statut ─────────────────────────────
+                const eqTotal = stats.equipements_total || 0;
+                const eqParStat = stats.equipements_par_statut || {};
+                const eqStatConfig = {
+                    'DISPONIBLE':     { label: 'Disponible',     color: 'linear-gradient(90deg,#059669,#10b981)' },
+                    'EN_SERVICE':     { label: 'En service',     color: 'linear-gradient(90deg,#2563eb,#3b82f6)' },
+                    'EN_MAINTENANCE': { label: 'Maintenance',    color: 'linear-gradient(90deg,#d97706,#f59e0b)' },
+                    'HORS_SERVICE':   { label: 'Hors service',   color: 'linear-gradient(90deg,#991b1b,#ef4444)' },
+                };
+                let eqHtml = '';
+                if (eqTotal > 0) {
+                    for (const [key, cfg] of Object.entries(eqStatConfig)) {
+                        const nb = eqParStat[key] || 0;
+                        if (nb === 0) continue;
+                        const pct = Math.round((nb / eqTotal) * 100);
+                        eqHtml += `
+                            <div class="progress-item">
+                                <div class="progress-label"><span>${cfg.label}</span><span>${nb} (${pct}%)</span></div>
+                                <div class="progress-track">
+                                    <div class="progress-fill" style="width:0%;background:${cfg.color};" data-target="${pct}"></div>
+                                </div>
+                            </div>`;
+                    }
+                }
+                if (!eqHtml) eqHtml = '<p class="text-muted small mb-0">Aucun équipement enregistré</p>';
+                const eqProg = document.getElementById('equipementsProgress');
+                if (eqProg) {
+                    eqProg.innerHTML = eqHtml;
+                    setTimeout(() => {
+                        eqProg.querySelectorAll('.progress-fill').forEach(b => {
+                            b.style.width = b.dataset.target + '%';
+                        });
+                    }, 150);
+                }
+                const stock = stats.equipements_stock || 0;
+                const pctStock = eqTotal > 0 ? Math.round((stock / eqTotal) * 100) : 0;
+                setBar('eq-stock', pctStock, stock + ' (' + pctStock + '%)');
+
                 // ── Indicateurs clés ────────────────────────────────────
                 const pctEns  = total > 1 ? Math.round((stats.cours_avec_enseignant / (total)) * 100) : 0;
                 const pctDone = total > 1 ? Math.round((stats.cours_termines / (total)) * 100) : 0;
@@ -457,6 +524,8 @@
                 // Fallback silencieux — les barres restent à 0
                 document.getElementById('sallesProgress').innerHTML =
                     '<p class="text-muted small">Données non disponibles</p>';
+                const ep = document.getElementById('equipementsProgress');
+                if (ep) ep.innerHTML = '<p class="text-muted small">Données non disponibles</p>';
             }
         }
 

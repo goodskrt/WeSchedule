@@ -10,8 +10,11 @@ import com.iusjc.weschedule.service.EnseignantService;
 import com.iusjc.weschedule.service.ExcelEnseignantService;
 import com.iusjc.weschedule.service.ExcelSalleService;
 import com.iusjc.weschedule.service.ExcelClasseService;
+import com.iusjc.weschedule.enums.StatutEquipement;
 import com.iusjc.weschedule.repositories.ClasseRepository;
+import com.iusjc.weschedule.repositories.EquipmentRepository;
 import com.iusjc.weschedule.repositories.FiliereRepository;
+import com.iusjc.weschedule.repositories.TypeEquipementRepository;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.HttpHeaders;
@@ -63,6 +66,15 @@ public class AdminController {
 
     @Autowired
     private FiliereRepository filiereRepository;
+
+    @Autowired
+    private EquipmentRepository equipmentRepository;
+
+    @Autowired
+    private TypeEquipementRepository typeEquipementRepository;
+
+    @Autowired
+    private com.iusjc.weschedule.repositories.EtudiantRepository etudiantRepository;
 
     // ==================== ENSEIGNANTS ====================
 
@@ -755,6 +767,19 @@ public class AdminController {
             long sallesDispo = toutesSalles.stream()
                     .filter(s -> s.getStatut() != null && s.getStatut().name().equals("DISPONIBLE")).count();
             stats.put("salles_disponibles", sallesDispo);
+
+            // Équipements
+            long totalEquipements = equipmentRepository.count();
+            stats.put("equipements_total", totalEquipements);
+            stats.put("equipements_types_total", typeEquipementRepository.count());
+            Map<String, Long> equipementsParStatut = new LinkedHashMap<>();
+            for (StatutEquipement st : StatutEquipement.values()) {
+                equipementsParStatut.put(st.name(), equipmentRepository.countByStatut(st));
+            }
+            stats.put("equipements_par_statut", equipementsParStatut);
+            stats.put("equipements_stock", equipmentRepository.countBySalleIsNull());
+
+            stats.put("etudiants_total", etudiantRepository.count());
 
             return ResponseEntity.ok(stats);
         } catch (Exception e) {

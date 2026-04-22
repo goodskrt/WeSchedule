@@ -12,10 +12,14 @@ import java.util.UUID;
 public interface EquipmentAssignmentRepository extends JpaRepository<EquipmentAssignment, UUID> {
     
     List<EquipmentAssignment> findByEquipment(Equipment equipment);
+
+    List<EquipmentAssignment> findByEquipmentOrderByStartAtDesc(Equipment equipment);
     
     List<EquipmentAssignment> findByEquipmentAndStatus(Equipment equipment, String status);
     
     List<EquipmentAssignment> findByTargetIdAndAssignmentType(UUID targetId, String assignmentType);
     
     List<EquipmentAssignment> findByStatus(String status);
+
+    long countByEquipment(Equipment equipment);
 }

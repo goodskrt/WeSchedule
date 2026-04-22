@@ -11,6 +11,7 @@ import com.iusjc.weschedule.repositories.EcoleRepository;
 import com.iusjc.weschedule.repositories.EnseignantRepository;
 import com.iusjc.weschedule.repositories.UERepository;
 import com.iusjc.weschedule.service.ExcelCoursService;
+import com.iusjc.weschedule.util.AdminStatsFactory;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.HttpHeaders;
@@ -124,6 +125,7 @@ public class CoursController {
         model.addAttribute("classes", classeRepository.findAll());
         model.addAttribute("ecoles",  ecoleRepository.findAll());
         model.addAttribute("ues",     ueRepository.findAll());
+        model.addAttribute("pageStats", AdminStatsFactory.cours(coursRepository));
         return "admin/cours-liste";
     }
 

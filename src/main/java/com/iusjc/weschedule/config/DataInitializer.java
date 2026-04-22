@@ -47,10 +47,13 @@ public class DataInitializer {
             CreneauDisponibiliteRepository creneauDispoRepo,
             PlageHoraireRepository plageHoraireRepo,
             PasswordResetTokenRepository passwordResetTokenRepo,
+            NotificationRepository notificationRepo,
             SeanceClasseRepository seanceClasseRepo,
             EmploiDuTempsClasseRepository emploiDuTempsClasseRepo,
             EquipmentRepository equipmentRepo,
-            EquipmentAssignmentRepository equipmentAssignmentRepo) {
+            EquipmentAssignmentRepository equipmentAssignmentRepo,
+            TypeEquipementRepository typeEquipementRepo,
+            CategorieEquipementRepository categorieEquipementRepo) {
         return args -> {
             log.info("=== INITIALISATION COMPLETE DE LA BASE DE DONNEES AVEC DONNEES FRONTEND ===");
 
@@ -60,10 +63,13 @@ public class DataInitializer {
             // 1. Supprimer d'abord les dépendances les plus faibles (sans FK vers d'autres tables)
             equipmentAssignmentRepo.deleteAll();
             equipmentRepo.deleteAll();
+            typeEquipementRepo.deleteAll();
+            categorieEquipementRepo.deleteAll();
             plageHoraireRepo.deleteAll();
             creneauDispoRepo.deleteAll();
             disponibiliteRepo.deleteAll();
             passwordResetTokenRepo.deleteAll();
+            notificationRepo.deleteAll();
 
             // 2. Supprimer les cours AVANT les enseignants (car cours a FK vers enseignants)
             coursRepo.deleteAll();
@@ -146,6 +152,52 @@ public class DataInitializer {
             inge4IsiEn.setEffectif(38);
             inge4IsiEn.setLangue("Anglophone");
             classeRepo.save(inge4IsiEn);
+
+            // ========== 3b. GROUPES ET ÉTUDIANTS (entités métier, sans compte utilisateur) ==========
+            log.info("Creation des groupes et etudiants...");
+            Groupe grpA = new Groupe();
+            grpA.setNomGroupe("Groupe A");
+            groupeRepo.save(grpA);
+            Groupe grpB = new Groupe();
+            grpB.setNomGroupe("Groupe B");
+            groupeRepo.save(grpB);
+
+            Etudiant et1 = new Etudiant();
+            et1.setNom("Nkoulou");
+            et1.setPrenom("Marc");
+            et1.setNumeroEtudiant("SJI-ISI-2026-001");
+            et1.setEmail("marc.nkoulou.contact@sji.edu.cm");
+            et1.setTelephone("+237 677 01 02 03");
+            et1.setClasse(inge4IsiFr);
+            et1.setGroupe(grpA);
+            etudiantRepo.save(et1);
+
+            Etudiant et2 = new Etudiant();
+            et2.setNom("Fotsing");
+            et2.setPrenom("Audrey");
+            et2.setNumeroEtudiant("SJI-ISI-2026-002");
+            et2.setEmail("audrey.fotsing.contact@sji.edu.cm");
+            et2.setTelephone("+237 677 04 05 06");
+            et2.setClasse(inge4IsiFr);
+            et2.setGroupe(grpB);
+            etudiantRepo.save(et2);
+
+            Etudiant et3 = new Etudiant();
+            et3.setNom("Tchouassi");
+            et3.setPrenom("Brice");
+            et3.setNumeroEtudiant("SJI-ISI-2026-003");
+            et3.setClasse(inge4IsiEn);
+            et3.setGroupe(grpA);
+            etudiantRepo.save(et3);
+
+            Etudiant et4 = new Etudiant();
+            et4.setNom("Nguepi");
+            et4.setPrenom("Clarisse");
+            et4.setNumeroEtudiant("SJI-ISI-2026-004");
+            et4.setEmail("clarisse.nguepi.contact@sji.edu.cm");
+            et4.setClasse(inge4IsiEn);
+            et4.setGroupe(grpB);
+            etudiantRepo.save(et4);
 
             // ========== 4. CREATION DES UEs POUR LES DEUX CLASSES ==========
             log.info("Creation des UEs pour INGE4 ISI FR et EN...");
@@ -818,6 +870,36 @@ public class DataInitializer {
             }
 
             log.info("Disponibilites enseignants creees pour semaine du {} au {}", debutSemaine, finSemaine);
+
+            // ========== 9b. CATEGORIES ET TYPES D'EQUIPEMENT ==========
+            log.info("Creation des categories et types d'equipement...");
+            java.util.Map<String, CategorieEquipement> catByCode = new java.util.LinkedHashMap<>();
+            String[][] catSeeds = {
+                    {"AUDIOVISUEL", "Audiovisuel", "1"},
+                    {"INFORMATIQUE", "Informatique", "2"},
+                    {"MOBILIER", "Mobilier", "3"},
+                    {"CONNECTIVITE", "Connectivité", "4"},
+                    {"ECRITURE", "Écriture", "5"},
+                    {"CONFORT", "Confort", "6"},
+                    {"LABORATOIRE", "Laboratoire", "7"},
+                    {"AUTRE", "Autre", "99"}
+            };
+            for (String[] row : catSeeds) {
+                CategorieEquipement c = new CategorieEquipement();
+                c.setCode(row[0]);
+                c.setNom(row[1]);
+                c.setOrdre(Integer.parseInt(row[2]));
+                catByCode.put(row[0], categorieEquipementRepo.save(c));
+            }
+            TypeEquipement tVid = new TypeEquipement();
+            tVid.setNom("Vidéoprojecteur");
+            tVid.setCategorie(catByCode.get("AUDIOVISUEL"));
+            tVid.setDescription("Projection");
+            typeEquipementRepo.save(tVid);
+            TypeEquipement tPc = new TypeEquipement();
+            tPc.setNom("PC portable");
+            tPc.setCategorie(catByCode.get("INFORMATIQUE"));
+            typeEquipementRepo.save(tPc);
 
             // ========== 10. CREATION DE L'ADMINISTRATEUR ==========
             log.info("Creation de l'administrateur...");

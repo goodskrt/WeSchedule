@@ -1,13 +1,16 @@
 package com.iusjc.weschedule.service;
 
-import com.iusjc.weschedule.enums.CategorieEquipement;
 import com.iusjc.weschedule.enums.StatutEquipement;
+import com.iusjc.weschedule.models.CategorieEquipement;
 import com.iusjc.weschedule.models.Equipment;
 import com.iusjc.weschedule.models.Salle;
 import com.iusjc.weschedule.models.TypeEquipement;
+import com.iusjc.weschedule.repositories.CategorieEquipementRepository;
 import com.iusjc.weschedule.repositories.EquipmentRepository;
+import com.iusjc.weschedule.models.Utilisateur;
 import com.iusjc.weschedule.repositories.SalleRepository;
 import com.iusjc.weschedule.repositories.TypeEquipementRepository;
+import com.iusjc.weschedule.util.EquipmentStatutRules;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.poi.ss.usermodel.*;
 import org.apache.poi.ss.util.CellRangeAddress;
@@ -20,6 +23,7 @@ import java.io.ByteArrayOutputStream;
 import java.io.IOException;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Optional;
 
 @Service
 @Slf4j
@@ -27,7 +31,9 @@ public class ExcelEquipementService {
 
     @Autowired private EquipmentRepository equipmentRepository;
     @Autowired private TypeEquipementRepository typeEquipementRepository;
+    @Autowired private CategorieEquipementRepository categorieEquipementRepository;
     @Autowired private SalleRepository salleRepository;
+    @Autowired private EquipmentAssignmentService equipmentAssignmentService;
 
     // ── EXPORT ────────────────────────────────────────────────────────────────
 
@@ -63,7 +69,8 @@ public class ExcelEquipementService {
                 Row r = sheet.createRow(row++);
                 createCell(r, 0, eq.getNom(), dataStyle);
                 createCell(r, 1, eq.getTypeEquipement() != null ? eq.getTypeEquipement().getNom() : "", dataStyle);
-                createCell(r, 2, eq.getTypeEquipement() != null ? eq.getTypeEquipement().getCategorie().name() : "", dataStyle);
+                createCell(r, 2, eq.getTypeEquipement() != null && eq.getTypeEquipement().getCategorie() != null
+                        ? eq.getTypeEquipement().getCategorie().getCode() : "", dataStyle);
                 createCell(r, 3, eq.getNumeroSerie() != null ? eq.getNumeroSerie() : "", dataStyle);
                 createCell(r, 4, eq.getSalle() != null ? eq.getSalle().getNomSalle() : "", dataStyle);
                 createCell(r, 5, eq.getStatut().name(), dataStyle);
@@ -106,11 +113,11 @@ public class ExcelEquipementService {
             noteFont.setItalic(true);
             noteFont.setFontHeightInPoints((short) 9);
             noteStyle.setFont(noteFont);
-            createCell(note, 0, "Statuts valides : DISPONIBLE, EN_SERVICE, EN_MAINTENANCE, HORS_SERVICE", noteStyle);
+            createCell(note, 0, "N° série obligatoire et unique. Statuts : DISPONIBLE, EN_SERVICE, EN_MAINTENANCE, HORS_SERVICE (une salle renseignée force EN_SERVICE).", noteStyle);
             tpl.addMergedRegion(new CellRangeAddress(4, 4, 0, 6));
 
             Row note2 = tpl.createRow(5);
-            createCell(note2, 0, "Type : nom exact d'un type existant (voir page Types). Salle : nom exact d'une salle existante.", noteStyle);
+            createCell(note2, 0, "Type : nom exact d'un type existant. Catégorie : code ou nom (ex. AUDIOVISUEL). Salle : nom exact.", noteStyle);
             tpl.addMergedRegion(new CellRangeAddress(5, 5, 0, 6));
 
             wb.write(out);
@@ -146,20 +153,31 @@ public class ExcelEquipementService {
                     result.addErreur(i + 1, "Nom obligatoire");
                     continue;
                 }
+                if (numeroSerie == null || numeroSerie.isBlank()) {
+                    result.addErreur(i + 1, "Numéro de série obligatoire");
+                    continue;
+                }
+                String numTrim = numeroSerie.trim();
+                if (equipmentRepository.existsByNumeroSerieIgnoreCase(numTrim)) {
+                    result.addErreur(i + 1, "Numéro de série déjà utilisé : " + numTrim);
+                    continue;
+                }
 
                 Equipment eq = new Equipment();
                 eq.setNom(nom.trim());
-                eq.setNumeroSerie(numeroSerie.isBlank() ? null : numeroSerie.trim());
+                eq.setNumeroSerie(numTrim);
                 eq.setDescription(description.isBlank() ? null : description.trim());
 
-                // Statut
+                // Statut demandé (réévalué après affectation salle : salle → EN_SERVICE)
+                StatutEquipement statutSouhaite;
                 try {
-                    eq.setStatut(statutStr.isBlank() ? StatutEquipement.DISPONIBLE
-                            : StatutEquipement.valueOf(statutStr.trim().toUpperCase()));
+                    statutSouhaite = statutStr.isBlank() ? StatutEquipement.DISPONIBLE
+                            : StatutEquipement.valueOf(statutStr.trim().toUpperCase());
                 } catch (IllegalArgumentException e) {
                     result.addAvertissement(i + 1, "Statut « " + statutStr + " » inconnu → DISPONIBLE utilisé");
-                    eq.setStatut(StatutEquipement.DISPONIBLE);
+                    statutSouhaite = StatutEquipement.DISPONIBLE;
                 }
+                eq.setStatut(statutSouhaite);
 
                 // Type
                 if (!typeNom.isBlank()) {
@@ -169,15 +187,15 @@ public class ExcelEquipementService {
                     } else {
                         // Créer le type si catégorie fournie
                         if (!categorieStr.isBlank()) {
-                            try {
-                                CategorieEquipement cat = CategorieEquipement.valueOf(categorieStr.trim().toUpperCase());
+                            Optional<CategorieEquipement> catOpt = resolveCategorie(categorieStr.trim());
+                            if (catOpt.isPresent()) {
                                 TypeEquipement newType = new TypeEquipement();
                                 newType.setNom(typeNom.trim());
-                                newType.setCategorie(cat);
+                                newType.setCategorie(catOpt.get());
                                 eq.setTypeEquipement(typeEquipementRepository.save(newType));
                                 result.addAvertissement(i + 1, "Type « " + typeNom + " » créé automatiquement");
-                            } catch (IllegalArgumentException e) {
-                                result.addAvertissement(i + 1, "Type « " + typeNom + " » introuvable et catégorie invalide → ignoré");
+                            } else {
+                                result.addAvertissement(i + 1, "Type « " + typeNom + " » introuvable et catégorie « " + categorieStr + " » inconnue → ignoré");
                             }
                         } else {
                             result.addAvertissement(i + 1, "Type « " + typeNom + " » introuvable → ignoré");
@@ -195,7 +213,16 @@ public class ExcelEquipementService {
                     }
                 }
 
+                EquipmentStatutRules.syncStatutAvecSalle(eq, statutSouhaite);
+
                 equipmentRepository.save(eq);
+                if (eq.getSalle() != null) {
+                    Utilisateur resp = equipmentAssignmentService.findFallbackAdminResponsable();
+                    if (resp != null) {
+                        equipmentAssignmentService.createInitialPermanentRoomAssignment(
+                                eq, eq.getSalle(), resp, "import-excel");
+                    }
+                }
                 result.incrementSucces();
             }
         }
@@ -203,6 +230,14 @@ public class ExcelEquipementService {
     }
 
     // ── Helpers ───────────────────────────────────────────────────────────────
+
+    /** Résout une catégorie par code ou nom (insensible à la casse). */
+    private Optional<CategorieEquipement> resolveCategorie(String raw) {
+        if (raw == null || raw.isBlank()) return Optional.empty();
+        String s = raw.trim();
+        return categorieEquipementRepository.findByCodeIgnoreCase(s)
+                .or(() -> categorieEquipementRepository.findByNomIgnoreCase(s));
+    }
 
     private CellStyle createHeaderStyle(Workbook wb) {
         CellStyle s = wb.createCellStyle();

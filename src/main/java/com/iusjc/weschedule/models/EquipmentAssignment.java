@@ -6,7 +6,6 @@ import lombok.Data;
 import lombok.NoArgsConstructor;
 import org.hibernate.annotations.CreationTimestamp;
 
-import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.util.UUID;
 
@@ -29,15 +28,19 @@ public class EquipmentAssignment {
     private String assignmentType; // room, class
 
     @Column(nullable = false)
-    private UUID targetId; // roomId or classId
+    private UUID targetId;
 
     @Column(nullable = false)
     private Integer quantity;
 
+    /** Début de la période d'affectation (date et heure). */
     @Column(nullable = false)
-    private LocalDate startDate;
+    private LocalDateTime startAt;
 
-    private LocalDate endDate; // Optional for permanent assignments
+    /**
+     * Fin de la période (date et heure), null si affectation permanente.
+     */
+    private LocalDateTime endAt;
 
     @Column(nullable = false)
     private String duration; // permanent, temporary
@@ -45,8 +48,9 @@ public class EquipmentAssignment {
     @Column(nullable = false, columnDefinition = "TEXT")
     private String reason;
 
+    /** active, expired, cancelled */
     @Column(nullable = false)
-    private String status = "active"; // active, expired, cancelled
+    private String status;
 
     @Column(nullable = false)
     private String assignedBy;
@@ -57,4 +61,9 @@ public class EquipmentAssignment {
 
     @Column(columnDefinition = "TEXT")
     private String notes;
+
+    /** Utilisateur responsable du matériel pendant la période d'affectation. */
+    @ManyToOne(fetch = FetchType.LAZY)
+    @JoinColumn(name = "responsable_id", nullable = false)
+    private Utilisateur responsable;
 }

@@ -1,6 +1,5 @@
 package com.iusjc.weschedule.models;
 
-import com.iusjc.weschedule.enums.CategorieEquipement;
 import jakarta.persistence.*;
 import lombok.AllArgsConstructor;
 import lombok.Data;
@@ -22,8 +21,8 @@ public class TypeEquipement {
     @Column(nullable = false, unique = true)
     private String nom;
 
-    @Enumerated(EnumType.STRING)
-    @Column(nullable = false)
+    @ManyToOne(fetch = FetchType.LAZY)
+    @JoinColumn(name = "categorie_id", nullable = false)
     private CategorieEquipement categorie;
 
     @Column(columnDefinition = "TEXT")

@@ -252,6 +252,9 @@
                     <a th:href="@{/admin/salles/modifier/{id}(id=${salle.idSalle})}" class="hero-btn hero-btn-edit">
                         <i class="fas fa-edit"></i> Modifier
                     </a>
+                    <a th:href="@{/admin/salles/{id}/emploi-temps(id=${salle.idSalle})}" class="hero-btn hero-btn-edit">
+                        <i class="fas fa-calendar-alt"></i> Emploi du temps
+                    </a>
                     <button class="hero-btn hero-btn-delete" onclick="confirmSupprimer()">
                         <i class="fas fa-trash"></i> Supprimer
                     </button>

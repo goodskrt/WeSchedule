@@ -90,6 +90,8 @@
                 </div>
             </div>
 
+            <div th:replace="~{fragments/admin-stats :: stat-row(${pageStats})}"></div>
+
             <!-- Filtres -->
             <div class="d-flex align-items-center gap-2 mb-4" style="flex-wrap:wrap;">
                 <div class="search-box" style="min-width:220px; flex:1;">

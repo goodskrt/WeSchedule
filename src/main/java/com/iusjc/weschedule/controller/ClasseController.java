@@ -10,6 +10,7 @@ import com.iusjc.weschedule.repositories.EmploiDuTempsClasseRepository;
 import com.iusjc.weschedule.repositories.EtudiantRepository;
 import com.iusjc.weschedule.repositories.FiliereRepository;
 import com.iusjc.weschedule.repositories.UERepository;
+import com.iusjc.weschedule.util.AdminStatsFactory;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.lang.NonNull;
@@ -45,6 +46,7 @@ public class ClasseController {
         model.addAttribute("classes",  classeRepository.findAll());
         model.addAttribute("ecoles",   ecoleRepository.findAll());
         model.addAttribute("filieres", filiereRepository.findAll());
+        model.addAttribute("pageStats", AdminStatsFactory.classes(classeRepository, filiereRepository, ecoleRepository));
         return "admin/classes";
     }
 

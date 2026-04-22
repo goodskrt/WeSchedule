@@ -1,11 +1,14 @@
 package com.iusjc.weschedule.controller;
 
+import com.iusjc.weschedule.enums.StatutEquipement;
 import com.iusjc.weschedule.enums.StatutSalle;
 import com.iusjc.weschedule.enums.TypeSalle;
 import com.iusjc.weschedule.models.Equipment;
 import com.iusjc.weschedule.models.Salle;
 import com.iusjc.weschedule.repositories.EquipmentRepository;
 import com.iusjc.weschedule.repositories.SalleRepository;
+import com.iusjc.weschedule.util.AdminStatsFactory;
+import com.iusjc.weschedule.util.EquipmentStatutRules;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.lang.NonNull;
 import org.springframework.stereotype.Controller;
@@ -36,6 +39,7 @@ public class SalleController {
         model.addAttribute("salles", safe(salleRepository.findAll()));
         model.addAttribute("typesSalle", TypeSalle.values());
         model.addAttribute("statuts", StatutSalle.values());
+        model.addAttribute("pageStats", AdminStatsFactory.salles(salleRepository));
         return "admin/salles-liste";
     }
 
@@ -85,6 +89,7 @@ public class SalleController {
                     try {
                         equipmentRepository.findById(UUID.fromString(idStr)).ifPresent(eq -> {
                             eq.setSalle(saved);
+                            EquipmentStatutRules.syncStatutAvecSalle(eq, StatutEquipement.DISPONIBLE);
                             equipmentRepository.save(eq);
                         });
                     } catch (Exception ignored) {}
@@ -158,6 +163,7 @@ public class SalleController {
             // CORRECTION : safe() avant forEach
             safe(equipmentRepository.findBySalle(salle)).forEach(eq -> {
                 eq.setSalle(null);
+                EquipmentStatutRules.syncStatutAvecSalle(eq, StatutEquipement.DISPONIBLE);
                 equipmentRepository.save(eq);
             });
 
@@ -166,6 +172,7 @@ public class SalleController {
                     try {
                         equipmentRepository.findById(UUID.fromString(idStr)).ifPresent(eq -> {
                             eq.setSalle(salle);
+                            EquipmentStatutRules.syncStatutAvecSalle(eq, StatutEquipement.DISPONIBLE);
                             equipmentRepository.save(eq);
                         });
                     } catch (Exception ignored) {}
@@ -187,6 +194,7 @@ public class SalleController {
             // CORRECTION : safe() avant forEach
             safe(equipmentRepository.findBySalle(salle)).forEach(eq -> {
                 eq.setSalle(null);
+                EquipmentStatutRules.syncStatutAvecSalle(eq, StatutEquipement.DISPONIBLE);
                 equipmentRepository.save(eq);
             });
             salleRepository.delete(salle);

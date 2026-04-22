@@ -5,6 +5,7 @@ import com.iusjc.weschedule.repositories.*;
 import com.iusjc.weschedule.service.AutoGenerationEmploiDuTempsService;
 import com.iusjc.weschedule.service.EmploiDuTempsService;
 import com.iusjc.weschedule.service.ExcelEmploiDuTempsService;
+import com.iusjc.weschedule.util.AdminStatsFactory;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.HttpHeaders;
 import org.springframework.http.MediaType;
@@ -61,6 +62,7 @@ public class AdminEmploiDuTempsController {
     public String index(Model model) {
         List<Classe> classes = classeRepository.findAll();
         model.addAttribute("classes", classes);
+        model.addAttribute("pageStats", AdminStatsFactory.emploisDuTemps(classeRepository, emploiDuTempsRepository, seanceRepository));
         return "admin/emplois-du-temps";
     }
 

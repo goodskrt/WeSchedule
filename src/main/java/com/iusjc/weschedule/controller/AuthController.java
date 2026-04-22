@@ -11,17 +11,23 @@ import com.iusjc.weschedule.models.Enseignant;
 import com.iusjc.weschedule.models.UE;
 import com.iusjc.weschedule.models.Utilisateur;
 import com.iusjc.weschedule.repositories.EnseignantRepository;
+import com.iusjc.weschedule.repositories.EtudiantRepository;
+import com.iusjc.weschedule.repositories.EmploiDuTempsClasseRepository;
+import com.iusjc.weschedule.repositories.SeanceClasseRepository;
 import com.iusjc.weschedule.repositories.SalleRepository;
 import com.iusjc.weschedule.repositories.CoursRepository;
 import com.iusjc.weschedule.models.DisponibiliteEnseignant;
 import com.iusjc.weschedule.models.PlageHoraire;
 import com.iusjc.weschedule.repositories.ClasseRepository;
+import com.iusjc.weschedule.repositories.EquipmentRepository;
+import com.iusjc.weschedule.repositories.TypeEquipementRepository;
 import com.iusjc.weschedule.repositories.UERepository;
 import com.iusjc.weschedule.service.AuthService;
 import com.iusjc.weschedule.service.DisponibiliteService;
 import com.iusjc.weschedule.service.EnseignantService;
 import com.iusjc.weschedule.service.PasswordResetService;
 import com.iusjc.weschedule.security.UserPrincipal;
+import com.iusjc.weschedule.util.AdminStatsFactory;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
 import jakarta.servlet.http.HttpSession;
@@ -80,6 +86,21 @@ public class AuthController {
 
     @Autowired
     private UERepository ueRepository;
+
+    @Autowired
+    private EquipmentRepository equipmentRepository;
+
+    @Autowired
+    private TypeEquipementRepository typeEquipementRepository;
+
+    @Autowired
+    private EtudiantRepository etudiantRepository;
+
+    @Autowired
+    private EmploiDuTempsClasseRepository emploiDuTempsClasseRepository;
+
+    @Autowired
+    private SeanceClasseRepository seanceClasseRepository;
 
     /**
      * Page de login
@@ -190,13 +211,23 @@ public class AuthController {
             long totalCours = coursRepository.count();
             long totalClasses = classeRepository.count();
             long totalUes = ueRepository.count();
-            
+            long totalEquipements = equipmentRepository.count();
+            long totalTypesEquipement = typeEquipementRepository.count();
+            long totalEtudiants = etudiantRepository.count();
+            long totalEmploisDuTemps = emploiDuTempsClasseRepository.count();
+            long totalSeances = seanceClasseRepository.count();
+
             model.addAttribute("totalEnseignants", totalEnseignants);
             model.addAttribute("totalSalles", totalSalles);
             model.addAttribute("totalCours", totalCours);
             model.addAttribute("totalClasses", totalClasses);
             model.addAttribute("totalUes", totalUes);
-            
+            model.addAttribute("totalEquipements", totalEquipements);
+            model.addAttribute("totalTypesEquipement", totalTypesEquipement);
+            model.addAttribute("totalEtudiants", totalEtudiants);
+            model.addAttribute("totalEmploisDuTemps", totalEmploisDuTemps);
+            model.addAttribute("totalSeances", totalSeances);
+
             return "admin/dashboard-admin";
         }
         return "redirect:/login";
@@ -383,6 +414,8 @@ public class AuthController {
             model.addAttribute("user", userPrincipal.getUtilisateur());
             model.addAttribute("nomComplet", userPrincipal.getNomComplet());
             model.addAttribute("email", userPrincipal.getUtilisateur().getEmail());
+            model.addAttribute("pageStats", AdminStatsFactory.syntheseGlobale(
+                    salleRepository, classeRepository, coursRepository, ueRepository, enseignantRepository, equipmentRepository, etudiantRepository));
             return "admin/rapports";
         }
         return "redirect:/login";
@@ -397,6 +430,8 @@ public class AuthController {
             model.addAttribute("user", userPrincipal.getUtilisateur());
             model.addAttribute("nomComplet", userPrincipal.getNomComplet());
             model.addAttribute("email", userPrincipal.getUtilisateur().getEmail());
+            model.addAttribute("pageStats", AdminStatsFactory.syntheseGlobale(
+                    salleRepository, classeRepository, coursRepository, ueRepository, enseignantRepository, equipmentRepository, etudiantRepository));
             return "admin/parametres";
         }
         return "redirect:/login";
@@ -626,12 +661,9 @@ public class AuthController {
      * Dashboard Admin - Équipements
      */
     @GetMapping("/dashboard/admin/equipements")
-    public String dashboardAdminEquipements(Authentication auth, Model model) {
-        if (auth != null && auth.getPrincipal() instanceof UserPrincipal userPrincipal) {
-            model.addAttribute("user", userPrincipal.getUtilisateur());
-            model.addAttribute("nomComplet", userPrincipal.getNomComplet());
-            model.addAttribute("email", userPrincipal.getUtilisateur().getEmail());
-            return "admin/equipements";
+    public String dashboardAdminEquipements(Authentication auth) {
+        if (auth != null && auth.isAuthenticated()) {
+            return "redirect:/admin/equipements";
         }
         return "redirect:/login";
     }

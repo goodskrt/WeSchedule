@@ -31,6 +31,7 @@ public class Equipment {
     @JoinColumn(name = "type_equipement_id")
     private TypeEquipement typeEquipement;
 
+    @Column(nullable = false)
     private String numeroSerie;
 
     @Enumerated(EnumType.STRING)
@@ -42,21 +43,8 @@ public class Equipment {
 
     private String photo;
 
-    // ── Champs système Angular (EquipmentService) ───────────────────────────
-    private String name;
-
-    private String category;
-
-    private String icon;
-
     @Column(columnDefinition = "TEXT")
     private String description;
-
-    private Integer totalQuantity;
-
-    private Integer availableQuantity;
-
-    private String status = "active";
 
     @CreationTimestamp
     @Column(updatable = false)

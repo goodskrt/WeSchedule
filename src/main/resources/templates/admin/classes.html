@@ -100,6 +100,8 @@
                 </div>
             </div>
 
+            <div th:replace="~{fragments/admin-stats :: stat-row(${pageStats})}"></div>
+
             <!-- Alertes flash -->
             <div th:if="${success}" class="alert alert-success alert-dismissible fade show mb-3">
                 <i class="fas fa-check-circle me-2"></i><span th:text="${success}"></span>

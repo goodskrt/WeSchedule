@@ -2,24 +2,315 @@
 <html lang="fr" xmlns:th="http://www.thymeleaf.org">
 <head>
     <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Équipements - WeSchedule</title>
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css" rel="stylesheet">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
     <link rel="stylesheet" href="/css/modern-layout.css">
+    <style>
+        .eq-card {
+            background: var(--white); border-radius: var(--radius-xl); padding: 1.25rem;
+            margin-bottom: 0.75rem; box-shadow: var(--shadow-sm); border: 1px solid var(--gray-200);
+            transition: all 0.2s;
+        }
+        .eq-card:hover { transform: translateY(-2px); box-shadow: var(--shadow-md); border-color: var(--primary-color); }
+        .eq-avatar {
+            width: 48px; height: 48px; border-radius: var(--radius-lg);
+            display: flex; align-items: center; justify-content: center;
+            font-size: 1.1rem; color: white; flex-shrink: 0;
+            background: linear-gradient(135deg, #6366f1, #4f46e5);
+        }
+        .badge-statut { padding: 0.2rem 0.65rem; border-radius: 2rem; font-size: 0.7rem; font-weight: 700; }
+        .st-dispo { background: #d1fae5; color: #065f46; }
+        .st-service { background: #dbeafe; color: #1e40af; }
+        .st-maint { background: #fef3c7; color: #92400e; }
+        .st-hors { background: #fee2e2; color: #991b1b; }
+        .badge-cat { padding: 0.15rem 0.55rem; border-radius: 2rem; font-size: 0.68rem; font-weight: 600; background: #f1f5f9; color: #475569; }
+        .search-box { background: var(--white); border-radius: 2rem; padding: 0.65rem 1.25rem; box-shadow: var(--shadow-sm); border: 1px solid var(--gray-200); display: flex; align-items: center; }
+        .search-box input { border: none; outline: none; width: 100%; background: transparent; font-size: 0.9rem; }
+        .empty-state { text-align: center; padding: 4rem 2rem; background: var(--white); border-radius: var(--radius-xl); }
+        .empty-state i { font-size: 3.5rem; color: var(--gray-300); margin-bottom: 1rem; }
+    </style>
 </head>
 <body>
     <div th:replace="~{fragments/sidebar :: admin-sidebar('equipements')}"></div>
     <div class="ws-wrapper">
         <div th:replace="~{fragments/header :: admin-header}"></div>
         <main class="ws-main-content">
-            <h2 class="page-title">Équipements</h2>
-            <p class="page-subtitle">Gerer les equipements disponibles</p>
-            <div class="card-custom p-5 text-center mt-4">
-                <div class="empty-state-icon"><i class="fas fa-cog"></i></div>
-                <p class="text-muted">Fonctionnalite en cours de developpement</p>
+
+            <div class="d-flex justify-content-between align-items-start flex-wrap gap-3 mb-3">
+                <div>
+                    <h2 class="page-title mb-1">Équipements</h2>
+                    <p class="page-subtitle mb-0">Matériel pédagogique, affectation aux salles et suivi des statuts</p>
+                </div>
+                <div class="d-flex flex-wrap gap-2">
+                    <a href="/admin/equipements/types" class="btn btn-outline-secondary">
+                        <i class="fas fa-tags me-1"></i> Types d'équipements
+                    </a>
+                    <a href="/api/admin/equipements/export" class="btn btn-outline-success">
+                        <i class="fas fa-file-excel me-1"></i> Exporter
+                    </a>
+                    <button type="button" class="btn btn-outline-primary" data-bs-toggle="modal" data-bs-target="#importModal">
+                        <i class="fas fa-file-import me-1"></i> Importer
+                    </button>
+                    <a href="/admin/equipements/nouveau" class="btn btn-primary">
+                        <i class="fas fa-plus me-1"></i> Nouvel équipement
+                    </a>
+                </div>
             </div>
+
+            <div th:replace="~{fragments/admin-stats :: stat-row(${pageStats})}"></div>
+
+            <div th:if="${success}" class="alert alert-success alert-dismissible fade show mb-3">
+                <i class="fas fa-check-circle me-2"></i><span th:text="${success}"></span>
+                <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+            </div>
+            <div th:if="${error}" class="alert alert-danger alert-dismissible fade show mb-3">
+                <i class="fas fa-exclamation-circle me-2"></i><span th:text="${error}"></span>
+                <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+            </div>
+
+            <div class="d-flex align-items-center gap-2 mb-3" style="flex-wrap:wrap;">
+                <div class="search-box" style="min-width:180px; flex:1;">
+                    <i class="fas fa-search text-muted me-2"></i>
+                    <input type="text" id="searchInput" placeholder="Rechercher par nom, série…" oninput="filterEq()">
+                </div>
+                <select id="statutFilter" class="form-select form-select-sm" style="min-width:160px;width:auto;" onchange="filterEq()">
+                    <option value="">Tous les statuts</option>
+                    <option th:each="st : ${statuts}" th:value="${st.name()}" th:text="${st.name()}"></option>
+                </select>
+                <select id="catFilter" class="form-select form-select-sm" style="min-width:160px;width:auto;" onchange="filterEq()">
+                    <option value="">Toutes catégories</option>
+                    <option th:each="c : ${categories}" th:value="${c.id}" th:text="${c.nom}"></option>
+                </select>
+                <select id="salleFilter" class="form-select form-select-sm" style="min-width:150px;width:auto;" onchange="filterEq()">
+                    <option value="">Salle</option>
+                    <option value="oui">Affecté à une salle</option>
+                    <option value="non">Sans salle</option>
+                </select>
+                <span class="text-muted small" id="countInfo"
+                      th:text="${equipements != null ? #lists.size(equipements) : 0} + ' équipement(s)'"></span>
+            </div>
+
+            <div th:if="${equipements == null or equipements.isEmpty()}" class="empty-state">
+                <i class="fas fa-laptop"></i>
+                <h5 class="mt-2">Aucun équipement</h5>
+                <p class="text-muted">Créez des types depuis « Types d'équipements », puis ajoutez du matériel.</p>
+                <div class="d-flex gap-2 justify-content-center flex-wrap mt-2">
+                    <a href="/admin/equipements/types" class="btn btn-outline-secondary btn-sm"><i class="fas fa-tags me-1"></i> Types</a>
+                    <a href="/admin/equipements/nouveau" class="btn btn-primary btn-sm"><i class="fas fa-plus me-1"></i> Nouvel équipement</a>
+                </div>
+            </div>
+
+            <div id="eqList" th:if="${equipements != null and !equipements.isEmpty()}">
+                <div id="noResultMsg" class="empty-state d-none">
+                    <i class="fas fa-filter"></i>
+                    <h5 class="mt-2">Aucun résultat</h5>
+                    <p class="text-muted">Aucun équipement ne correspond aux filtres.</p>
+                    <button type="button" class="btn btn-primary btn-sm mt-2" onclick="resetFiltres()">
+                        <i class="fas fa-rotate-left me-1"></i> Réinitialiser
+                    </button>
+                </div>
+
+                <th:block th:each="e : ${equipements}">
+                <div class="eq-card eq-row"
+                     th:data-nom="${e.nom != null ? e.nom : ''}"
+                     th:data-serie="${e.numeroSerie != null ? e.numeroSerie : ''}"
+                     th:data-statut="${e.statut != null ? e.statut.name() : ''}"
+                     th:data-cat="${e.typeEquipement != null and e.typeEquipement.categorie != null ? e.typeEquipement.categorie.id : ''}"
+                     th:data-salle="${e.salle != null ? 'oui' : 'non'}">
+                    <div class="row align-items-center">
+                        <div class="col-md-4 d-flex align-items-center gap-3">
+                            <div class="eq-avatar"><i class="fas fa-laptop"></i></div>
+                            <div>
+                                <div class="fw-semibold" style="color:var(--gray-900);" th:text="${e.nom != null ? e.nom : '—'}">—</div>
+                                <span class="badge-cat" th:if="${e.typeEquipement != null}"
+                                      th:text="${e.typeEquipement.nom}">Type</span>
+                                <span class="text-muted small ms-1" th:if="${e.numeroSerie != null}" th:text="'S/N ' + ${e.numeroSerie}"></span>
+                            </div>
+                        </div>
+                        <div class="col-md-3">
+                            <small class="text-muted d-block">Catégorie</small>
+                            <span class="fw-semibold small" th:text="${e.typeEquipement != null and e.typeEquipement.categorie != null} ? ${e.typeEquipement.categorie.nom} : '—'">—</span>
+                            <div class="mt-1" th:if="${e.salle != null}">
+                                <small class="text-muted"><i class="fas fa-door-open me-1"></i></small>
+                                <span class="small" th:text="${e.salle.nomSalle}">—</span>
+                            </div>
+                            <div class="mt-1 text-muted small" th:if="${e.salle == null}"><i class="fas fa-warehouse me-1"></i>Non affecté</div>
+                        </div>
+                        <div class="col-md-2 text-center">
+                            <span class="badge-statut"
+                                  th:classappend="${e.statut != null and e.statut.name() == 'DISPONIBLE'} ? 'st-dispo' :
+                                    (${e.statut != null and e.statut.name() == 'EN_SERVICE'} ? 'st-service' :
+                                    (${e.statut != null and e.statut.name() == 'EN_MAINTENANCE'} ? 'st-maint' : 'st-hors'))"
+                                  th:text="${e.statut != null and e.statut.name() == 'DISPONIBLE'} ? 'Disponible' :
+                                    (${e.statut != null and e.statut.name() == 'EN_SERVICE'} ? 'En service' :
+                                    (${e.statut != null and e.statut.name() == 'EN_MAINTENANCE'} ? 'Maintenance' : 'Hors service'))">—</span>
+                        </div>
+                        <div class="col-md-3 text-end">
+                            <a th:href="@{/admin/equipements/details/{id}(id=${e.id})}" class="btn btn-outline-primary btn-sm me-1" title="Détails"><i class="fas fa-eye"></i></a>
+                            <a th:href="@{/admin/equipements/modifier/{id}(id=${e.id})}" class="btn btn-outline-primary btn-sm me-1" title="Modifier"><i class="fas fa-edit"></i></a>
+                            <button type="button" class="btn btn-outline-danger btn-sm"
+                                    th:attr="data-id=${e.id}, data-nom=${e.nom}"
+                                    onclick="showDelete(this)" title="Supprimer"><i class="fas fa-trash"></i></button>
+                        </div>
+                    </div>
+                </div>
+                </th:block>
+            </div>
+
         </main>
     </div>
+
+    <div class="modal fade" id="deleteModal" tabindex="-1">
+        <div class="modal-dialog modal-sm">
+            <div class="modal-content">
+                <div class="modal-header border-0 pb-0">
+                    <h5 class="modal-title text-danger"><i class="fas fa-exclamation-triangle me-2"></i>Supprimer</h5>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+                </div>
+                <div class="modal-body pt-2">
+                    Supprimer l'équipement <strong id="deleteNom"></strong> ?<br>
+                    <small class="text-muted">Les affectations liées devront être gérées séparément si nécessaire.</small>
+                </div>
+                <div class="modal-footer border-0 pt-0">
+                    <button type="button" class="btn btn-secondary btn-sm" data-bs-dismiss="modal">Annuler</button>
+                    <form id="deleteForm" method="post">
+                        <button type="submit" class="btn btn-danger btn-sm"><i class="fas fa-trash me-1"></i> Supprimer</button>
+                    </form>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div class="modal fade" id="importModal" tabindex="-1">
+        <div class="modal-dialog">
+            <div class="modal-content">
+                <div class="modal-header border-0">
+                    <h5 class="modal-title"><i class="fas fa-file-import me-2 text-primary"></i>Importer des équipements</h5>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+                </div>
+                <div class="modal-body">
+                    <div id="dropZone" class="border border-2 border-dashed rounded-3 p-4 text-center mb-3"
+                         style="border-color:var(--gray-300)!important; cursor:pointer;"
+                         onclick="document.getElementById('fileInput').click()"
+                         ondragover="event.preventDefault(); this.style.borderColor='var(--primary-color)'"
+                         ondragleave="this.style.borderColor='var(--gray-300)'"
+                         ondrop="onDrop(event)">
+                        <i class="fas fa-cloud-upload-alt fa-2x text-muted mb-2"></i>
+                        <p class="mb-1 fw-semibold">Glissez votre fichier ici</p>
+                        <p class="text-muted small mb-0">ou cliquez pour sélectionner (.xlsx, .xls)</p>
+                    </div>
+                    <input type="file" id="fileInput" accept=".xlsx,.xls" class="d-none" onchange="onFileSelect(this)">
+                    <div id="fileInfo" class="d-none alert alert-info py-2">
+                        <i class="fas fa-file-excel me-2"></i><span id="fileName"></span>
+                    </div>
+                    <div id="importResult"></div>
+                    <small class="text-muted">
+                        <i class="fas fa-info-circle me-1"></i>
+                        Colonnes : Nom, Type, Catégorie, N° série (obligatoire, unique), Salle, Statut, Description. Une salle renseignée impose le statut EN_SERVICE. Utilisez l'onglet « Modèle import » du fichier exporté.
+                    </small>
+                </div>
+                <div class="modal-footer border-0">
+                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Fermer</button>
+                    <button type="button" class="btn btn-primary" id="importBtn" onclick="doImport()" disabled>
+                        <i class="fas fa-upload me-1"></i> Importer
+                    </button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js"></script>
     <script src="/js/modern-layout.js"></script>
+    <script>
+        function filterEq() {
+            const search = document.getElementById('searchInput').value.toLowerCase();
+            const st = document.getElementById('statutFilter').value;
+            const cat = document.getElementById('catFilter').value;
+            const salle = document.getElementById('salleFilter').value;
+            const cards = document.querySelectorAll('#eqList .eq-row');
+            let visible = 0;
+            cards.forEach(card => {
+                const nom = (card.dataset.nom || '') + ' ' + (card.dataset.serie || '');
+                const ok = nom.toLowerCase().includes(search)
+                    && (!st || card.dataset.statut === st)
+                    && (!cat || card.dataset.cat === cat)
+                    && (!salle || card.dataset.salle === salle);
+                card.style.display = ok ? '' : 'none';
+                if (ok) visible++;
+            });
+            const el = document.getElementById('countInfo');
+            if (el) el.textContent = visible + ' équipement(s)';
+            const nr = document.getElementById('noResultMsg');
+            if (nr) nr.classList.toggle('d-none', visible > 0 || cards.length === 0);
+        }
+        function resetFiltres() {
+            ['searchInput','statutFilter','catFilter','salleFilter'].forEach(id => {
+                const e = document.getElementById(id); if (e) e.value = '';
+            });
+            filterEq();
+        }
+        function showDelete(btn) {
+            document.getElementById('deleteNom').textContent = btn.dataset.nom || '';
+            document.getElementById('deleteForm').action = '/admin/equipements/supprimer/' + btn.dataset.id;
+            new bootstrap.Modal(document.getElementById('deleteModal')).show();
+        }
+        function onFileSelect(input) {
+            if (input.files.length > 0) {
+                document.getElementById('fileName').textContent = input.files[0].name;
+                document.getElementById('fileInfo').classList.remove('d-none');
+                document.getElementById('importBtn').disabled = false;
+                document.getElementById('importResult').innerHTML = '';
+            }
+        }
+        function onDrop(event) {
+            event.preventDefault();
+            document.getElementById('dropZone').style.borderColor = 'var(--gray-300)';
+            const file = event.dataTransfer.files[0];
+            if (file) {
+                const input = document.getElementById('fileInput');
+                const dt = new DataTransfer(); dt.items.add(file); input.files = dt.files;
+                onFileSelect(input);
+            }
+        }
+        async function doImport() {
+            const input = document.getElementById('fileInput');
+            if (!input.files.length) return;
+            const btn = document.getElementById('importBtn');
+            btn.disabled = true;
+            btn.innerHTML = '<span class="spinner-border spinner-border-sm me-1"></span> Import…';
+            const formData = new FormData();
+            formData.append('file', input.files[0]);
+            try {
+                const res = await fetch('/api/admin/equipements/import', { method: 'POST', body: formData });
+                const data = await res.json();
+                const div = document.getElementById('importResult');
+                if (res.ok && data.success !== false) {
+                    let html = '<div class="alert alert-success mt-2"><i class="fas fa-check-circle me-2"></i>' + (data.message || '') + '</div>';
+                    if (data.avertissements && data.avertissements.length) {
+                        html += '<div class="alert alert-warning mt-1"><strong>Avertissements :</strong><ul class="mb-0 mt-1">';
+                        data.avertissements.forEach(a => { html += '<li>' + a + '</li>'; });
+                        html += '</ul></div>';
+                    }
+                    if (data.erreurs && data.erreurs.length) {
+                        html += '<div class="alert alert-danger mt-1"><strong>Erreurs :</strong><ul class="mb-0 mt-1">';
+                        data.erreurs.forEach(er => { html += '<li>' + er + '</li>'; });
+                        html += '</ul></div>';
+                    }
+                    div.innerHTML = html;
+                    const okCount = data.succes != null ? data.succes : 0;
+                    if (okCount > 0) setTimeout(() => location.reload(), 1600);
+                } else {
+                    div.innerHTML = '<div class="alert alert-danger mt-2"><i class="fas fa-times-circle me-2"></i>' + (data.message || 'Échec') + '</div>';
+                }
+            } catch (e) {
+                document.getElementById('importResult').innerHTML = '<div class="alert alert-danger mt-2">Erreur de connexion</div>';
+            }
+            btn.disabled = false;
+            btn.innerHTML = '<i class="fas fa-upload me-1"></i> Importer';
+        }
+    </script>
 </body>
 </html>

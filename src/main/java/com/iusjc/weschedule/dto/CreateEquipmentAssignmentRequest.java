@@ -7,7 +7,7 @@ import lombok.AllArgsConstructor;
 import lombok.Data;
 import lombok.NoArgsConstructor;
 
-import java.time.LocalDate;
+import java.time.LocalDateTime;
 import java.util.UUID;
 
 @Data
@@ -29,9 +29,12 @@ public class CreateEquipmentAssignmentRequest {
     private Integer quantity;
 
     @NotNull(message = "La date de début est requise")
-    private LocalDate startDate;
+    private LocalDateTime startAt;
 
-    private LocalDate endDate; // Optional for permanent assignments
+    private LocalDateTime endAt;
+
+    @NotNull(message = "Le responsable est requis")
+    private UUID responsableId;
 
     @NotBlank(message = "La durée est requise")
     private String duration; // permanent, temporary
