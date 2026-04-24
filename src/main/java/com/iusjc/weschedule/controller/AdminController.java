@@ -1,16 +1,31 @@
 package com.iusjc.weschedule.controller;
 
 import com.iusjc.weschedule.models.*;
+import com.iusjc.weschedule.repositories.SalleRepository;
+import com.iusjc.weschedule.repositories.CoursRepository;
+import com.iusjc.weschedule.repositories.UERepository;
 import com.iusjc.weschedule.service.DisponibiliteService;
-import com.iusjc.weschedule.service.EmploiDeTempsService;
+import com.iusjc.weschedule.service.ExcelEquipementService;
 import com.iusjc.weschedule.service.EnseignantService;
+import com.iusjc.weschedule.service.ExcelEnseignantService;
+import com.iusjc.weschedule.service.ExcelSalleService;
+import com.iusjc.weschedule.service.ExcelClasseService;
+import com.iusjc.weschedule.enums.StatutEquipement;
+import com.iusjc.weschedule.repositories.ClasseRepository;
+import com.iusjc.weschedule.repositories.EquipmentRepository;
+import com.iusjc.weschedule.repositories.FiliereRepository;
+import com.iusjc.weschedule.repositories.TypeEquipementRepository;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.http.HttpHeaders;
+import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.web.bind.annotation.*;
+import org.springframework.web.multipart.MultipartFile;
 
 import java.time.LocalDate;
+import java.time.format.DateTimeFormatter;
 import java.util.*;
 
 @RestController
@@ -20,13 +35,46 @@ import java.util.*;
 public class AdminController {
 
     @Autowired
+    private ExcelEquipementService excelEquipementService;
+
+    @Autowired
     private EnseignantService enseignantService;
 
     @Autowired
     private DisponibiliteService disponibiliteService;
 
     @Autowired
-    private EmploiDeTempsService emploiDeTempsService;
+    private ExcelEnseignantService excelEnseignantService;
+
+    @Autowired
+    private ExcelSalleService excelSalleService;
+
+    @Autowired
+    private ExcelClasseService excelClasseService;
+
+    @Autowired
+    private SalleRepository salleRepository;
+
+    @Autowired
+    private CoursRepository coursRepository;
+
+    @Autowired
+    private UERepository ueRepository;
+
+    @Autowired
+    private com.iusjc.weschedule.repositories.ClasseRepository classeRepository;
+
+    @Autowired
+    private FiliereRepository filiereRepository;
+
+    @Autowired
+    private EquipmentRepository equipmentRepository;
+
+    @Autowired
+    private TypeEquipementRepository typeEquipementRepository;
+
+    @Autowired
+    private com.iusjc.weschedule.repositories.EtudiantRepository etudiantRepository;
 
     // ==================== ENSEIGNANTS ====================
 
@@ -48,10 +96,22 @@ public class AdminController {
                 data.put("phone", ens.getPhone());
                 data.put("grade", ens.getGrade());
                 
-                // Ne pas charger les UEs dans la liste pour éviter les problèmes de lazy loading
-                data.put("nbUes", 0);
-                data.put("ues", new ArrayList<>());
-                data.put("nbDisponibilites", 0);
+                // UEs déjà chargées via JOIN FETCH dans findAllWithUEs()
+                List<UE> ues = ens.getUesEnseignees() != null ? new ArrayList<>(ens.getUesEnseignees()) : new ArrayList<>();
+                data.put("nbUes", ues.size());
+                
+                List<Map<String, Object>> uesData = ues.stream().map(ue -> {
+                    Map<String, Object> ueMap = new HashMap<>();
+                    ueMap.put("idUE", ue.getIdUE().toString());
+                    ueMap.put("code", ue.getCode());
+                    ueMap.put("intitule", ue.getIntitule());
+                    ueMap.put("duree", ue.getDuree());
+                    return ueMap;
+                }).toList();
+                data.put("ues", uesData);
+                
+                int nbDispos = enseignantService.countDisponibilites(ens.getIdUser());
+                data.put("nbDisponibilites", nbDispos);
                 
                 result.add(data);
             }
@@ -83,9 +143,24 @@ public class AdminController {
             data.put("email", ens.getEmail());
             data.put("phone", ens.getPhone());
             data.put("grade", ens.getGrade());
-            data.put("ues", new ArrayList<>());
-            data.put("ueIds", new ArrayList<>());
-            data.put("nbDisponibilites", 0);
+            
+            // Charger les UEs via le service
+            List<UE> ues = enseignantService.getUEsEnseignant(id);
+            List<Map<String, Object>> uesData = ues.stream().map(ue -> {
+                Map<String, Object> ueMap = new HashMap<>();
+                ueMap.put("idUE", ue.getIdUE().toString());
+                ueMap.put("code", ue.getCode());
+                ueMap.put("intitule", ue.getIntitule());
+                ueMap.put("duree", ue.getDuree());
+                return ueMap;
+            }).toList();
+            data.put("ues", uesData);
+            
+            List<String> ueIds = ues.stream().map(ue -> ue.getIdUE().toString()).toList();
+            data.put("ueIds", ueIds);
+            
+            int nbDispos = enseignantService.countDisponibilites(id);
+            data.put("nbDisponibilites", nbDispos);
             
             return ResponseEntity.ok(data);
         } catch (Exception e) {
@@ -110,11 +185,14 @@ public class AdminController {
 
             // Validation
             if (nom == null || nom.trim().isEmpty() || 
-                prenom == null || prenom.trim().isEmpty() || 
                 email == null || email.trim().isEmpty()) {
                 response.put("success", false);
-                response.put("message", "Nom, prénom et email sont obligatoires");
+                response.put("message", "Nom et email sont obligatoires");
                 return ResponseEntity.badRequest().body(response);
+            }
+
+            if (prenom == null) {
+                prenom = "";
             }
 
             Enseignant saved = enseignantService.creerEnseignant(nom, prenom, email, phone, grade, ueIds);
@@ -208,6 +286,48 @@ public class AdminController {
         }
     }
 
+    // ==================== EXCEL IMPORT / EXPORT ====================
+
+    @GetMapping("/enseignants/export")
+    public ResponseEntity<byte[]> exportEnseignants() {
+        try {
+            byte[] data = excelEnseignantService.exporterEnseignants();
+            String filename = "enseignants_" + LocalDate.now().format(DateTimeFormatter.ofPattern("yyyyMMdd")) + ".xlsx";
+            return ResponseEntity.ok()
+                    .header(HttpHeaders.CONTENT_DISPOSITION, "attachment; filename=\"" + filename + "\"")
+                    .contentType(MediaType.parseMediaType("application/vnd.openxmlformats-officedocument.spreadsheetml.sheet"))
+                    .body(data);
+        } catch (Exception e) {
+            log.error("Erreur export Excel enseignants", e);
+            return ResponseEntity.internalServerError().build();
+        }
+    }
+
+    @PostMapping("/enseignants/import")
+    public ResponseEntity<Map<String, Object>> importEnseignants(@RequestParam("file") MultipartFile file) {
+        Map<String, Object> response = new HashMap<>();
+        try {
+            ExcelEnseignantService.ImportResult result = excelEnseignantService.importerEnseignants(file);
+            response.put("success", true);
+            response.put("succes", result.getSucces());
+            response.put("erreurs", result.getErreurs());
+            response.put("avertissements", result.getAvertissements());
+            response.put("nbErreurs", result.getNbErreurs());
+            response.put("message", result.getSucces() + " enseignant(s) importé(s)" +
+                    (result.hasErreurs() ? ", " + result.getNbErreurs() + " erreur(s)" : " avec succès"));
+            return ResponseEntity.ok(response);
+        } catch (IllegalArgumentException e) {
+            response.put("success", false);
+            response.put("message", e.getMessage());
+            return ResponseEntity.badRequest().body(response);
+        } catch (Exception e) {
+            log.error("Erreur import Excel enseignants", e);
+            response.put("success", false);
+            response.put("message", "Erreur lors de l'import : " + e.getMessage());
+            return ResponseEntity.internalServerError().body(response);
+        }
+    }
+
     // ==================== UES ====================
 
     @GetMapping("/ues")
@@ -220,6 +340,26 @@ public class AdminController {
                 data.put("code", ue.getCode() != null ? ue.getCode() : "");
                 data.put("intitule", ue.getIntitule());
                 data.put("duree", ue.getDuree());
+                
+                List<Map<String, Object>> classesData = new ArrayList<>();
+                if (ue.getClasses() != null && !ue.getClasses().isEmpty()) {
+                    for (Classe classe : ue.getClasses()) {
+                        Map<String, Object> classeMap = new HashMap<>();
+                        classeMap.put("idClasse", classe.getIdClasse());
+                        classeMap.put("nom", classe.getNom());
+                        classeMap.put("niveau", classe.getNiveau());
+                        classeMap.put("effectif", classe.getEffectif());
+                        if (classe.getFiliere() != null) {
+                            classeMap.put("filiere", classe.getFiliere().getNomFiliere());
+                        }
+                        if (classe.getEcole() != null) {
+                            classeMap.put("ecole", classe.getEcole().getNomEcole());
+                        }
+                        classesData.add(classeMap);
+                    }
+                }
+                data.put("classes", classesData);
+                
                 return data;
             }).toList();
             return ResponseEntity.ok(result);
@@ -379,32 +519,30 @@ public class AdminController {
             result.put("dateDebut", dispo.getDateDebut().toString());
             result.put("dateFin", dispo.getDateFin().toString());
             
-            // Grouper les créneaux par jour
+            // Utiliser le service qui charge tout en transaction (évite LazyInitializationException)
+            Map<java.time.LocalDate, List<PlageHoraire>> emploiDuTemps = disponibiliteService.getEmploiDuTempsSemaine(id);
+            
+            // Grouper les créneaux par nom de jour
             Map<String, List<Map<String, String>>> creneauxParJour = new LinkedHashMap<>();
             String[] jours = {"Lundi", "Mardi", "Mercredi", "Jeudi", "Vendredi", "Samedi", "Dimanche"};
-            
             for (String jour : jours) {
                 creneauxParJour.put(jour, new ArrayList<>());
             }
             
-            if (dispo.getCreneauxParJour() != null) {
-                for (CreneauDisponibilite creneau : dispo.getCreneauxParJour()) {
-                    if (creneau.getPlagesHoraires() != null && creneau.getDate() != null) {
-                        // Déterminer le jour de la semaine à partir de la date
-                        String jour = creneau.getDate().getDayOfWeek().getDisplayName(
-                            java.time.format.TextStyle.FULL, java.util.Locale.FRENCH);
-                        // Capitaliser la première lettre
-                        jour = jour.substring(0, 1).toUpperCase() + jour.substring(1);
-                        
-                        for (PlageHoraire plage : creneau.getPlagesHoraires()) {
-                            Map<String, String> plageData = new HashMap<>();
-                            plageData.put("heureDebut", plage.getHeureDebut().toString());
-                            plageData.put("heureFin", plage.getHeureFin().toString());
-                            if (creneauxParJour.containsKey(jour)) {
-                                creneauxParJour.get(jour).add(plageData);
-                            }
-                        }
-                    }
+            for (Map.Entry<java.time.LocalDate, List<PlageHoraire>> entry : emploiDuTemps.entrySet()) {
+                String jour = entry.getKey().getDayOfWeek().getDisplayName(
+                    java.time.format.TextStyle.FULL, java.util.Locale.FRENCH);
+                jour = jour.substring(0, 1).toUpperCase() + jour.substring(1);
+                
+                List<Map<String, String>> plagesData = entry.getValue().stream().map(plage -> {
+                    Map<String, String> p = new HashMap<>();
+                    p.put("heureDebut", plage.getHeureDebut().toString());
+                    p.put("heureFin", plage.getHeureFin().toString());
+                    return p;
+                }).toList();
+                
+                if (creneauxParJour.containsKey(jour)) {
+                    creneauxParJour.get(jour).addAll(plagesData);
                 }
             }
             
@@ -415,4 +553,347 @@ public class AdminController {
             return ResponseEntity.internalServerError().build();
         }
     }
+
+    // ==================== SALLES EXCEL ====================
+
+    @GetMapping("/salles/export")
+    public ResponseEntity<byte[]> exportSalles() {
+        try {
+            byte[] data = excelSalleService.exporterSalles();
+            String filename = "salles_" + LocalDate.now().format(DateTimeFormatter.ofPattern("yyyyMMdd")) + ".xlsx";
+            return ResponseEntity.ok()
+                    .header(HttpHeaders.CONTENT_DISPOSITION, "attachment; filename=\"" + filename + "\"")
+                    .contentType(MediaType.parseMediaType("application/vnd.openxmlformats-officedocument.spreadsheetml.sheet"))
+                    .body(data);
+        } catch (Exception e) {
+            log.error("Erreur export Excel salles", e);
+            return ResponseEntity.internalServerError().build();
+        }
+    }
+
+    // ==================== FILIERES ====================
+
+    @GetMapping("/filieres")
+    public ResponseEntity<List<Map<String, Object>>> getFilieres(
+            @RequestParam(required = false) UUID ecoleId,
+            @RequestParam(required = false) String niveau) {
+        try {
+            List<com.iusjc.weschedule.models.Filiere> filieres;
+            if (ecoleId != null && niveau != null && !niveau.isBlank()) {
+                filieres = filiereRepository.findByEcoleAndNiveau(ecoleId, niveau);
+            } else if (ecoleId != null) {
+                filieres = filiereRepository.findByEcoleIdEcole(ecoleId);
+            } else {
+                filieres = filiereRepository.findAll();
+            }
+            List<Map<String, Object>> result = filieres.stream().map(f -> {
+                Map<String, Object> m = new HashMap<>();
+                m.put("idFiliere", f.getIdFiliere().toString());
+                m.put("nomFiliere", f.getNomFiliere());
+                m.put("niveaux", f.getNiveaux());
+                return m;
+            }).toList();
+            return ResponseEntity.ok(result);
+        } catch (Exception e) {
+            log.error("Erreur récupération filières", e);
+            return ResponseEntity.internalServerError().build();
+        }
+    }
+
+    // ==================== CLASSES EXCEL ====================
+
+    @GetMapping("/classes/export")
+    public ResponseEntity<byte[]> exportClasses() {
+        try {
+            byte[] data = excelClasseService.exporterClasses();
+            String filename = "classes_" + LocalDate.now().format(DateTimeFormatter.ofPattern("yyyyMMdd")) + ".xlsx";
+            return ResponseEntity.ok()
+                    .header(HttpHeaders.CONTENT_DISPOSITION, "attachment; filename=\"" + filename + "\"")
+                    .contentType(MediaType.parseMediaType("application/vnd.openxmlformats-officedocument.spreadsheetml.sheet"))
+                    .body(data);
+        } catch (Exception e) {
+            log.error("Erreur export Excel classes", e);
+            return ResponseEntity.internalServerError().build();
+        }
+    }
+
+    @PostMapping("/classes/import")
+    public ResponseEntity<Map<String, Object>> importClasses(@RequestParam("file") MultipartFile file) {
+        Map<String, Object> response = new HashMap<>();
+        try {
+            ExcelClasseService.ImportResult result = excelClasseService.importerClasses(file);
+            response.put("success", true);
+            response.put("succes", result.getSucces());
+            response.put("erreurs", result.getErreurs());
+            response.put("nbErreurs", result.getNbErreurs());
+            response.put("message", result.getSucces() + " classe(s) importée(s)" +
+                    (result.hasErreurs() ? ", " + result.getNbErreurs() + " erreur(s)" : " avec succès"));
+            return ResponseEntity.ok(response);
+        } catch (IllegalArgumentException e) {
+            response.put("success", false);
+            response.put("message", e.getMessage());
+            return ResponseEntity.badRequest().body(response);
+        } catch (Exception e) {
+            log.error("Erreur import Excel classes", e);
+            response.put("success", false);
+            response.put("message", "Erreur lors de l'import : " + e.getMessage());
+            return ResponseEntity.internalServerError().body(response);
+        }
+    }
+
+    // ==================== SALLES IMPORT ====================
+
+    @PostMapping("/salles/import")
+    public ResponseEntity<Map<String, Object>> importSalles(@RequestParam("file") MultipartFile file) {
+        Map<String, Object> response = new HashMap<>();
+        try {
+            ExcelSalleService.ImportResult result = excelSalleService.importerSalles(file);
+            response.put("success", true);
+            response.put("succes", result.getSucces());
+            response.put("erreurs", result.getErreurs());
+            response.put("nbErreurs", result.getNbErreurs());
+            response.put("message", result.getSucces() + " salle(s) importée(s)" +
+                    (result.hasErreurs() ? ", " + result.getNbErreurs() + " erreur(s)" : " avec succès"));
+            return ResponseEntity.ok(response);
+        } catch (IllegalArgumentException e) {
+            response.put("success", false);
+            response.put("message", e.getMessage());
+            return ResponseEntity.badRequest().body(response);
+        } catch (Exception e) {
+            log.error("Erreur import Excel salles", e);
+            response.put("success", false);
+            response.put("message", "Erreur lors de l'import : " + e.getMessage());
+            return ResponseEntity.internalServerError().body(response);
+        }
+    }
+
+    // ==================== EQUIPEMENTS EXCEL ====================
+
+    @GetMapping("/equipements/export")
+    public ResponseEntity<byte[]> exportEquipements() {
+        try {
+            byte[] data = excelEquipementService.exporterEquipements();
+            String filename = "equipements_" + LocalDate.now().format(DateTimeFormatter.ofPattern("yyyyMMdd")) + ".xlsx";
+            return ResponseEntity.ok()
+                    .header(HttpHeaders.CONTENT_DISPOSITION, "attachment; filename=\"" + filename + "\"")
+                    .contentType(MediaType.parseMediaType("application/vnd.openxmlformats-officedocument.spreadsheetml.sheet"))
+                    .body(data);
+        } catch (Exception e) {
+            log.error("Erreur export Excel équipements", e);
+            return ResponseEntity.internalServerError().build();
+        }
+    }
+
+    @PostMapping("/equipements/import")
+    public ResponseEntity<Map<String, Object>> importEquipements(@RequestParam("file") MultipartFile file) {
+        Map<String, Object> response = new HashMap<>();
+        try {
+            ExcelEquipementService.ImportResult result = excelEquipementService.importerEquipements(file);
+            response.put("success", true);
+            response.put("succes", result.getSucces());
+            response.put("erreurs", result.getErreurs());
+            response.put("avertissements", result.getAvertissements());
+            response.put("nbErreurs", result.getNbErreurs());
+            response.put("message", result.getSucces() + " équipement(s) importé(s)" +
+                    (result.hasErreurs() ? ", " + result.getNbErreurs() + " erreur(s)" : " avec succès"));
+            return ResponseEntity.ok(response);
+        } catch (IllegalArgumentException e) {
+            response.put("success", false);
+            response.put("message", e.getMessage());
+            return ResponseEntity.badRequest().body(response);
+        } catch (Exception e) {
+            log.error("Erreur import Excel équipements", e);
+            response.put("success", false);
+            response.put("message", "Erreur lors de l'import : " + e.getMessage());
+            return ResponseEntity.internalServerError().body(response);
+        }
+    }
+
+    // ==================== UEs EXCEL ====================
+
+    @Autowired
+    private com.iusjc.weschedule.service.ExcelUEService excelUEService;
+
+    @GetMapping("/ues/export")
+    public ResponseEntity<byte[]> exportUEs() {
+        try {
+            byte[] data = excelUEService.exporterUEs();
+            String filename = "ues_" + LocalDate.now().format(DateTimeFormatter.ofPattern("yyyyMMdd")) + ".xlsx";
+            return ResponseEntity.ok()
+                    .header(HttpHeaders.CONTENT_DISPOSITION, "attachment; filename=\"" + filename + "\"")
+                    .contentType(MediaType.parseMediaType("application/vnd.openxmlformats-officedocument.spreadsheetml.sheet"))
+                    .body(data);
+        } catch (Exception e) {
+            log.error("Erreur export Excel UEs", e);
+            return ResponseEntity.internalServerError().build();
+        }
+    }
+
+    @PostMapping("/ues/import")
+    public ResponseEntity<Map<String, Object>> importUEs(@RequestParam("file") MultipartFile file) {
+        Map<String, Object> response = new HashMap<>();
+        try {
+            com.iusjc.weschedule.service.ExcelUEService.ImportResult result = excelUEService.importerUEs(file);
+            response.put("success", true);
+            response.put("succes", result.getSucces());
+            response.put("erreurs", result.getErreurs());
+            response.put("avertissements", result.getAvertissements());
+            response.put("message", result.getSucces() + " UE(s) importée(s)" +
+                    (result.hasErreurs() ? ", " + result.getNbErreurs() + " erreur(s)" : " avec succès"));
+            return ResponseEntity.ok(response);
+        } catch (Exception e) {
+            log.error("Erreur import Excel UEs", e);
+            response.put("success", false);
+            response.put("message", "Erreur lors de l'import : " + e.getMessage());
+            return ResponseEntity.internalServerError().body(response);
+        }
+    }
+
+    // ==================== CLASSES API ====================
+
+    @GetMapping("/classes")
+    public ResponseEntity<List<Map<String, Object>>> getAllClasses() {
+        try {
+            List<com.iusjc.weschedule.models.Classe> classes = classeRepository.findAll();
+            List<Map<String, Object>> result = classes.stream().map(c -> {
+                Map<String, Object> m = new HashMap<>();
+                m.put("idClasse", c.getIdClasse().toString());
+                m.put("nom", c.getNom());
+                m.put("niveau", c.getNiveau());
+                m.put("langue", c.getLangue());
+                m.put("effectif", c.getEffectif());
+                if (c.getEcole() != null) m.put("ecole", c.getEcole().getNomEcole());
+                if (c.getFiliere() != null) m.put("filiere", c.getFiliere().getNomFiliere());
+                return m;
+            }).toList();
+            return ResponseEntity.ok(result);
+        } catch (Exception e) {
+            log.error("Erreur récupération classes", e);
+            return ResponseEntity.internalServerError().build();
+        }
+    }
+
+    // ==================== SALLES API ====================
+
+    @GetMapping("/salles")
+    public ResponseEntity<List<Map<String, Object>>> getAllSalles() {
+        try {
+            List<com.iusjc.weschedule.models.Salle> salles = salleRepository.findAll();
+            List<Map<String, Object>> result = salles.stream().map(s -> {
+                Map<String, Object> m = new HashMap<>();
+                m.put("idSalle", s.getIdSalle().toString());
+                m.put("nomSalle", s.getNomSalle());
+                m.put("capacite", s.getCapacite());
+                m.put("typeSalle", s.getTypeSalle() != null ? s.getTypeSalle().name() : null);
+                m.put("statut", s.getStatut() != null ? s.getStatut().name() : null);
+                m.put("batiment", s.getBatiment());
+                m.put("etage", s.getEtage());
+                return m;
+            }).toList();
+            return ResponseEntity.ok(result);
+        } catch (Exception e) {
+            log.error("Erreur récupération salles", e);
+            return ResponseEntity.internalServerError().build();
+        }
+    }
+
+    // ==================== COURS PAR CLASSE ====================
+
+    @GetMapping("/cours/classe/{classeId}")
+    public ResponseEntity<List<Map<String, Object>>> getCoursByClasse(@PathVariable UUID classeId) {
+        try {
+            List<com.iusjc.weschedule.models.Cours> cours = coursRepository.findAll().stream()
+                    .filter(c -> c.getClasse() != null && c.getClasse().getIdClasse().equals(classeId))
+                    .toList();
+            List<Map<String, Object>> result = cours.stream().map(c -> {
+                Map<String, Object> m = new HashMap<>();
+                m.put("idCours", c.getIdCours().toString());
+                m.put("intitule", c.getIntitule());
+                m.put("typeCours", c.getTypeCours() != null ? c.getTypeCours().name() : null);
+                m.put("dureeTotal", c.getDureeTotal());
+                m.put("dureeRestante", c.getDureeRestante());
+                if (c.getUe() != null) {
+                    Map<String, Object> ue = new HashMap<>();
+                    ue.put("idUE", c.getUe().getIdUE().toString());
+                    ue.put("code", c.getUe().getCode());
+                    ue.put("intitule", c.getUe().getIntitule());
+                    ue.put("semestre", c.getUe().getSemestre());
+                    m.put("ue", ue);
+                }
+                if (c.getEnseignant() != null) {
+                    Map<String, Object> ens = new HashMap<>();
+                    ens.put("idUser", c.getEnseignant().getIdUser().toString());
+                    ens.put("nom", c.getEnseignant().getNom());
+                    ens.put("prenom", c.getEnseignant().getPrenom());
+                    m.put("enseignant", ens);
+                }
+                return m;
+            }).toList();
+            return ResponseEntity.ok(result);
+        } catch (Exception e) {
+            log.error("Erreur récupération cours par classe", e);
+            return ResponseEntity.internalServerError().build();
+        }
+    }
+
+    // ==================== STATS DASHBOARD ====================
+
+    @GetMapping("/stats")
+    public ResponseEntity<Map<String, Object>> getStats() {
+        Map<String, Object> stats = new LinkedHashMap<>();
+        try {
+            // Cours par type
+            List<com.iusjc.weschedule.models.Cours> tousLesCours = coursRepository.findAll();
+            long nbCM = tousLesCours.stream().filter(c -> c.getTypeCours() != null && c.getTypeCours().name().equals("CM")).count();
+            long nbTD = tousLesCours.stream().filter(c -> c.getTypeCours() != null && c.getTypeCours().name().equals("TD")).count();
+            long nbTP = tousLesCours.stream().filter(c -> c.getTypeCours() != null && c.getTypeCours().name().equals("TP")).count();
+            long totalCours = tousLesCours.size();
+            stats.put("cours_cm", nbCM);
+            stats.put("cours_td", nbTD);
+            stats.put("cours_tp", nbTP);
+            stats.put("cours_total", totalCours);
+
+            // Cours avec enseignant
+            long coursAvecEns = tousLesCours.stream().filter(c -> c.getEnseignant() != null).count();
+            stats.put("cours_avec_enseignant", coursAvecEns);
+
+            // Cours terminés (dureeRestante == 0)
+            long coursTermines = tousLesCours.stream().filter(c -> c.getDureeRestante() != null && c.getDureeRestante() == 0).count();
+            stats.put("cours_termines", coursTermines);
+
+            // Salles par type
+            List<com.iusjc.weschedule.models.Salle> toutesSalles = salleRepository.findAll();
+            long totalSalles = toutesSalles.size();
+            Map<String, Long> sallesParType = new LinkedHashMap<>();
+            for (com.iusjc.weschedule.enums.TypeSalle t : com.iusjc.weschedule.enums.TypeSalle.values()) {
+                sallesParType.put(t.name(), toutesSalles.stream().filter(s -> t.equals(s.getTypeSalle())).count());
+            }
+            stats.put("salles_par_type", sallesParType);
+            stats.put("salles_total", totalSalles);
+
+            // Salles disponibles
+            long sallesDispo = toutesSalles.stream()
+                    .filter(s -> s.getStatut() != null && s.getStatut().name().equals("DISPONIBLE")).count();
+            stats.put("salles_disponibles", sallesDispo);
+
+            // Équipements
+            long totalEquipements = equipmentRepository.count();
+            stats.put("equipements_total", totalEquipements);
+            stats.put("equipements_types_total", typeEquipementRepository.count());
+            Map<String, Long> equipementsParStatut = new LinkedHashMap<>();
+            for (StatutEquipement st : StatutEquipement.values()) {
+                equipementsParStatut.put(st.name(), equipmentRepository.countByStatut(st));
+            }
+            stats.put("equipements_par_statut", equipementsParStatut);
+            stats.put("equipements_stock", equipmentRepository.countBySalleIsNull());
+
+            stats.put("etudiants_total", etudiantRepository.count());
+
+            return ResponseEntity.ok(stats);
+        } catch (Exception e) {
+            log.error("Erreur stats dashboard", e);
+            return ResponseEntity.internalServerError().build();
+        }
+    }
 }
+

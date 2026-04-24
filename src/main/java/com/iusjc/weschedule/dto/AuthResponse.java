@@ -14,11 +14,14 @@ import java.util.UUID;
 @Builder
 public class AuthResponse {
 
-    private UUID idUser;
+    private String idUser; // Changé de UUID à String pour compatibilité JSON/Frontend
     private String email;
     private String nom;
     private String prenom;
     private Role role;
     private String message;
     private boolean success;
+    private String token; // Token JWT pour l'authentification
+    private String phone; // Téléphone (pour les enseignants)
+    private String grade; // Grade (pour les enseignants)
 }

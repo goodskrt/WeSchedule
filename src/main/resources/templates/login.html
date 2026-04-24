@@ -16,8 +16,7 @@
             left: 0;
             width: 100%;
             height: 100%;
-            background: rgba(255, 255, 255, 0.95);
-            backdrop-filter: blur(8px);
+            background: var(--white);
             display: none;
             align-items: center;
             justify-content: center;
@@ -33,10 +32,10 @@
             text-align: center;
             padding: 2rem;
             background: white;
-            border-radius: 1rem;
-            box-shadow: 0 20px 25px -5px rgb(0 0 0 / 0.1);
+            border-radius: var(--radius-2xl);
+            box-shadow: var(--shadow-2xl);
             border: 1px solid var(--gray-200);
-            max-width: 300px;
+            max-width: 320px;
             width: 90%;
         }
 
@@ -52,7 +51,7 @@
 
         .loading-text {
             color: var(--gray-700);
-            font-weight: 500;
+            font-weight: 600;
             font-size: 1rem;
             margin-bottom: 0.5rem;
         }
@@ -102,14 +101,57 @@
             opacity: 1;
         }
 
-        /* Animation de pulsation pour le logo pendant le chargement */
-        .auth-logo.loading img {
-            animation: logoPulse 2s ease-in-out infinite;
+        /* Styles pour les champs requis */
+        .text-danger {
+            color: #dc3545;
         }
 
-        @keyframes logoPulse {
-            0%, 100% { transform: scale(1); opacity: 1; }
-            50% { transform: scale(1.05); opacity: 0.8; }
+        /* Messages d'erreur de validation */
+        .invalid-feedback {
+            display: none;
+            color: #dc3545;
+            font-size: 0.875rem;
+            margin-top: 0.5rem;
+            padding: 0.5rem;
+            background: #fee;
+            border-radius: 0.5rem;
+            border-left: 3px solid #dc3545;
+        }
+
+        .invalid-feedback i {
+            margin-right: 0.25rem;
+        }
+
+        /* États de validation des champs */
+        .form-input.is-invalid {
+            border-color: #dc3545;
+            background-color: #fff5f5;
+        }
+
+        .form-input.is-invalid:focus {
+            border-color: #dc3545;
+            box-shadow: 0 0 0 3px rgba(220, 53, 69, 0.1);
+        }
+
+        .form-input.is-valid {
+            border-color: #28a745;
+            background-color: #f0fff4;
+        }
+
+        .form-input.is-valid:focus {
+            border-color: #28a745;
+            box-shadow: 0 0 0 3px rgba(40, 167, 69, 0.1);
+        }
+
+        /* Animation shake pour les erreurs */
+        @keyframes shake {
+            0%, 100% { transform: translateX(0); }
+            10%, 30%, 50%, 70%, 90% { transform: translateX(-5px); }
+            20%, 40%, 60%, 80% { transform: translateX(5px); }
+        }
+
+        .shake {
+            animation: shake 0.5s;
         }
     </style>
 </head>
@@ -125,9 +167,6 @@
 
 <div class="auth-container fade-in">
     <div class="auth-header">
-        <div class="auth-logo" id="authLogo">
-            <img src="/images/logo.jpeg" alt="WeSchedule Logo">
-        </div>
         <h1 class="auth-title">WeSchedule</h1>
         <p class="auth-subtitle">Gestion d'emploi du temps - Connexion sécurisée</p>
     </div>
@@ -149,7 +188,7 @@
     <form th:action="@{/login}" method="post" id="loginForm" class="auth-form">
         <div class="form-group">
             <label class="form-label" for="username">
-                <i class="fas fa-envelope"></i> Email
+                <i class="fas fa-envelope"></i> Email <span class="text-danger">*</span>
             </label>
             <div class="input-group">
                 <i class="input-icon fas fa-envelope"></i>
@@ -157,14 +196,19 @@
                        class="form-input"
                        id="username"
                        name="username"
+                       required
                        autofocus
-                       placeholder="votre.email@exemple.com">
+                       placeholder="votre.email@exemple.com"
+                       title="Veuillez entrer une adresse email valide">
+            </div>
+            <div class="invalid-feedback" id="emailError" style="display: none;">
+                <i class="fas fa-exclamation-circle"></i> Veuillez entrer une adresse email valide
             </div>
         </div>
 
         <div class="form-group">
             <label class="form-label" for="password">
-                <i class="fas fa-lock"></i> Mot de passe
+                <i class="fas fa-lock"></i> Mot de passe <span class="text-danger">*</span>
             </label>
             <div class="input-group">
                 <i class="input-icon fas fa-lock"></i>
@@ -172,10 +216,16 @@
                        class="form-input"
                        id="password"
                        name="password"
-                       placeholder="••••••••">
+                       required
+                       minlength="6"
+                       placeholder="••••••••"
+                       title="Le mot de passe doit contenir au moins 6 caractères">
                 <button type="button" class="input-toggle" onclick="togglePasswordVisibility()">
                     <i class="fas fa-eye"></i>
                 </button>
+            </div>
+            <div class="invalid-feedback" id="passwordError" style="display: none;">
+                <i class="fas fa-exclamation-circle"></i> Le mot de passe est requis (minimum 6 caractères)
             </div>
         </div>
 
@@ -214,32 +264,94 @@
         }
     }
 
-    // Gestion du chargement lors de la soumission
-    document.getElementById('loginForm').addEventListener('submit', function(e) {
-        const submitBtn = document.getElementById('submitBtn');
-        const loadingOverlay = document.getElementById('loadingOverlay');
-        const authLogo = document.getElementById('authLogo');
+    // Validation du formulaire
+    function validateForm() {
         const usernameInput = document.getElementById('username');
         const passwordInput = document.getElementById('password');
+        const emailError = document.getElementById('emailError');
+        const passwordError = document.getElementById('passwordError');
+        let isValid = true;
 
-        // Validation basique côté client - mais ne pas empêcher la soumission
-        if (!usernameInput.value.trim() || !passwordInput.value.trim()) {
-            // Laisser le navigateur gérer la validation HTML5
-            return;
+        // Validation de l'email
+        const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+        if (!usernameInput.value.trim()) {
+            usernameInput.classList.add('is-invalid', 'shake');
+            usernameInput.classList.remove('is-valid');
+            emailError.textContent = 'L\'adresse email est requise';
+            emailError.style.display = 'block';
+            isValid = false;
+            setTimeout(() => usernameInput.classList.remove('shake'), 500);
+        } else if (!emailRegex.test(usernameInput.value.trim())) {
+            usernameInput.classList.add('is-invalid', 'shake');
+            usernameInput.classList.remove('is-valid');
+            emailError.textContent = 'Veuillez entrer une adresse email valide';
+            emailError.style.display = 'block';
+            isValid = false;
+            setTimeout(() => usernameInput.classList.remove('shake'), 500);
+        } else {
+            usernameInput.classList.remove('is-invalid');
+            usernameInput.classList.add('is-valid');
+            emailError.style.display = 'none';
         }
 
-        // Afficher le loading SANS empêcher la soumission
+        // Validation du mot de passe
+        if (!passwordInput.value.trim()) {
+            passwordInput.classList.add('is-invalid', 'shake');
+            passwordInput.classList.remove('is-valid');
+            passwordError.textContent = 'Le mot de passe est requis';
+            passwordError.style.display = 'block';
+            isValid = false;
+            setTimeout(() => passwordInput.classList.remove('shake'), 500);
+        } else if (passwordInput.value.length < 6) {
+            passwordInput.classList.add('is-invalid', 'shake');
+            passwordInput.classList.remove('is-valid');
+            passwordError.textContent = 'Le mot de passe doit contenir au moins 6 caractères';
+            passwordError.style.display = 'block';
+            isValid = false;
+            setTimeout(() => passwordInput.classList.remove('shake'), 500);
+        } else {
+            passwordInput.classList.remove('is-invalid');
+            passwordInput.classList.add('is-valid');
+            passwordError.style.display = 'none';
+        }
+
+        return isValid;
+    }
+
+    // Gestion du chargement lors de la soumission
+    let isSubmitting = false; // Variable pour éviter les soumissions multiples
+    
+    document.getElementById('loginForm').addEventListener('submit', function(e) {
+        e.preventDefault(); // Empêcher la soumission par défaut pour valider d'abord
+
+        // Empêcher les soumissions multiples
+        if (isSubmitting) {
+            return false;
+        }
+
+        // Valider le formulaire
+        if (!validateForm()) {
+            // Focus sur le premier champ invalide
+            const firstInvalid = document.querySelector('.form-input.is-invalid');
+            if (firstInvalid) {
+                firstInvalid.focus();
+            }
+            return false;
+        }
+
+        // Marquer comme en cours de soumission
+        isSubmitting = true;
+
+        // Si la validation passe, soumettre le formulaire
+        const submitBtn = document.getElementById('submitBtn');
+        const loadingOverlay = document.getElementById('loadingOverlay');
+
         submitBtn.disabled = true;
         submitBtn.classList.add('loading');
         loadingOverlay.classList.add('show');
-        authLogo.classList.add('loading');
 
-        // NE PAS désactiver les champs - cela peut empêcher la soumission
-        // usernameInput.disabled = true;
-        // passwordInput.disabled = true;
-
-        // Laisser le formulaire se soumettre naturellement
-        // Ne pas utiliser preventDefault() ou setTimeout()
+        // Soumettre le formulaire
+        this.submit();
     });
 
     // Masquer le loading si on revient sur la page (bouton retour du navigateur)
@@ -251,7 +363,6 @@
 
     // Masquer le loading en cas d'erreur (page rechargée avec erreur)
     window.addEventListener('load', function() {
-        // Si on est sur la page de login avec une erreur, masquer le loading
         const errorAlert = document.querySelector('.alert-danger');
         if (errorAlert) {
             hideLoading();
@@ -260,11 +371,9 @@
 
     // Fonction pour masquer le loading
     function hideLoading() {
+        isSubmitting = false; // Réinitialiser le flag
         const submitBtn = document.getElementById('submitBtn');
         const loadingOverlay = document.getElementById('loadingOverlay');
-        const authLogo = document.getElementById('authLogo');
-        const usernameInput = document.getElementById('username');
-        const passwordInput = document.getElementById('password');
 
         if (submitBtn) {
             submitBtn.disabled = false;
@@ -272,15 +381,6 @@
         }
         if (loadingOverlay) {
             loadingOverlay.classList.remove('show');
-        }
-        if (authLogo) {
-            authLogo.classList.remove('loading');
-        }
-        if (usernameInput) {
-            usernameInput.disabled = false;
-        }
-        if (passwordInput) {
-            passwordInput.disabled = false;
         }
     }
 
@@ -292,39 +392,61 @@
         }
     });
 
-    // Validation en temps réel (optionnelle, n'interfère pas avec la soumission)
+    // Validation en temps réel
     document.addEventListener('DOMContentLoaded', function() {
-        const inputs = document.querySelectorAll('.form-input');
-        inputs.forEach(input => {
-            input.addEventListener('blur', function() {
-                if (this.value.trim()) {
-                    this.classList.add('is-valid');
-                    this.classList.remove('is-invalid');
-                } else {
-                    this.classList.add('is-invalid');
-                    this.classList.remove('is-valid');
-                }
-            });
+        const usernameInput = document.getElementById('username');
+        const passwordInput = document.getElementById('password');
+        const emailError = document.getElementById('emailError');
+        const passwordError = document.getElementById('passwordError');
 
-            input.addEventListener('input', function() {
-                this.classList.remove('is-valid', 'is-invalid');
-            });
+        // Validation de l'email en temps réel
+        usernameInput.addEventListener('input', function() {
+            this.classList.remove('is-invalid', 'is-valid');
+            emailError.style.display = 'none';
         });
 
-        // Validation email
-        const emailInput = document.getElementById('username');
-        if (emailInput) {
-            emailInput.addEventListener('blur', function() {
-                const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
-                if (this.value.trim() && emailRegex.test(this.value)) {
-                    this.classList.add('is-valid');
-                    this.classList.remove('is-invalid');
-                } else if (this.value.trim()) {
-                    this.classList.add('is-invalid');
-                    this.classList.remove('is-valid');
+        usernameInput.addEventListener('blur', function() {
+            const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+            if (this.value.trim() && emailRegex.test(this.value)) {
+                this.classList.add('is-valid');
+                this.classList.remove('is-invalid');
+                emailError.style.display = 'none';
+            } else if (this.value.trim()) {
+                this.classList.add('is-invalid');
+                this.classList.remove('is-valid');
+                emailError.textContent = 'Veuillez entrer une adresse email valide';
+                emailError.style.display = 'block';
+            }
+        });
+
+        // Validation du mot de passe en temps réel
+        passwordInput.addEventListener('input', function() {
+            this.classList.remove('is-invalid', 'is-valid');
+            passwordError.style.display = 'none';
+        });
+
+        passwordInput.addEventListener('blur', function() {
+            if (this.value.trim() && this.value.length >= 6) {
+                this.classList.add('is-valid');
+                this.classList.remove('is-invalid');
+                passwordError.style.display = 'none';
+            } else if (this.value.trim()) {
+                this.classList.add('is-invalid');
+                this.classList.remove('is-valid');
+                passwordError.textContent = 'Le mot de passe doit contenir au moins 6 caractères';
+                passwordError.style.display = 'block';
+            }
+        });
+
+        // Permettre la soumission avec Enter
+        [usernameInput, passwordInput].forEach(input => {
+            input.addEventListener('keypress', function(e) {
+                if (e.key === 'Enter') {
+                    e.preventDefault();
+                    document.getElementById('loginForm').dispatchEvent(new Event('submit'));
                 }
             });
-        }
+        });
     });
 </script>
 </body>

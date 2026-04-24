@@ -7,6 +7,7 @@ import org.springframework.context.annotation.Configuration;
 import org.springframework.security.authentication.AuthenticationManager;
 import org.springframework.security.authentication.dao.DaoAuthenticationProvider;
 import org.springframework.security.config.annotation.authentication.configuration.AuthenticationConfiguration;
+import org.springframework.security.config.annotation.method.configuration.EnableMethodSecurity;
 import org.springframework.security.config.annotation.web.builders.HttpSecurity;
 import org.springframework.security.config.http.SessionCreationPolicy;
 import org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder;
@@ -15,6 +16,7 @@ import org.springframework.security.web.SecurityFilterChain;
 import org.springframework.security.web.authentication.UsernamePasswordAuthenticationFilter;
 
 @Configuration
+@EnableMethodSecurity
 public class SecurityConfig {
 
     @Autowired
@@ -56,10 +58,16 @@ public class SecurityConfig {
                         .requestMatchers("/", "/login", "/register", "/admin/signup", 
                                 "/css/**", "/js/**", "/images/**", "/error").permitAll()
                         
+                        // API REST d'authentification (publique)
+                        .requestMatchers("/api/auth/**").permitAll()
+                        
                         // Pages et API endpoints pour mot de passe oublié/réinitialisation
                         .requestMatchers("/reset-password-request", "/reset-password", "/reset-password-error", 
                                 "/reset-password-success", "/api/forgot-password", "/api/reset-password-with-token", 
                                 "/api/auto-login", "/api/validate-new-password").permitAll()
+
+                        // Swagger/OpenAPI documentation
+                        .requestMatchers("/swagger-ui/**", "/v3/api-docs/**", "/swagger-ui.html").permitAll()
 
                         // Toutes les autres pages → authentication requise
                         .anyRequest().authenticated()
@@ -69,7 +77,7 @@ public class SecurityConfig {
                 .formLogin(form -> form
                         .loginPage("/login")
                         .loginProcessingUrl("/login")
-                        .defaultSuccessUrl("/dashboard", true)
+                        .defaultSuccessUrl("/dashboard", false)
                         .failureUrl("/login?error=true")
                         .permitAll()
                 )

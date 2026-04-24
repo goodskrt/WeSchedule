@@ -2,65 +2,494 @@
 <html lang="fr" xmlns:th="http://www.thymeleaf.org">
 <head>
     <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Mon Emploi du temps - WeSchedule</title>
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
     <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css" rel="stylesheet">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
-    <link rel="stylesheet" href="/css/dashboard-professional.css">
+    <link rel="stylesheet" href="/css/modern-layout.css">
+    <style>
+        .timetable-wrap { overflow-x: auto; }
+        .timetable { 
+            display:grid; 
+            grid-template-columns:70px repeat(6,1fr); 
+            border-radius:var(--radius-xl); 
+            overflow:hidden; 
+            border:1px solid var(--gray-200); 
+            background:var(--gray-200); 
+            gap:1px; 
+            min-width:800px;
+            box-shadow: var(--shadow-md);
+        }
+        .tt-head { 
+            background:linear-gradient(135deg, #667eea, #764ba2); 
+            color:white; 
+            padding:1rem .5rem; 
+            text-align:center; 
+            font-weight:600; 
+            font-size:.85rem; 
+        }
+        .tt-head.corner { 
+            background:#5568d3;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+        .tt-time { 
+            background:#f8fafc; 
+            padding:.75rem .5rem; 
+            text-align:center; 
+            font-size:.75rem; 
+            color:var(--gray-600); 
+            display:flex; 
+            align-items:center; 
+            justify-content:center; 
+            font-weight:600; 
+        }
+        .tt-time.pause { 
+            background: linear-gradient(135deg, #fbbf24, #f59e0b);
+            color: white;
+            font-weight: 700;
+        }
+        .tt-cell { 
+            background:white; 
+            min-height:60px; 
+            position:relative; 
+            padding:4px; 
+        }
+        .tt-cell.pause {
+            background: repeating-linear-gradient(
+                45deg,
+                #fef3c7,
+                #fef3c7 10px,
+                #fde68a 10px,
+                #fde68a 20px
+            );
+        }
+        .seance-block { 
+            border-radius:6px; 
+            padding:.4rem .5rem; 
+            font-size:.72rem; 
+            line-height:1.3; 
+            height:100%; 
+            cursor:pointer; 
+            transition:all .2s; 
+            display:flex; 
+            flex-direction:column; 
+            justify-content:space-between; 
+        }
+        .seance-block:hover { 
+            opacity:.85;
+            transform: translateY(-2px);
+            box-shadow: 0 4px 8px rgba(0,0,0,0.1);
+        }
+        .seance-block.cm { background:#dbeafe; border-left:3px solid #2563eb; color:#1e3a8a; }
+        .seance-block.td { background:#fef3c7; border-left:3px solid #d97706; color:#78350f; }
+        .seance-block.tp { background:#d1fae5; border-left:3px solid #059669; color:#064e3b; }
+        .seance-block.tpe { background:#f3f4f6; border-left:3px solid #6b7280; color:#374151; }
+        .seance-title { font-weight:700; white-space:nowrap; overflow:hidden; text-overflow:ellipsis; }
+        .seance-meta  { opacity:.8; font-size:.7rem; white-space:nowrap; overflow:hidden; text-overflow:ellipsis; }
+        .legend-dot { width:12px; height:12px; border-radius:3px; display:inline-block; }
+        .week-nav { 
+            background:white; 
+            border-radius:var(--radius-xl); 
+            padding:1rem 1.5rem; 
+            box-shadow:var(--shadow-sm); 
+            border:1px solid var(--gray-200); 
+        }
+        .stat-pill { 
+            background:linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            border-radius:var(--radius-lg); 
+            padding:1.25rem 1rem; 
+            box-shadow:var(--shadow-md); 
+            text-align:center; 
+        }
+        .stat-pill .val { 
+            font-size:2rem; 
+            font-weight:700; 
+            margin-bottom: 0.25rem;
+        }
+        .stat-pill .lbl { 
+            font-size:.85rem; 
+            opacity: 0.9;
+        }
+    </style>
 </head>
 <body>
-    <nav class="navbar navbar-expand-lg navbar-custom">
-        <div class="container-fluid">
-            <a class="navbar-brand" href="/dashboard/enseignant"><img src="/images/logo.jpeg" alt="Logo">WeSchedule</a>
-            <div class="collapse navbar-collapse">
-                <ul class="navbar-nav ms-auto">
-                    <li class="nav-item dropdown">
-                        <a class="nav-link p-0" href="#" data-bs-toggle="dropdown">
-                            <div class="user-info-nav">
-                                <div class="user-avatar-small"><i class="fas fa-chalkboard-teacher"></i></div>
-                                <div class="user-details"><div class="user-name-small" th:text="${nomComplet}">Enseignant</div><div class="user-role-small">Enseignant</div></div>
-                            </div>
-                        </a>
-                        <ul class="dropdown-menu dropdown-menu-end">
-                            <li><a class="dropdown-item" href="/dashboard/enseignant/profil"><i class="fas fa-user"></i> Mon profil</a></li>
-                            <li><hr class="dropdown-divider"></li>
-                            <li><form th:action="@{/logout}" method="post" style="margin: 0;"><button type="submit" class="dropdown-item"><i class="fas fa-sign-out-alt"></i> Deconnexion</button></form></li>
-                        </ul>
-                    </li>
-                </ul>
+<div th:replace="~{fragments/sidebar :: enseignant-sidebar('emploi-temps')}"></div>
+<div class="ws-wrapper">
+    <div th:replace="~{fragments/header :: enseignant-header}"></div>
+    <main class="ws-main-content">
+
+        <!-- Header -->
+        <div class="d-flex justify-content-between align-items-center mb-3">
+            <div>
+                <h2 class="page-title">Mon Emploi du Temps</h2>
+                <p class="page-subtitle">Consultez votre planning hebdomadaire</p>
+            </div>
+            <div class="d-flex gap-2">
+                <button class="btn btn-success" onclick="exportEmploiDuTemps()">
+                    <i class="fas fa-file-excel me-1"></i> Exporter
+                </button>
+                <button class="btn btn-primary" onclick="imprimerEmploiDuTemps()">
+                    <i class="fas fa-print me-1"></i> Imprimer
+                </button>
             </div>
         </div>
-    </nav>
 
-    <div class="container-fluid">
-        <div class="row">
-            <div class="col-lg-2 col-md-3 p-0">
-                <div class="sidebar">
-                    <div class="sidebar-menu">
-                        <div class="menu-section-title">Tableau de bord</div>
-                        <a href="/dashboard/enseignant" class="nav-link"><i class="fas fa-tachometer-alt"></i><span>Vue d'ensemble</span></a>
-                        <div class="menu-section-title">Mon activite</div>
-                        <a href="/dashboard/enseignant/cours" class="nav-link"><i class="fas fa-book"></i><span>Mes Cours</span></a>
-                        <a href="/dashboard/enseignant/emploi-temps" class="nav-link active"><i class="fas fa-calendar-alt"></i><span>Mon Emploi du temps</span></a>
-                        <a href="/dashboard/enseignant/disponibilites" class="nav-link"><i class="fas fa-clock"></i><span>Mes Disponibilites</span></a>
-                        <div class="menu-section-title">Compte</div>
-                        <a href="/dashboard/enseignant/profil" class="nav-link"><i class="fas fa-user-cog"></i><span>Mon Profil</span></a>
+        <!-- Stats pills -->
+        <div class="d-flex gap-3 mb-3 flex-wrap">
+            <div class="stat-pill"><div class="val" id="statTotal">0</div><div class="lbl">Séances</div></div>
+            <div class="stat-pill"><div class="val" id="statCM" style="color:#2563eb;">0</div><div class="lbl">CM</div></div>
+            <div class="stat-pill"><div class="val" id="statTD" style="color:#d97706;">0</div><div class="lbl">TD</div></div>
+            <div class="stat-pill"><div class="val" id="statTP" style="color:#059669;">0</div><div class="lbl">TP</div></div>
+            <div class="stat-pill"><div class="val" id="statHeures">0h</div><div class="lbl">Heures planifiées</div></div>
+        </div>
+
+        <!-- Week navigation -->
+        <div class="week-nav d-flex align-items-center justify-content-between mb-3">
+            <button class="btn btn-outline-secondary btn-sm" onclick="changerSemaine(-1)">
+                <i class="fas fa-chevron-left"></i>
+            </button>
+            <div class="text-center flex-grow-1">
+                <div class="fw-semibold" style="font-size:.95rem;">
+                    Semaine <span id="semaineNum">1</span> &mdash; <span id="anneeNum">2026</span>
+                </div>
+                <div class="text-muted small" id="datesRange">
+                    Du 01/01/2026 au 07/01/2026
+                </div>
+            </div>
+            <button class="btn btn-outline-secondary btn-sm" onclick="changerSemaine(1)">
+                <i class="fas fa-chevron-right"></i>
+            </button>
+        </div>
+
+        <!-- Légende -->
+        <div class="d-flex gap-3 mb-3 align-items-center flex-wrap" style="font-size:.82rem;">
+            <span class="text-muted">Légende :</span>
+            <span><span class="legend-dot me-1" style="background:#dbeafe; border-left:3px solid #2563eb;"></span>CM</span>
+            <span><span class="legend-dot me-1" style="background:#fef3c7; border-left:3px solid #d97706;"></span>TD</span>
+            <span><span class="legend-dot me-1" style="background:#d1fae5; border-left:3px solid #059669;"></span>TP</span>
+            <span><span class="legend-dot me-1" style="background:#f3f4f6; border-left:3px solid #6b7280;"></span>TPE</span>
+        </div>
+
+        <!-- Grille emploi du temps -->
+        <div class="timetable-wrap mb-4">
+            <div class="timetable" id="timetable"></div>
+        </div>
+
+    </main>
+</div>
+
+<!-- Modal détails séance -->
+<div class="modal fade" id="seanceModal" tabindex="-1">
+    <div class="modal-dialog modal-lg">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title">
+                    <i class="fas fa-info-circle me-2 text-primary"></i>Détails de la séance
+                </h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+            </div>
+            <div class="modal-body">
+                <div class="row g-3">
+                    <div class="col-md-6">
+                        <label class="form-label fw-semibold text-muted small">Date</label>
+                        <div id="detailDate" class="fw-semibold"></div>
+                    </div>
+                    <div class="col-md-6">
+                        <label class="form-label fw-semibold text-muted small">Horaire</label>
+                        <div id="detailHoraire" class="fw-semibold"></div>
+                    </div>
+                    <div class="col-12">
+                        <label class="form-label fw-semibold text-muted small">Cours</label>
+                        <div id="detailCours" class="fw-semibold"></div>
+                    </div>
+                    <div class="col-md-6">
+                        <label class="form-label fw-semibold text-muted small">Type</label>
+                        <div id="detailType"></div>
+                    </div>
+                    <div class="col-md-6">
+                        <label class="form-label fw-semibold text-muted small">Classe</label>
+                        <div id="detailClasse" class="fw-semibold"></div>
+                    </div>
+                    <div class="col-md-6">
+                        <label class="form-label fw-semibold text-muted small">Salle</label>
+                        <div id="detailSalle" class="fw-semibold"></div>
+                    </div>
+                    <div class="col-md-6">
+                        <label class="form-label fw-semibold text-muted small">Effectif</label>
+                        <div id="detailEffectif" class="fw-semibold"></div>
+                    </div>
+                    <div class="col-12" id="detailRemarquesContainer" style="display:none;">
+                        <label class="form-label fw-semibold text-muted small">Remarques</label>
+                        <div id="detailRemarques" class="text-muted"></div>
                     </div>
                 </div>
             </div>
-
-            <div class="col-lg-10 col-md-9">
-                <div class="main-content">
-                    <h2 class="page-title">Mon Emploi du temps</h2>
-                    <p class="page-subtitle">Consulter mon planning de la semaine</p>
-                    <div class="card-custom p-5 text-center mt-4">
-                        <div class="empty-state-icon"><i class="fas fa-calendar-alt"></i></div>
-                        <p class="text-muted">Fonctionnalite en cours de developpement</p>
-                    </div>
-                </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">
+                    <i class="fas fa-times me-2"></i>Fermer
+                </button>
             </div>
         </div>
     </div>
-    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js"></script>
+</div>
+
+<script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js"></script>
+<script src="/js/modern-layout.js"></script>
+<script>
+    const JOURS  = ['Lundi','Mardi','Mercredi','Jeudi','Vendredi','Samedi'];
+    const HEURES = ['08:00','09:00','10:00','11:00','12:00','13:00','14:00','15:00','16:00'];
+    const PAUSE_INDEX = 4; // Index de 12h00-13h00
+
+    let currentWeekNumber = 1;
+    let currentYear = new Date().getFullYear();
+    let seancesData = {};
+    let seanceModal;
+
+    function formatHeure(h) {
+        if (!h || typeof h !== 'string') return '';
+        const [hh, mm] = h.split(':');
+        return `${parseInt(hh, 10)}h${(mm || '00').padStart(2, '0')}`;
+    }
+
+    function formatPlage(hDeb, hFin) {
+        return `${formatHeure(hDeb)}-${formatHeure(hFin)}`;
+    }
+
+    document.addEventListener('DOMContentLoaded', () => {
+        seanceModal = new bootstrap.Modal(document.getElementById('seanceModal'));
+        initSemaine();
+        buildGrid();
+        loadSeances();
+    });
+
+    function initSemaine() {
+        const now = new Date();
+        const onejan = new Date(now.getFullYear(), 0, 1);
+        currentWeekNumber = Math.ceil((((now - onejan) / 86400000) + onejan.getDay() + 1) / 7);
+        currentYear = now.getFullYear();
+        updateSemaineDisplay();
+    }
+
+    function changerSemaine(delta) {
+        currentWeekNumber += delta;
+        
+        if (currentWeekNumber < 1) {
+            currentWeekNumber = 52;
+            currentYear--;
+        } else if (currentWeekNumber > 52) {
+            currentWeekNumber = 1;
+            currentYear++;
+        }
+        
+        updateSemaineDisplay();
+        loadSeances();
+    }
+
+    function updateSemaineDisplay() {
+        const firstDayOfYear = new Date(currentYear, 0, 1);
+        const daysOffset = (currentWeekNumber - 1) * 7;
+        const targetDate = new Date(firstDayOfYear.getTime() + daysOffset * 24 * 60 * 60 * 1000);
+        
+        const dayOfWeek = targetDate.getDay();
+        const diff = dayOfWeek === 0 ? -6 : 1 - dayOfWeek;
+        const monday = new Date(targetDate);
+        monday.setDate(targetDate.getDate() + diff);
+        
+        const sunday = new Date(monday);
+        sunday.setDate(monday.getDate() + 6);
+        
+        const formatDate = (date) => {
+            const day = String(date.getDate()).padStart(2, '0');
+            const month = String(date.getMonth() + 1).padStart(2, '0');
+            const year = date.getFullYear();
+            return `${day}/${month}/${year}`;
+        };
+        
+        document.getElementById('semaineNum').textContent = currentWeekNumber;
+        document.getElementById('anneeNum').textContent = currentYear;
+        document.getElementById('datesRange').textContent = `Du ${formatDate(monday)} au ${formatDate(sunday)}`;
+    }
+
+    function buildGrid() {
+        const grid = document.getElementById('timetable');
+        grid.innerHTML = '';
+        
+        const corner = document.createElement('div');
+        corner.className = 'tt-head corner';
+        corner.innerHTML = '<i class="fas fa-clock"></i>';
+        grid.appendChild(corner);
+
+        const firstDayOfYear = new Date(currentYear, 0, 1);
+        const daysOffset = (currentWeekNumber - 1) * 7;
+        const targetDate = new Date(firstDayOfYear.getTime() + daysOffset * 24 * 60 * 60 * 1000);
+        const dayOfWeek = targetDate.getDay();
+        const diff = dayOfWeek === 0 ? -6 : 1 - dayOfWeek;
+        const lundi = new Date(targetDate);
+        lundi.setDate(targetDate.getDate() + diff);
+        
+        JOURS.forEach((j, i) => {
+            const d = new Date(lundi);
+            d.setDate(lundi.getDate() + i);
+            const h = document.createElement('div');
+            h.className = 'tt-head';
+            h.innerHTML = '<div>' + j + '</div><small style="opacity:.8;font-weight:400;">' +
+                d.toLocaleDateString('fr-FR', {day:'2-digit', month:'2-digit'}) + '</small>';
+            grid.appendChild(h);
+        });
+
+        for (let hi = 0; hi < HEURES.length; hi++) {
+            const timeCell = document.createElement('div');
+            timeCell.className = 'tt-time';
+            const start = HEURES[hi];
+            const end = (hi < HEURES.length - 1) ? HEURES[hi + 1] : '17:00';
+            timeCell.textContent = formatPlage(start, end);
+            
+            if (hi === PAUSE_INDEX) {
+                timeCell.classList.add('pause');
+            }
+            
+            grid.appendChild(timeCell);
+
+            for (let di = 0; di < 6; di++) {
+                const d = new Date(lundi);
+                d.setDate(lundi.getDate() + di);
+                const dateStr = d.toISOString().split('T')[0];
+                const cell = document.createElement('div');
+                cell.className = 'tt-cell';
+                cell.id = 'cell-' + dateStr + '-' + HEURES[hi].replace(':', '');
+                cell.dataset.date = dateStr;
+                cell.dataset.heure = HEURES[hi];
+                
+                if (hi === PAUSE_INDEX) {
+                    cell.classList.add('pause');
+                    cell.innerHTML = '<span style="color: #9ca3af; font-size: 0.75rem; font-weight: 600;">PAUSE</span>';
+                }
+                
+                grid.appendChild(cell);
+            }
+        }
+    }
+
+    async function loadSeances() {
+        try {
+            const url = `/dashboard/emploi-du-temps/api?semaine=${currentWeekNumber}&annee=${currentYear}`;
+            console.log('Chargement séances depuis:', url);
+            const res = await fetch(url);
+            
+            if (!res.ok) {
+                console.error('Erreur chargement séances:', res.status, res.statusText);
+                return;
+            }
+            
+            const data = await res.json();
+            console.log('Données reçues:', data);
+            console.log('Nombre de séances:', data.length);
+            
+            seancesData = {};
+            
+            if (data && Array.isArray(data)) {
+                data.forEach(s => {
+                    console.log('Séance:', s.date, s.heureDebut, s.cours?.intitule);
+                    const key = s.date + '-' + s.heureDebut.substring(0, 5).replace(':', '');
+                    seancesData[key] = s;
+                });
+            }
+            
+            console.log('seancesData après traitement:', seancesData);
+            console.log('Nombre de clés dans seancesData:', Object.keys(seancesData).length);
+            
+            renderSeances();
+            updateStats();
+        } catch(e) {
+            console.error('Erreur chargement séances', e);
+        }
+    }
+
+    function renderSeances() {
+        // Vider toutes les cellules (sauf pause)
+        document.querySelectorAll('.tt-cell:not(.pause)').forEach(c => c.innerHTML = '');
+        
+        Object.entries(seancesData).forEach(([key, s]) => {
+            const cell = document.getElementById('cell-' + key);
+            if (!cell) return;
+            
+            const typeLower = (s.cours?.typeCours || 'CM').toLowerCase();
+            const block = document.createElement('div');
+            block.className = 'seance-block ' + typeLower;
+            block.onclick = () => showSeanceDetails(s);
+            
+            const title = document.createElement('div');
+            title.className = 'seance-title';
+            title.textContent = s.cours?.intitule || 'Sans titre';
+            
+            const meta = document.createElement('div');
+            meta.className = 'seance-meta';
+            const parts = [];
+            if (s.cours?.typeCours) parts.push(s.cours.typeCours);
+            if (s.classe?.nom) parts.push(s.classe.nom);
+            if (s.salle?.nomSalle) parts.push(s.salle.nomSalle);
+            meta.textContent = parts.join(' • ');
+            
+            block.appendChild(title);
+            block.appendChild(meta);
+            cell.appendChild(block);
+        });
+    }
+
+    function showSeanceDetails(seance) {
+        const formatDate = (dateStr) => {
+            const d = new Date(dateStr + 'T12:00:00');
+            return d.toLocaleDateString('fr-FR', {weekday: 'long', day: '2-digit', month: 'long', year: 'numeric'});
+        };
+        
+        document.getElementById('detailDate').textContent = formatDate(seance.date);
+        document.getElementById('detailHoraire').textContent = 
+            formatPlage(seance.heureDebut.substring(0, 5), seance.heureFin.substring(0, 5));
+        document.getElementById('detailCours').textContent = seance.cours?.intitule || 'N/A';
+        
+        const typeText = seance.cours?.typeCours || 'N/A';
+        const typeBadge = `<span class="badge bg-${typeText === 'CM' ? 'primary' : typeText === 'TD' ? 'warning' : typeText === 'TP' ? 'success' : 'secondary'}">${typeText}</span>`;
+        document.getElementById('detailType').innerHTML = typeBadge;
+        
+        document.getElementById('detailClasse').textContent = seance.classe?.nom || 'N/A';
+        document.getElementById('detailSalle').textContent = seance.salle?.nomSalle || 'Non assignée';
+        document.getElementById('detailEffectif').textContent = (seance.classe?.effectif || 0) + ' étudiants';
+        
+        if (seance.remarques) {
+            document.getElementById('detailRemarques').textContent = seance.remarques;
+            document.getElementById('detailRemarquesContainer').style.display = 'block';
+        } else {
+            document.getElementById('detailRemarquesContainer').style.display = 'none';
+        }
+        
+        seanceModal.show();
+    }
+
+    function updateStats() {
+        const seances = Object.values(seancesData);
+        const total = seances.length;
+        const cm = seances.filter(s => s.cours?.typeCours === 'CM').length;
+        const td = seances.filter(s => s.cours?.typeCours === 'TD').length;
+        const tp = seances.filter(s => s.cours?.typeCours === 'TP').length;
+        
+        document.getElementById('statTotal').textContent = total;
+        document.getElementById('statCM').textContent = cm;
+        document.getElementById('statTD').textContent = td;
+        document.getElementById('statTP').textContent = tp;
+        document.getElementById('statHeures').textContent = total + 'h';
+    }
+
+    function exportEmploiDuTemps() {
+        alert('Fonctionnalité d\'export en cours de développement');
+    }
+
+    function imprimerEmploiDuTemps() {
+        window.print();
+    }
+</script>
 </body>
 </html>

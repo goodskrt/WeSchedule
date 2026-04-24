@@ -52,12 +52,16 @@ public class DisponibiliteService {
         LocalDate debutSemaine = dateDebut.with(DayOfWeek.MONDAY);
         LocalDate finSemaine = debutSemaine.plusDays(6);
         
+        log.info("Création disponibilité pour enseignant {} - Semaine du {} au {}", 
+            enseignant.getIdUser(), debutSemaine, finSemaine);
+        
         // Vérifier si une disponibilité existe déjà pour cette semaine
         List<DisponibiliteEnseignant> existantes = disponibiliteRepo
             .findByEnseignantAndDateDebutLessThanEqualAndDateFinGreaterThanEqual(
                 enseignant, finSemaine, debutSemaine);
         
         if (!existantes.isEmpty()) {
+            log.warn("Disponibilité existe déjà pour cette semaine");
             throw new IllegalArgumentException("Une disponibilité existe déjà pour cette semaine");
         }
 
@@ -66,18 +70,23 @@ public class DisponibiliteService {
         disponibilite.setDateDebut(debutSemaine);
         disponibilite.setDateFin(finSemaine);
         
-        return disponibiliteRepo.save(disponibilite);
+        DisponibiliteEnseignant saved = disponibiliteRepo.save(disponibilite);
+        log.info("Disponibilité créée avec ID: {}", saved.getId());
+        return saved;
     }
 
     /**
      * Ajouter un créneau de disponibilité
      */
     public PlageHoraire ajouterCreneau(UUID disponibiliteId, LocalDate date, LocalTime heureDebut, LocalTime heureFin) {
+        log.info("Ajout créneau - Dispo: {}, Date: {}, {}h-{}h", disponibiliteId, date, heureDebut, heureFin);
+        
         DisponibiliteEnseignant disponibilite = disponibiliteRepo.findById(disponibiliteId)
             .orElseThrow(() -> new IllegalArgumentException("Disponibilité non trouvée"));
 
         // Vérifier que la date est dans la semaine de la disponibilité
         if (date.isBefore(disponibilite.getDateDebut()) || date.isAfter(disponibilite.getDateFin())) {
+            log.error("Date {} hors de la semaine {} - {}", date, disponibilite.getDateDebut(), disponibilite.getDateFin());
             throw new IllegalArgumentException("La date doit être dans la semaine de disponibilité");
         }
 
@@ -87,6 +96,7 @@ public class DisponibiliteService {
             .stream()
             .findFirst()
             .orElseGet(() -> {
+                log.info("Création nouveau créneau pour la date {}", date);
                 CreneauDisponibilite nouveau = new CreneauDisponibilite();
                 nouveau.setDisponibilite(disponibilite);
                 nouveau.setDate(date);
@@ -99,7 +109,9 @@ public class DisponibiliteService {
         plageHoraire.setHeureDebut(heureDebut);
         plageHoraire.setHeureFin(heureFin);
         
-        return plageHoraireRepo.save(plageHoraire);
+        PlageHoraire saved = plageHoraireRepo.save(plageHoraire);
+        log.info("Plage horaire créée avec ID: {}", saved.getId());
+        return saved;
     }
 
     /**
@@ -123,48 +135,40 @@ public class DisponibiliteService {
     /**
      * Supprimer une disponibilité complète (avec tous ses créneaux)
      */
+    @Transactional
     public void supprimerDisponibilite(UUID disponibiliteId) {
         log.info("Début suppression disponibilité {}", disponibiliteId);
         
-        DisponibiliteEnseignant disponibilite = disponibiliteRepo.findById(disponibiliteId)
-            .orElseThrow(() -> new IllegalArgumentException("Disponibilité non trouvée"));
+        // Supprimer directement via requêtes SQL bulk sans charger les entités
+        // 1. Supprimer toutes les plages horaires
+        plageHoraireRepo.deleteByDisponibiliteIdViaCreneaux(disponibiliteId);
+        log.info("Plages horaires supprimées");
         
-        // 1. Récupérer tous les créneaux de cette disponibilité
-        List<CreneauDisponibilite> creneaux = creneauDispoRepo.findByDisponibilite(disponibilite);
-        log.info("Trouvé {} créneaux à supprimer", creneaux.size());
-        
-        // 2. Pour chaque créneau, supprimer les plages horaires via requête
-        for (CreneauDisponibilite creneau : creneaux) {
-            log.info("Suppression des plages horaires pour créneau {}", creneau.getId());
-            plageHoraireRepo.deleteByCreneauDisponibiliteId(creneau.getId());
-        }
-        
-        // 3. Supprimer les créneaux via requête
-        log.info("Suppression des créneaux pour disponibilité {}", disponibiliteId);
+        // 2. Supprimer tous les créneaux
         creneauDispoRepo.deleteByDisponibiliteId(disponibiliteId);
+        log.info("Créneaux supprimés");
         
-        // 4. Enfin supprimer la disponibilité
+        // 3. Supprimer la disponibilité
         disponibiliteRepo.deleteById(disponibiliteId);
-        
         log.info("Disponibilité {} supprimée avec succès", disponibiliteId);
     }
 
     /**
      * Supprimer tous les créneaux d'une disponibilité
      */
+    @Transactional
     public void supprimerTousLesCreneaux(UUID disponibiliteId) {
-        DisponibiliteEnseignant disponibilite = disponibiliteRepo.findById(disponibiliteId)
-            .orElseThrow(() -> new IllegalArgumentException("Disponibilité non trouvée"));
+        log.info("Début suppression créneaux pour disponibilité {}", disponibiliteId);
         
-        List<CreneauDisponibilite> creneaux = creneauDispoRepo.findByDisponibilite(disponibilite);
-        log.info("Suppression de {} créneaux pour disponibilité {}", creneaux.size(), disponibiliteId);
+        // Supprimer d'abord toutes les plages horaires via requête bulk
+        plageHoraireRepo.deleteByDisponibiliteIdViaCreneaux(disponibiliteId);
+        log.info("Plages horaires supprimées");
         
-        for (CreneauDisponibilite creneau : creneaux) {
-            List<PlageHoraire> plages = plageHoraireRepo.findByCreneauDisponibilite(creneau);
-            log.info("Suppression de {} plages horaires pour créneau {}", plages.size(), creneau.getId());
-            plageHoraireRepo.deleteAll(plages);
-            creneauDispoRepo.delete(creneau);
-        }
+        // Ensuite supprimer tous les créneaux via requête bulk
+        creneauDispoRepo.deleteByDisponibiliteId(disponibiliteId);
+        log.info("Créneaux supprimés");
+        
+        log.info("Tous les créneaux supprimés pour disponibilité {}", disponibiliteId);
     }
 
     /**

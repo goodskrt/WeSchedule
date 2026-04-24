@@ -49,3 +49,11 @@ Thumbs.db
 *.tmp
 *.bak
 *.swp
+
+### Environment files ###
+.env
+app_log.txt
+cookies.txt
+response.html
+test_curl.sh
+*.xlsx

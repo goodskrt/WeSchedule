@@ -4,5 +4,5 @@ public enum TypeCours {
     CM,
     TD,
     TP,
-    EXAMEN
+    TPE  // Travail Personnel Encadré
 }

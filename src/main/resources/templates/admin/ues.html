@@ -1,0 +1,404 @@
+<!DOCTYPE html>
+<html lang="fr" xmlns:th="http://www.thymeleaf.org">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Gestion des UEs - WeSchedule</title>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <link rel="stylesheet" href="/css/modern-layout.css">
+    <style>
+        .ue-card {
+            background: var(--white); border-radius: var(--radius-xl); padding: 1.25rem;
+            margin-bottom: 0.75rem; box-shadow: var(--shadow-sm); border: 1px solid var(--gray-200);
+            transition: all 0.2s;
+        }
+        .ue-card:hover { transform: translateY(-2px); box-shadow: var(--shadow-md); border-color: var(--primary-color); }
+
+        .ue-avatar { width: 48px; height: 48px; border-radius: var(--radius-lg); display: flex; flex-direction: column; align-items: center; justify-content: center; font-weight: 800; color: white; flex-shrink: 0; line-height: 1; }
+        .ue-avatar.av-s1 { background: linear-gradient(135deg, #3b82f6, #2563eb); }
+        .ue-avatar.av-s3 { background: linear-gradient(135deg, #8b5cf6, #7c3aed); }
+        .ue-avatar.av-s5 { background: linear-gradient(135deg, #f59e0b, #d97706); }
+        .ue-avatar.av-s7 { background: linear-gradient(135deg, #ef4444, #dc2626); }
+        .ue-avatar .av-code { font-size: 0.65rem; font-weight: 700; letter-spacing: 0.03em; opacity: 0.9; }
+        .ue-avatar .av-sem  { font-size: 1.1rem; font-weight: 800; }
+
+        .statut-badge {
+            display: inline-flex; align-items: center; gap: 0.3rem;
+            padding: 0.2rem 0.65rem; border-radius: 2rem; font-size: 0.72rem; font-weight: 700;
+        }
+        .statut-actif   { background: #d1fae5; color: #065f46; }
+        .statut-inactif { background: #fee2e2; color: #991b1b; }
+
+        .classe-chip {
+            display: inline-flex; align-items: center; padding: 0.15rem 0.55rem;
+            border-radius: 2rem; background: #f0fdf4; border: 1px solid #bbf7d0;
+            color: #065f46; font-size: 0.7rem; font-weight: 600; margin: 0.1rem;
+        }
+        .search-box {
+            background: var(--white); border-radius: 2rem; padding: 0.65rem 1.25rem;
+            box-shadow: var(--shadow-sm); border: 1px solid var(--gray-200);
+            display: flex; align-items: center;
+        }
+        .search-box input { border: none; outline: none; width: 100%; background: transparent; font-size: 0.9rem; }
+        .empty-state { text-align: center; padding: 4rem 2rem; background: var(--white); border-radius: var(--radius-xl); }
+        .empty-state i { font-size: 3.5rem; color: var(--gray-300); margin-bottom: 1rem; }
+        .drop-zone {
+            border: 2px dashed var(--gray-300); border-radius: var(--radius-xl);
+            padding: 2.5rem; text-align: center; cursor: pointer; transition: all 0.2s;
+        }
+        .drop-zone:hover, .drop-zone.dragover { border-color: var(--primary-color); background: #f0fdf4; }
+        .drop-zone i { font-size: 2.5rem; color: var(--gray-300); margin-bottom: 0.75rem; }
+        .drop-zone.dragover i { color: var(--primary-color); }
+    </style>
+</head>
+<body>
+    <div th:replace="~{fragments/sidebar :: admin-sidebar('ues')}"></div>
+    <div class="ws-wrapper">
+        <div th:replace="~{fragments/header :: admin-header}"></div>
+        <main class="ws-main-content">
+
+            <!-- Header -->
+            <div class="d-flex justify-content-between align-items-center mb-4">
+                <div>
+                    <h2 class="page-title">Gestion des UEs</h2>
+                    <p class="page-subtitle">Gérez les unités d'enseignement et leurs affectations</p>
+                </div>
+                <div class="d-flex gap-2">
+                    <button class="btn btn-outline-success" onclick="exportUEs()">
+                        <i class="fas fa-file-excel"></i> Exporter
+                    </button>
+                    <button class="btn btn-outline-primary" onclick="new bootstrap.Modal(document.getElementById('importModal')).show()">
+                        <i class="fas fa-file-upload"></i> Importer
+                    </button>
+                    <a href="/admin/ues/nouvelle" class="btn btn-primary">
+                        <i class="fas fa-plus"></i> Nouvelle UE
+                    </a>
+                </div>
+            </div>
+
+            <div th:replace="~{fragments/admin-stats :: stat-row(${pageStats})}"></div>
+
+            <!-- Alertes -->
+            <div th:if="${success}" class="alert alert-success alert-dismissible fade show mb-3">
+                <i class="fas fa-check-circle me-2"></i><span th:text="${success}"></span>
+                <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+            </div>
+            <div th:if="${error}" class="alert alert-danger alert-dismissible fade show mb-3">
+                <i class="fas fa-exclamation-circle me-2"></i><span th:text="${error}"></span>
+                <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+            </div>
+
+            <!-- Filtres -->
+            <div class="d-flex align-items-center gap-2 mb-3" style="flex-wrap:wrap;">
+                <div class="search-box" style="min-width:180px; flex:1;">
+                    <i class="fas fa-search text-muted me-2"></i>
+                    <input type="text" id="searchInput" placeholder="Rechercher…" oninput="filterUEs()">
+                </div>
+                <select id="semestreFilter" class="form-select form-select-sm" style="min-width:130px;width:auto;" onchange="filterUEs()">
+                    <option value="">Tous les semestres</option>
+                    <option value="1">Semestre 1</option>
+                    <option value="2">Semestre 2</option>
+                </select>
+                <select id="ecoleFilter" class="form-select form-select-sm" style="min-width:150px;width:auto;" onchange="onEcoleFilter()">
+                    <option value="">Toutes les écoles</option>
+                    <option th:each="e : ${ecoles}" th:value="${e.idEcole}" th:text="${e.nomEcole}"></option>
+                </select>
+                <select id="classeFilter" class="form-select form-select-sm" style="min-width:160px;width:auto;" onchange="filterUEs()">
+                    <option value="">Toutes les classes</option>
+                    <option th:each="c : ${classes}"
+                            th:value="${c.nom}"
+                            th:data-ecole="${c.ecole != null ? c.ecole.idEcole : ''}"
+                            th:text="${c.nom}"></option>
+                </select>
+                <select id="statutFilter" class="form-select form-select-sm" style="min-width:120px;width:auto;" onchange="filterUEs()">
+                    <option value="">Tous les statuts</option>
+                    <option value="ACTIF">Actif</option>
+                    <option value="INACTIF">Inactif</option>
+                </select>
+                <span class="text-muted small" id="countInfo"
+                      th:text="${ues != null ? #lists.size(ues) : 0} + ' UE(s)'"></span>
+            </div>
+
+            <!-- Liste vide -->
+            <div th:if="${ues == null or ues.isEmpty()}" class="empty-state">
+                <i class="fas fa-book"></i>
+                <h5 class="mt-2">Aucune UE</h5>
+                <p class="text-muted">Commencez par créer votre première unité d'enseignement.</p>
+                <a href="/admin/ues/nouvelle" class="btn btn-primary mt-2">
+                    <i class="fas fa-plus me-1"></i> Nouvelle UE
+                </a>
+            </div>
+
+            <!-- Cards -->
+            <div id="uesList">
+                <div id="noResultMsg" class="empty-state d-none">
+                    <i class="fas fa-filter"></i>
+                    <h5 class="mt-2">Aucun résultat</h5>
+                    <p class="text-muted">Aucune UE ne correspond aux filtres sélectionnés.</p>
+                    <button class="btn btn-primary btn-sm mt-2" onclick="resetFiltres()">
+                        <i class="fas fa-rotate-left me-1"></i> Réinitialiser les filtres
+                    </button>
+                </div>
+
+                <th:block th:each="ue : ${ues}" th:if="${ues != null}">
+                <div class="ue-card"
+                     th:data-code="${ue.code}"
+                     th:data-intitule="${ue.intitule}"
+                     th:data-semestre="${ue.semestre}"
+                     th:data-statut="${ue.statut != null ? ue.statut.name() : ''}"
+                     th:data-classes="${ueClassNames != null and ueClassNames[ue.idUE] != null ? ueClassNames[ue.idUE] : ''}"
+                     th:data-ecoles="${ueEcoleIds != null and ueEcoleIds[ue.idUE] != null ? ueEcoleIds[ue.idUE] : ''}">
+                    <div class="row align-items-center">
+
+                        <!-- Avatar + code/intitulé -->
+                        <div class="col-md-4 d-flex align-items-center gap-3">
+                            <div class="ue-avatar"
+                                 th:classappend="${ue.semestre != null and ue.semestre <= 2} ? 'av-s1' :
+                                                 (${ue.semestre != null and ue.semestre <= 4} ? 'av-s3' :
+                                                 (${ue.semestre != null and ue.semestre <= 6} ? 'av-s5' : 'av-s7'))">
+                                <span class="av-sem" th:text="${ue.semestre != null ? 'S' + ue.semestre : '?'}">?</span>
+                                <span class="av-code" th:text="${ue.code != null ? #strings.abbreviate(ue.code, 6) : ''}"></span>
+                            </div>
+                            <div>
+                                <div class="fw-semibold" style="color:var(--gray-900);" th:text="${ue.code}">—</div>
+                                <small class="text-muted" th:text="${ue.intitule}">—</small>
+                            </div>
+                        </div>
+
+                        <!-- Semestre + crédits + durée -->
+                        <div class="col-md-3">
+                            <div class="d-flex gap-3">
+                                <div>
+                                    <small class="text-muted d-block">Semestre</small>
+                                    <span class="fw-bold" style="color:var(--primary-color);"
+                                          th:text="${ue.semestre != null ? 'S' + ue.semestre : '—'}">—</span>
+                                </div>
+                                <div>
+                                    <small class="text-muted d-block">Crédits</small>
+                                    <span class="fw-bold" th:text="${ue.credits != null ? ue.credits + ' cr.' : '—'}">—</span>
+                                </div>
+                                <div th:if="${ue.duree != null}">
+                                    <small class="text-muted d-block">Durée</small>
+                                    <span class="fw-bold" th:text="${ue.duree + 'h'}">—</span>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- Classes + statut -->
+                        <div class="col-md-3">
+                            <span th:class="${ue.statut != null and ue.statut.name() == 'ACTIF'} ? 'statut-badge statut-actif' : 'statut-badge statut-inactif'">
+                                <i th:class="${ue.statut != null and ue.statut.name() == 'ACTIF'} ? 'fas fa-check-circle' : 'fas fa-times-circle'"
+                                   style="font-size:0.65rem;"></i>
+                                <span th:text="${ue.statut != null ? ue.statut.name() : '—'}"></span>
+                            </span>
+                            <div class="mt-1" th:if="${ue.classes != null and !ue.classes.isEmpty()}">
+                                <span th:each="c, iter : ${ue.classes}" th:if="${iter.index < 2}" class="classe-chip"
+                                      th:text="${c.nom}"></span>
+                                <span th:if="${#sets.size(ue.classes) > 2}" class="classe-chip"
+                                      th:text="'+' + (${#sets.size(ue.classes)} - 2)"></span>
+                            </div>
+                        </div>
+
+                        <!-- Actions -->
+                        <div class="col-md-2 text-end">
+                            <a th:href="@{/admin/ues/details/{id}(id=${ue.idUE})}"
+                               class="btn btn-outline-primary btn-sm me-1" title="Détails">
+                                <i class="fas fa-eye"></i>
+                            </a>
+                            <a th:href="@{/admin/ues/modifier/{id}(id=${ue.idUE})}"
+                               class="btn btn-outline-primary btn-sm me-1" title="Modifier">
+                                <i class="fas fa-edit"></i>
+                            </a>
+                            <button class="btn btn-outline-danger btn-sm"
+                                    th:attr="data-id=${ue.idUE}, data-nom=${ue.code}"
+                                    onclick="showDelete(this)" title="Supprimer">
+                                <i class="fas fa-trash"></i>
+                            </button>
+                        </div>
+                    </div>
+                </div>
+                </th:block>
+            </div>
+
+        </main>
+    </div>
+
+    <!-- Modal suppression -->
+    <div class="modal fade" id="deleteModal" tabindex="-1">
+        <div class="modal-dialog modal-sm">
+            <div class="modal-content">
+                <div class="modal-header border-0 pb-0">
+                    <h5 class="modal-title text-danger"><i class="fas fa-exclamation-triangle me-2"></i>Supprimer</h5>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+                </div>
+                <div class="modal-body pt-2">
+                    Supprimer l'UE <strong id="deleteNom"></strong> ?<br>
+                    <small class="text-muted">Cette action est irréversible.</small>
+                </div>
+                <div class="modal-footer border-0 pt-0">
+                    <button class="btn btn-secondary btn-sm" data-bs-dismiss="modal">Annuler</button>
+                    <form id="deleteForm" method="post">
+                        <button type="submit" class="btn btn-danger btn-sm">
+                            <i class="fas fa-trash me-1"></i> Supprimer
+                        </button>
+                    </form>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Modal import -->
+    <div class="modal fade" id="importModal" tabindex="-1">
+        <div class="modal-dialog">
+            <div class="modal-content">
+                <div class="modal-header border-0">
+                    <h5 class="modal-title"><i class="fas fa-file-import me-2 text-primary"></i>Importer des UEs</h5>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+                </div>
+                <div class="modal-body">
+                    <p class="text-muted small mb-3">
+                        Colonnes attendues : <strong>Code, Intitulé, Semestre, Crédits, Durée (h), Statut, Classes, Description</strong>.
+                        <a href="#" onclick="exportUEs(); return false;" class="text-primary">Télécharger le template</a>
+                    </p>
+                    <div class="drop-zone" id="dropZone" onclick="document.getElementById('importFile').click()">
+                        <i class="fas fa-cloud-upload-alt d-block mx-auto mb-2"></i>
+                        <p class="mb-1 fw-semibold">Glissez votre fichier ici</p>
+                        <p class="text-muted small mb-0">ou cliquez pour parcourir</p>
+                        <p class="text-muted small mt-2" id="fileName">Aucun fichier sélectionné</p>
+                    </div>
+                    <input type="file" id="importFile" accept=".xlsx,.xls" class="d-none" onchange="onFileSelected(this)">
+                    <div id="importResult" class="mt-3 d-none"></div>
+                </div>
+                <div class="modal-footer border-0">
+                    <button class="btn btn-secondary" data-bs-dismiss="modal">Annuler</button>
+                    <button class="btn btn-primary" id="importBtn" onclick="doImport()" disabled>
+                        <i class="fas fa-upload me-1"></i> Importer
+                    </button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js"></script>
+    <script src="/js/modern-layout.js"></script>
+    <script>
+        function filterUEs() {
+            const search   = document.getElementById('searchInput').value.toLowerCase();
+            const semestre = document.getElementById('semestreFilter').value;
+            const statut   = document.getElementById('statutFilter').value.toUpperCase();
+            const classe   = document.getElementById('classeFilter').value.toLowerCase();
+            const ecoleId  = document.getElementById('ecoleFilter').value;
+            const cards    = document.querySelectorAll('#uesList .ue-card');
+            let visible    = 0;
+            cards.forEach(card => {
+                const code     = (card.dataset.code     || '').toLowerCase();
+                const intitule = (card.dataset.intitule || '').toLowerCase();
+                const sem      = (card.dataset.semestre || '');
+                const stat     = (card.dataset.statut   || '').toUpperCase();
+                const classes  = (card.dataset.classes  || '').toLowerCase();
+                const ecoles   = (card.dataset.ecoles   || '');
+                const ok = (code.includes(search) || intitule.includes(search))
+                        && (!semestre || sem === semestre)
+                        && (!statut  || stat === statut)
+                        && (!classe  || classes.split('|').some(c => c.trim() === classe))
+                        && (!ecoleId || ecoles.split('|').some(e => e.trim() === ecoleId));
+                card.style.display = ok ? '' : 'none';
+                if (ok) visible++;
+            });
+            document.getElementById('countInfo').textContent = visible + ' UE(s)';
+            document.getElementById('noResultMsg').classList.toggle('d-none', visible > 0 || cards.length === 0);
+        }
+
+        function onEcoleFilter() {
+            const ecoleId = document.getElementById('ecoleFilter').value;
+            const classeSelect = document.getElementById('classeFilter');
+            // Afficher/masquer les options de classe selon l'école
+            Array.from(classeSelect.options).forEach(opt => {
+                if (!opt.value) return; // "Toutes les classes"
+                opt.hidden = ecoleId ? opt.dataset.ecole !== ecoleId : false;
+            });
+            // Reset classe si l'option sélectionnée n'appartient plus à l'école
+            const selected = classeSelect.options[classeSelect.selectedIndex];
+            if (selected && selected.value && ecoleId && selected.dataset.ecole !== ecoleId) {
+                classeSelect.value = '';
+            }
+            filterUEs();
+        }
+
+        function resetFiltres() {
+            document.getElementById('searchInput').value = '';
+            document.getElementById('semestreFilter').value = '';
+            document.getElementById('ecoleFilter').value = '';
+            document.getElementById('classeFilter').value = '';
+            document.getElementById('statutFilter').value = '';
+            // Réafficher toutes les options de classe
+            Array.from(document.getElementById('classeFilter').options).forEach(o => o.hidden = false);
+            filterUEs();
+        }
+
+        function showDelete(btn) {
+            document.getElementById('deleteNom').textContent = btn.dataset.nom;
+            document.getElementById('deleteForm').action = '/admin/ues/supprimer/' + btn.dataset.id;
+            new bootstrap.Modal(document.getElementById('deleteModal')).show();
+        }
+
+        function exportUEs() { window.location.href = '/api/admin/ues/export'; }
+
+        let selectedFile = null;
+        const dropZone = document.getElementById('dropZone');
+        dropZone.addEventListener('dragover', e => { e.preventDefault(); dropZone.classList.add('dragover'); });
+        dropZone.addEventListener('dragleave', () => dropZone.classList.remove('dragover'));
+        dropZone.addEventListener('drop', e => {
+            e.preventDefault(); dropZone.classList.remove('dragover');
+            const f = e.dataTransfer.files[0]; if (f) setFile(f);
+        });
+
+        function onFileSelected(input) { if (input.files[0]) setFile(input.files[0]); }
+        function setFile(f) {
+            selectedFile = f;
+            document.getElementById('fileName').textContent = f.name;
+            document.getElementById('importBtn').disabled = false;
+            document.getElementById('importResult').classList.add('d-none');
+        }
+
+        function doImport() {
+            if (!selectedFile) return;
+            const btn = document.getElementById('importBtn');
+            btn.disabled = true;
+            btn.innerHTML = '<span class="spinner-border spinner-border-sm me-1"></span> Import…';
+            const fd = new FormData();
+            fd.append('file', selectedFile);
+            fetch('/api/admin/ues/import', { method: 'POST', body: fd })
+                .then(r => r.json())
+                .then(data => {
+                    btn.disabled = false;
+                    btn.innerHTML = '<i class="fas fa-upload me-1"></i> Importer';
+                    const res = document.getElementById('importResult');
+                    res.classList.remove('d-none');
+                    if (data.success) {
+                        let html = `<div class="alert alert-success"><i class="fas fa-check-circle me-2"></i>${data.message}</div>`;
+                        if (data.avertissements && data.avertissements.length > 0) {
+                            html += `<div class="alert alert-warning"><strong>Avertissements :</strong><ul class="mb-0 mt-1">`;
+                            data.avertissements.forEach(a => html += `<li>${a}</li>`);
+                            html += `</ul></div>`;
+                        }
+                        res.innerHTML = html;
+                        setTimeout(() => { bootstrap.Modal.getInstance(document.getElementById('importModal')).hide(); location.reload(); }, 2000);
+                    } else {
+                        res.innerHTML = `<div class="alert alert-danger"><i class="fas fa-exclamation-circle me-2"></i>${data.message}</div>`;
+                    }
+                });
+        }
+
+        document.getElementById('importModal').addEventListener('hidden.bs.modal', () => {
+            selectedFile = null;
+            document.getElementById('fileName').textContent = 'Aucun fichier sélectionné';
+            document.getElementById('importBtn').disabled = true;
+            document.getElementById('importResult').classList.add('d-none');
+            document.getElementById('importFile').value = '';
+        });
+    </script>
+</body>
+</html>

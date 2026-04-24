@@ -1,0 +1,200 @@
+<!DOCTYPE html>
+<html lang="fr" xmlns:th="http://www.thymeleaf.org">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Réservation Administrative — WeSchedule</title>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <link rel="stylesheet" href="/css/modern-layout.css">
+</head>
+<body>
+<div th:replace="~{fragments/sidebar :: admin-sidebar('reservations')}"></div>
+<div class="ws-wrapper">
+    <div th:replace="~{fragments/header :: admin-header}"></div>
+    <main class="ws-main-content">
+        <div class="mb-4 d-flex justify-content-between align-items-center">
+            <div>
+                <nav aria-label="breadcrumb">
+                    <ol class="breadcrumb">
+                        <li class="breadcrumb-item"><a href="/admin/reservations" class="text-decoration-none">Réservations</a></li>
+                        <li class="breadcrumb-item active" th:text="${reservation.idResa == null ? 'Nouvelle' : 'Modification'}">Action</li>
+                    </ol>
+                </nav>
+                <h2 class="h4 fw-bold mb-0" th:text="${reservation.idResa == null ? 'Créer une réservation' : 'Modifier la réservation'}">Titre</h2>
+            </div>
+            <a href="/admin/reservations" class="btn btn-outline-secondary">
+                <i class="fas fa-arrow-left me-2"></i>Retour
+            </a>
+        </div>
+
+        <div class="card border-0 shadow-sm">
+            <div class="card-body p-4">
+                <form th:action="${reservation.idResa == null ? '/admin/reservations/creer' : '/admin/reservations/modifier/' + reservation.idResa}" method="post">
+                    <div class="row g-4">
+                        <!-- Demandeur -->
+                        <div class="col-md-6">
+                            <label class="form-label fw-semibold">Responsable de la réservation</label>
+                            <select name="reserveParId" class="form-select" required>
+                                <option value="">Choisir un responsable...</option>
+                                <option th:each="userItem : ${utilisateurs}" 
+                                        th:value="${userItem.idUser}" 
+                                        th:selected="${reservation.reservePar != null ? reservation.reservePar.idUser == userItem.idUser : (reservation.idResa == null and currentUser != null and userItem.idUser == currentUser.idUser)}"
+                                        th:text="${userItem.prenom + ' ' + userItem.nom + ' (' + userItem.role + ')'}"></option>
+                            </select>
+                        </div>
+
+                        <!-- Salle -->
+                        <div class="col-md-6">
+                            <label class="form-label fw-semibold">Salle</label>
+                            <select name="salleId" id="selSalleAdmin" class="form-select" required>
+                                <option value="">Choisir une salle...</option>
+                                <option th:each="salleItem : ${salles}" 
+                                        th:value="${salleItem.idSalle}" 
+                                        th:selected="${reservation.salle != null and reservation.salle.idSalle == salleItem.idSalle}"
+                                        th:text="${salleItem.nomSalle + ' (' + salleItem.capacite + ' places)'}"></option>
+                            </select>
+                        </div>
+
+                        <!-- Dates -->
+                        <div class="col-md-6">
+                            <label class="form-label fw-semibold">Début *</label>
+                            <input type="datetime-local" name="startAt" class="form-control" required
+                                   th:value="${reservation.startAt != null ? #temporals.format(reservation.startAt, 'yyyy-MM-dd''T''HH:mm') : ''}">
+                        </div>
+                        <div class="col-md-6">
+                            <label class="form-label fw-semibold">Fin *</label>
+                            <input type="datetime-local" name="endAt" class="form-control" required
+                                   th:value="${reservation.endAt != null ? #temporals.format(reservation.endAt, 'yyyy-MM-dd''T''HH:mm') : ''}">
+                        </div>
+
+                        <!-- Motif -->
+                        <div class="col-md-12 text-muted-option">
+                            <label class="form-label fw-semibold">Motif / Description</label>
+                            <input type="text" name="motif" class="form-control" th:value="${reservation.motif}" 
+                                   placeholder="Ex: Réunion départementale, Maintenance..." required>
+                        </div>
+
+                        <!-- Équipements -->
+                        <div class="col-12">
+                            <label class="form-label fw-semibold d-block mb-3">Équipements</label>
+                            <div class="row g-3">
+                                <!-- Fixes (Dynamic) -->
+                                <div class="col-md-6">
+                                    <div class="card bg-light border-0 h-100">
+                                        <div class="card-body">
+                                            <h6 class="card-title fw-bold small text-uppercase text-muted">Équipements fixes (Salle)</h6>
+                                            <div id="fixedEquipments" class="mt-2">
+                                                <p class="text-muted small mb-0 fst-italic">Sélectionnez une salle...</p>
+                                            </div>
+                                        </div>
+                                    </div>
+                                </div>
+
+                                <!-- Équipements Mobiles -->
+                                <div class="col-md-6">
+                                    <div class="card bg-light border-0 h-100">
+                                        <div class="card-body">
+                                            <h6 class="card-title fw-bold small text-uppercase text-muted">Équipements mobiles disponibles</h6>
+                                            <div class="mt-2" style="max-height: 200px; overflow-y: auto;">
+                                                <div th:each="mobEq : ${equipementsMobiles}" class="form-check mb-1">
+                                                    <input class="form-check-input" type="checkbox" name="equipementIds" 
+                                                           th:value="${mobEq.id}" th:id="|mob${mobEq.id}|"
+                                                           th:checked="${reservation.equipements != null and reservation.equipements.contains(mobEq)}">
+                                                    <label class="form-check-label small" th:for="|mob${mobEq.id}|" th:text="${mobEq.nom}"></label>
+                                                </div>
+                                                <p th:if="${equipementsMobiles == null or equipementsMobiles.isEmpty()}" class="text-muted small mb-0">Aucun outil mobile disponible.</p>
+                                            </div>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- Statut (Visible uniquement en modification) -->
+                        <div class="col-md-6" th:if="${reservation.idResa != null}">
+                            <label class="form-label fw-semibold">Statut de la réservation</label>
+                            <select name="statut" class="form-select">
+                                <option th:each="statutItem : ${T(com.iusjc.weschedule.enums.StatutReservation).values()}"
+                                        th:value="${statutItem}" th:text="${statutItem}" th:selected="${reservation.statut == statutItem}"></option>
+                            </select>
+                        </div>
+
+                        <!-- Cours (Optionnel) -->
+                        <div class="col-md-6">
+                            <label class="form-label fw-semibold">Cours associé (Optionnel)</label>
+                            <select name="coursId" class="form-select text-muted">
+                                <option value="">Aucun cours spécifique</option>
+                                <option th:each="coursItem : ${cours}" th:value="${coursItem.idCours}" 
+                                        th:selected="${reservation.cours != null and reservation.cours.idCours == coursItem.idCours}"
+                                        th:text="${coursItem.intitule + (coursItem.classe != null ? ' (' + coursItem.classe.nom + ')' : '')}"></option>
+                            </select>
+                        </div>
+                    </div>
+
+                    <div class="mt-4 pt-4 border-top d-flex justify-content-end gap-2">
+                        <a href="/admin/reservations" class="btn btn-light px-4">Annuler</a>
+                        <button type="submit" class="btn btn-primary px-4 shadow-sm">
+                            <i class="fas fa-save me-2"></i>
+                            <span th:text="${reservation.idResa == null ? 'Créer' : 'Enregistrer les modifications'}"></span>
+                        </button>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </main>
+</div>
+
+<script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js"></script>
+<script th:inline="javascript">
+    /*<![CDATA[*/
+    const selSalle = document.getElementById('selSalleAdmin');
+    const fixedContainer = document.getElementById('fixedEquipments');
+    const initialSId = /*[[${reservation.salle?.idSalle}]]*/ null;
+
+    function loadFixedEquipments(salleId) {
+        if (!salleId) {
+            fixedContainer.innerHTML = '<p class="text-muted small mb-0 fst-italic">Sélectionnez une salle...</p>';
+            return;
+        }
+
+        fixedContainer.innerHTML = '<div class="spinner-border spinner-border-sm text-primary" role="status"></div>';
+
+        fetch(`/admin/salles/api/${salleId}/equipements`)
+            .then(res => res.json())
+            .then(data => {
+                if (data.length === 0) {
+                    fixedContainer.innerHTML = '<p class="text-muted small mb-0">Aucun équipement fixe dans cette salle.</p>';
+                    return;
+                }
+                
+                let html = '';
+                data.forEach(item => {
+                    html += `
+                        <div class="form-check mb-1">
+                            <input class="form-check-input" type="checkbox" name="equipementIds" value="${item.id}" id="fix${item.id}" checked disabled>
+                            <label class="form-check-label small" for="fix${item.id}">${item.nom} <span class="badge bg-secondary ms-1" style="font-size: 0.65rem;">Fixe</span></label>
+                            <input type="hidden" name="equipementIds" value="${item.id}">
+                        </div>
+                    `;
+                });
+                fixedContainer.innerHTML = html;
+            })
+            .catch(() => {
+                fixedContainer.innerHTML = '<p class="text-danger small mb-0">Erreur réseau.</p>';
+            });
+    }
+
+    selSalle.addEventListener('change', function() {
+        loadFixedEquipments(this.value);
+    });
+
+    // Au chargement si on est en edition
+    if (selSalle.value) {
+        loadFixedEquipments(selSalle.value);
+    }
+    /*]]>*/
+</script>
+</body>
+</html>

@@ -1,6 +1,5 @@
 package com.iusjc.weschedule.models;
 
-import com.iusjc.weschedule.enums.TypeRessource;
 import jakarta.persistence.*;
 import lombok.AllArgsConstructor;
 import lombok.Data;
@@ -14,6 +13,6 @@ import java.util.UUID;
 @AllArgsConstructor
 public class Ressource {
     @Id @GeneratedValue private UUID idRessource;
-    @Enumerated(EnumType.STRING) private TypeRessource typeRessource;
+    private String typeRessource;
     private Integer quantite;
 }

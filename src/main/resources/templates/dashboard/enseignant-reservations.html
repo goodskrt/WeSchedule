@@ -1,0 +1,308 @@
+<!DOCTYPE html>
+<html lang="fr" xmlns:th="http://www.thymeleaf.org">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Mes Réservations — WeSchedule</title>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <link rel="stylesheet" href="/css/modern-layout.css">
+    <style>
+        .badge-en_attente { background-color: #fef3c7; color: #92400e; border: 1px solid #fde68a; }
+        .badge-confirmee { background-color: #d1fae5; color: #065f46; border: 1px solid #a7f3d0; }
+        .badge-annulee { background-color: #fee2e2; color: #991b1b; border: 1px solid #fecaca; }
+        .badge-terminee { background-color: #f3f4f6; color: #374151; border: 1px solid #e5e7eb; }
+    </style>
+</head>
+<body>
+<div th:replace="~{fragments/sidebar :: enseignant-sidebar('reservations')}"></div>
+<div class="ws-wrapper">
+    <div th:replace="~{fragments/header :: enseignant-header}"></div>
+    <main class="ws-main-content">
+        <div class="d-flex justify-content-between align-items-center mb-4">
+            <h2 class="h4 fw-bold mb-0">Gestion des Réservations de Salles</h2>
+            <button class="btn btn-primary" data-bs-toggle="modal" data-bs-target="#modalNouvelleResa">
+                <i class="fas fa-plus me-2"></i>Nouvelle Demande
+            </button>
+        </div>
+
+        <!-- Notifications Modales -->
+        <div th:replace="~{fragments/notifications :: notification-modals}"></div>
+
+        <div class="card border-0 shadow-sm">
+            <div class="card-body p-0">
+                <div class="table-responsive">
+                    <table class="table table-hover align-middle mb-0">
+                        <thead class="bg-light">
+                        <tr>
+                            <th class="ps-4">Salle</th>
+                            <th>Période</th>
+                            <th>Motif</th>
+                            <th>Équipements</th>
+                            <th>Statut</th>
+                            <th class="text-end pe-4">Actions</th>
+                        </tr>
+                        </thead>
+                        <tbody>
+                        <tr th:each="demande : ${demandes}">
+                            <td class="ps-4">
+                                <div class="fw-medium" th:text="${demande.salle.nomSalle}">Salle 101</div>
+                                <div class="text-muted small" th:text="${demande.salle.batiment + ' - Etage ' + demande.salle.etage}">Bât A - Etage 1</div>
+                            </td>
+                            <td>
+                                <div class="d-flex align-items-center">
+                                    <div class="me-3 text-primary bg-primary-subtle rounded-3 p-2 d-flex align-items-center justify-content-center" style="width: 40px; height: 40px;">
+                                        <i class="far fa-calendar-alt fs-5"></i>
+                                    </div>
+                                    <div>
+                                        <div th:if="${demande.startAt != null}">
+                                            <div class="fw-bold text-dark" th:text="${#temporals.format(demande.startAt, 'dd MMMM yyyy')}"></div>
+                                            <div class="text-muted small">
+                                                <i class="far fa-clock me-1"></i>
+                                                <span th:text="${#temporals.format(demande.startAt, 'HH:mm') + ' - ' + #temporals.format(demande.endAt, 'HH:mm')}"></span>
+                                            </div>
+                                        </div>
+                                        <div th:if="${demande.plageHoraire != null}">
+                                            <div class="fw-bold text-dark" th:text="${#temporals.format(demande.plageHoraire.creneauDisponibilite.date, 'dd MMMM yyyy')}"></div>
+                                            <div class="text-muted small">
+                                                <i class="far fa-clock me-1"></i>
+                                                <span th:text="${demande.plageHoraire.heureDebut + ' - ' + demande.plageHoraire.heureFin}"></span>
+                                            </div>
+                                        </div>
+                                    </div>
+                                </div>
+                            </td>
+                            <td th:text="${demande.motif}">Cours de Java</td>
+                            <td>
+                                <div class="d-flex flex-wrap gap-1">
+                                    <span th:each="equip : ${demande.equipements}" class="badge bg-light text-dark border small fw-normal" th:text="${equip.nom}">Projecteur</span>
+                                    <span th:if="${#lists.isEmpty(demande.equipements)}" class="text-muted small italic">Aucun</span>
+                                </div>
+                            </td>
+                            <td>
+                                <span th:class="${'badge rounded-pill px-3 py-2 ' + (demande.statut.name() == 'EN_ATTENTE' ? 'badge-en_attente' : (demande.statut.name() == 'CONFIRMEE' ? 'badge-confirmee' : 'badge-annulee'))}"
+                                      th:text="${demande.statut}">En attente</span>
+                            </td>
+                            <td class="text-end pe-4">
+                                <button type="button" class="btn btn-sm btn-outline-primary me-1"
+                                        data-bs-toggle="modal" th:data-bs-target="${'#modalDetailResa' + demande.idResa}">
+                                    Détails
+                                </button>
+                                <form th:if="${demande.statut.name() == 'EN_ATTENTE'}"
+                                      th:id="${'formAnnuler' + demande.idResa}"
+                                      th:action="@{/dashboard/enseignant/reservations/{id}/annuler(id=${demande.idResa})}" method="post" class="d-inline">
+                                    <button type="button" class="btn btn-sm btn-outline-secondary"
+                                            th:data-form-id="${'formAnnuler' + demande.idResa}"
+                                            onclick="wsConfirm('Annuler cette demande ?', () => document.getElementById(this.getAttribute('data-form-id')).submit())">
+                                        Annuler
+                                    </button>
+                                </form>
+                            </td>
+                        </tr>
+                        <tr th:if="${#lists.isEmpty(demandes)}">
+                            <td colspan="6" class="text-center py-5 text-muted">
+                                <i class="fas fa-calendar-times fs-2 mb-3 d-block"></i>
+                                Aucune réservation trouvée.
+                            </td>
+                        </tr>
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+    </main>
+</div>
+
+<!-- Modal Nouvelle Réservation -->
+<div class="modal fade" id="modalNouvelleResa" tabindex="-1">
+    <div class="modal-dialog modal-lg">
+        <div class="modal-content border-0 shadow">
+            <form th:action="@{/dashboard/enseignant/reservations/nouvelle}" method="post">
+                <div class="modal-header border-bottom-0 pt-4 px-4">
+                    <h5 class="modal-title fw-bold">Demande de Réservation</h5>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+                </div>
+                <div class="modal-body px-4">
+                    <div class="row g-3">
+                        <div class="col-md-12">
+                            <label class="form-label fw-semibold">Salle *</label>
+                            <select name="salleId" id="selSalleRes" class="form-select" required>
+                                <option value="">Choisir une salle...</option>
+                                <option th:each="salle : ${salles}" th:value="${salle.idSalle}" th:text="${salle.nomSalle + ' (' + salle.capacite + ' places)'}"></option>
+                            </select>
+                        </div>
+                        <div class="col-md-6">
+                            <label class="form-label fw-semibold">Début *</label>
+                            <input type="datetime-local" name="startAt" class="form-control" required>
+                        </div>
+                        <div class="col-md-6">
+                            <label class="form-label fw-semibold">Fin *</label>
+                            <input type="datetime-local" name="endAt" class="form-control" required>
+                        </div>
+                        <div class="col-12">
+                            <label class="form-label fw-semibold">Motif *</label>
+                            <input type="text" name="motif" class="form-control" placeholder="Ex: Cours de Rattrapage, Soutenance..." required>
+                        </div>
+                        
+                        <div class="col-12 mt-4">
+                            <label class="form-label fw-semibold">Équipements</label>
+                            <div class="row g-3">
+                                <!-- Fixes (Dynamic) -->
+                                <div class="col-md-6">
+                                    <div class="p-3 border rounded bg-light" style="min-height: 120px;">
+                                        <p class="small fw-bold text-muted mb-2">INCLUS DANS LA SALLE</p>
+                                        <div id="containerFixedEns">
+                                            <p class="text-muted small fst-italic">Sélectionnez une salle pour voir ses équipements fixes.</p>
+                                        </div>
+                                    </div>
+                                </div>
+                                <!-- Mobiles -->
+                                <div class="col-md-6">
+                                    <div class="p-3 border rounded bg-light" style="min-height: 120px;">
+                                        <p class="small fw-bold text-muted mb-2">ÉQUIPEMENTS MOBILES DISPONIBLES</p>
+                                        <div style="max-height: 150px; overflow-y: auto;">
+                                            <div th:each="equipDispo : ${equipementsDisponibles}" class="form-check mb-1">
+                                                <input class="form-check-input" type="checkbox" name="equipmentIds" th:value="${equipDispo.id}" th:id="${'cb' + equipDispo.id}">
+                                                <label class="form-check-label small" th:for="${'cb' + equipDispo.id}" th:text="${equipDispo.nom}"></label>
+                                            </div>
+                                            <p th:if="${equipementsDisponibles == null or equipementsDisponibles.isEmpty()}" class="text-muted small">Aucun équipement disponible.</p>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                <div class="modal-footer border-top-0 pb-4 px-4">
+                    <button type="button" class="btn btn-light" data-bs-dismiss="modal">Annuler</button>
+                    <button type="submit" class="btn btn-primary px-4">Envoyer la demande</button>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+
+<!-- Modales détails -->
+<th:block th:each="demandeDetail : ${demandes}">
+    <div class="modal fade" tabindex="-1" th:id="${'modalDetailResa' + demandeDetail.idResa}">
+        <div class="modal-dialog modal-dialog-centered">
+            <div class="modal-content border-0 shadow-lg">
+                <div class="modal-header border-bottom-0 pt-4 px-4">
+                    <h5 class="modal-title fw-bold text-primary">
+                        <i class="fas fa-info-circle me-2"></i>Détails de la demande
+                    </h5>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+                </div>
+                <div class="modal-body p-4">
+                    <div class="row g-4">
+                        <div class="col-md-6">
+                            <label class="text-muted small fw-bold text-uppercase d-block mb-1">Salle</label>
+                            <div class="fw-bold text-primary" th:text="${demandeDetail.salle.nomSalle}">Salle 101</div>
+                            <div class="small text-muted" th:text="${demandeDetail.salle.batiment + ' - Etage ' + demandeDetail.salle.etage}">Bât A - Etage 1</div>
+                        </div>
+                        <div class="col-md-6 text-end">
+                            <label class="text-muted small fw-bold text-uppercase d-block mb-1">Statut</label>
+                            <span th:class="${'badge rounded-pill px-3 py-2 ' + (demandeDetail.statut.name() == 'EN_ATTENTE' ? 'badge-en_attente' : (demandeDetail.statut.name() == 'CONFIRMEE' ? 'badge-confirmee' : (demandeDetail.statut.name() == 'TERMINEE' ? 'badge-terminee' : 'badge-annulee')))}"
+                                  th:text="${demandeDetail.statut}">En attente</span>
+                        </div>
+                        <div class="col-12">
+                            <hr class="my-0 opacity-10">
+                        </div>
+                        <div class="col-12">
+                            <label class="text-muted small fw-bold text-uppercase d-block mb-1">Période réservée</label>
+                            <div class="d-flex align-items-center mt-1">
+                                <div class="bg-light rounded-3 p-3 border w-100">
+                                    <div th:if="${demandeDetail.startAt != null}">
+                                        <div class="fw-bold text-dark mb-1">
+                                            <i class="far fa-calendar-check me-2 text-primary"></i>
+                                            <span th:text="${#temporals.format(demandeDetail.startAt, 'dd MMMM yyyy')}"></span>
+                                        </div>
+                                        <div class="text-muted fw-medium">
+                                            <i class="far fa-clock me-2 text-primary"></i>
+                                            <span th:text="${#temporals.format(demandeDetail.startAt, 'HH:mm') + ' - ' + #temporals.format(demandeDetail.endAt, 'HH:mm')}"></span>
+                                        </div>
+                                    </div>
+                                    <div th:if="${demandeDetail.plageHoraire != null}">
+                                        <div class="fw-bold text-dark mb-1">
+                                            <i class="far fa-calendar-check me-2 text-primary"></i>
+                                            <span th:text="${#temporals.format(demandeDetail.plageHoraire.creneauDisponibilite.date, 'dd MMMM yyyy')}"></span>
+                                        </div>
+                                        <div class="text-muted fw-medium">
+                                            <i class="far fa-clock me-2 text-primary"></i>
+                                            <span th:text="${demandeDetail.plageHoraire.heureDebut + ' - ' + demandeDetail.plageHoraire.heureFin}"></span>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="col-12">
+                            <label class="text-muted small fw-bold text-uppercase d-block mb-1">Motif de la demande</label>
+                            <div class="p-3 bg-light rounded-3 small border" th:text="${demandeDetail.motif}">Le motif...</div>
+                        </div>
+                        <div class="col-12">
+                            <label class="text-muted small fw-bold text-uppercase d-block mb-1">Équipements réservés</label>
+                            <div class="d-flex flex-wrap gap-2 mt-1">
+                                <span th:each="equipDetail : ${demandeDetail.equipements}" class="badge bg-white text-dark border px-3 py-2 fw-normal" th:text="${equipDetail.nom}">Equipement</span>
+                                <span th:if="${#lists.isEmpty(demandeDetail.equipements)}" class="text-muted italic small fst-italic">Aucun équipement spécifique</span>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                <div class="modal-footer border-top-0 pb-4 px-4">
+                    <button type="button" class="btn btn-light px-4" data-bs-dismiss="modal">Fermer</button>
+                </div>
+            </div>
+        </div>
+    </div>
+</th:block>
+
+<script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js"></script>
+<script src="/js/modern-layout.js"></script>
+<script>
+    document.addEventListener('DOMContentLoaded', function() {
+        const selSalle = document.getElementById('selSalleRes');
+        const containerFixed = document.getElementById('containerFixedEns');
+
+        selSalle.addEventListener('change', function() {
+            const id = this.value;
+            if (!id) {
+                containerFixed.innerHTML = '<p class="text-muted small fst-italic">Sélectionnez une salle pour voir ses équipements fixes.</p>';
+                return;
+            }
+
+            containerFixed.innerHTML = '<div class="spinner-border spinner-border-sm text-primary" role="status"></div>';
+
+            fetch(`/admin/salles/api/${id}/equipements`)
+                .then(res => res.json())
+                .then(data => {
+                    if (data.length === 0) {
+                        containerFixed.innerHTML = '<p class="text-muted small">Aucun équipement fixe enregistré.</p>';
+                        return;
+                    }
+                    
+                    let html = '';
+                    data.forEach(item => {
+                        html += `
+                            <div class="form-check mb-1">
+                                <input class="form-check-input" type="checkbox" name="equipmentIds" value="${item.id}" id="ensfix${item.id}" checked>
+                                <label class="form-check-label small" for="ensfix${item.id}">${item.nom}</label>
+                                <input type="hidden" name="equipmentIds" value="${item.id}">
+                            </div>
+                        `;
+                    });
+                    containerFixed.innerHTML = html;
+                    
+                    data.forEach(item => {
+                        document.getElementById(`ensfix${item.id}`).disabled = true;
+                    });
+                })
+                .catch(err => {
+                    console.error("Erreur équipements:", err);
+                    containerFixed.innerHTML = '<p class="text-danger small">Erreur de chargement.</p>';
+                });
+        });
+    });
+</script>
+</body>
+</html>

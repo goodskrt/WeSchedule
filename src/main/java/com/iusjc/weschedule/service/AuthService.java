@@ -78,7 +78,7 @@ public class AuthService {
             log.info("Nouvel utilisateur enregistré : {} {}", request.getNom(), request.getPrenom());
 
             return AuthResponse.builder()
-                    .idUser(utilisateur.getIdUser())
+                    .idUser(utilisateur.getIdUser().toString()) // Conversion UUID vers String
                     .email(utilisateur.getEmail())
                     .nom(utilisateur.getNom())
                     .prenom(utilisateur.getPrenom())
@@ -116,7 +116,7 @@ public class AuthService {
             }
 
             Utilisateur utilisateur = optionalUser.get();
-            log.info("Utilisateur trouvé - Hash en base: {}", utilisateur.getMotDePasse());
+            log.info("Utilisateur trouvé pour email: {}", email);
 
             // Vérifier le mot de passe
             boolean passwordMatches = passwordEncoder.matches(motDePasse, utilisateur.getMotDePasse());
@@ -133,7 +133,7 @@ public class AuthService {
             log.info("Authentification réussie pour: {}", email);
 
             return AuthResponse.builder()
-                    .idUser(utilisateur.getIdUser())
+                    .idUser(utilisateur.getIdUser().toString()) // Conversion UUID vers String
                     .email(utilisateur.getEmail())
                     .nom(utilisateur.getNom())
                     .prenom(utilisateur.getPrenom())

@@ -1,0 +1,377 @@
+<!DOCTYPE html>
+<html lang="fr" xmlns:th="http://www.thymeleaf.org">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Gestion des Salles - WeSchedule</title>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <link rel="stylesheet" href="/css/modern-layout.css">
+    <style>
+        .salle-card {
+            background: var(--white); border-radius: var(--radius-xl); padding: 1.25rem;
+            margin-bottom: 0.75rem; box-shadow: var(--shadow-sm); border: 1px solid var(--gray-200);
+            transition: all 0.2s;
+        }
+        .salle-card:hover { transform: translateY(-2px); box-shadow: var(--shadow-md); border-color: var(--primary-color); }
+        .salle-avatar {
+            width: 48px; height: 48px; border-radius: var(--radius-lg);
+            display: flex; align-items: center; justify-content: center;
+            font-size: 1.2rem; color: white; flex-shrink: 0;
+        }
+        .av-cours      { background: linear-gradient(135deg, #3b82f6, #2563eb); }
+        .av-td         { background: linear-gradient(135deg, #f59e0b, #d97706); }
+        .av-info       { background: linear-gradient(135deg, #10b981, #059669); }
+        .av-labo       { background: linear-gradient(135deg, #8b5cf6, #7c3aed); }
+        .av-conf       { background: linear-gradient(135deg, #ec4899, #db2777); }
+        .badge-type { padding: 0.2rem 0.6rem; border-radius: 2rem; font-size: 0.72rem; font-weight: 700; }
+        .badge-cours { background: #dbeafe; color: #1e40af; }
+        .badge-td    { background: #fef3c7; color: #92400e; }
+        .badge-info  { background: #d1fae5; color: #065f46; }
+        .badge-labo  { background: #ede9fe; color: #4c1d95; }
+        .badge-conf  { background: #fce7f3; color: #9d174d; }
+        .badge-statut { padding: 0.2rem 0.6rem; border-radius: 2rem; font-size: 0.7rem; font-weight: 700; }
+        .statut-dispo { background: #d1fae5; color: #065f46; }
+        .statut-occupe { background: #fee2e2; color: #991b1b; }
+        .statut-maintenance { background: #fef3c7; color: #92400e; }
+        .search-box { background: var(--white); border-radius: 2rem; padding: 0.65rem 1.25rem; box-shadow: var(--shadow-sm); border: 1px solid var(--gray-200); display: flex; align-items: center; }
+        .search-box input { border: none; outline: none; width: 100%; background: transparent; font-size: 0.9rem; }
+        .empty-state { text-align: center; padding: 4rem 2rem; background: var(--white); border-radius: var(--radius-xl); }
+        .empty-state i { font-size: 3.5rem; color: var(--gray-300); margin-bottom: 1rem; }
+    </style>
+</head>
+<body>
+    <div th:replace="~{fragments/sidebar :: admin-sidebar('salles')}"></div>
+    <div class="ws-wrapper">
+        <div th:replace="~{fragments/header :: admin-header}"></div>
+        <main class="ws-main-content">
+
+            <!-- Header -->
+            <div class="d-flex justify-content-between align-items-center mb-4">
+                <div>
+                    <h2 class="page-title">Gestion des Salles</h2>
+                    <p class="page-subtitle">Gérez les salles et leurs disponibilités</p>
+                </div>
+                <div class="d-flex gap-2">
+                    <a href="/api/admin/salles/export" class="btn btn-outline-success">
+                        <i class="fas fa-file-excel me-1"></i> Exporter
+                    </a>
+                    <button class="btn btn-outline-primary" data-bs-toggle="modal" data-bs-target="#importModal">
+                        <i class="fas fa-file-import me-1"></i> Importer
+                    </button>
+                    <a href="/admin/salles/nouvelle" class="btn btn-primary">
+                        <i class="fas fa-plus me-1"></i> Nouvelle Salle
+                    </a>
+                </div>
+            </div>
+
+            <div th:replace="~{fragments/admin-stats :: stat-row(${pageStats})}"></div>
+
+            <!-- Alertes -->
+            <div th:if="${success}" class="alert alert-success alert-dismissible fade show mb-3">
+                <i class="fas fa-check-circle me-2"></i><span th:text="${success}"></span>
+                <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+            </div>
+            <div th:if="${error}" class="alert alert-danger alert-dismissible fade show mb-3">
+                <i class="fas fa-exclamation-circle me-2"></i><span th:text="${error}"></span>
+                <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+            </div>
+
+            <!-- Filtres -->
+            <div class="d-flex align-items-center gap-2 mb-3" style="flex-wrap:wrap;">
+                <div class="search-box" style="min-width:180px; flex:1;">
+                    <i class="fas fa-search text-muted me-2"></i>
+                    <input type="text" id="searchInput" placeholder="Rechercher…" oninput="filterSalles()">
+                </div>
+                <select id="typeFilter" class="form-select form-select-sm" style="min-width:160px;width:auto;" onchange="filterSalles()">
+                    <option value="">Tous les types</option>
+                    <option value="SALLE_DE_COURS">Salle de Cours</option>
+                    <option value="SALLE_DE_TD">Salle de TD</option>
+                    <option value="SALLE_INFORMATIQUE">Salle Informatique</option>
+                    <option value="LABORATOIRE">Laboratoire</option>
+                    <option value="SALLE_DE_CONFERENCE">Salle de Conférence</option>
+                </select>
+                <select id="batimentFilter" class="form-select form-select-sm" style="min-width:160px;width:auto;" onchange="filterSalles()">
+                    <option value="">Tous les bâtiments</option>
+                    <option value="Nouveau bâtiment">Nouveau bâtiment</option>
+                    <option value="Ancien bâtiment">Ancien bâtiment</option>
+                </select>
+                <select id="statutFilter" class="form-select form-select-sm" style="min-width:140px;width:auto;" onchange="filterSalles()">
+                    <option value="">Tous les statuts</option>
+                    <option value="DISPONIBLE">Disponible</option>
+                    <option value="OCCUPE">Occupé</option>
+                    <option value="EN_MAINTENANCE">En maintenance</option>
+                </select>
+                <span class="text-muted small" id="countInfo"
+                      th:text="${salles != null ? #lists.size(salles) : 0} + ' salle(s)'"></span>
+            </div>
+
+            <!-- Liste vide -->
+            <div th:if="${salles == null or salles.isEmpty()}" class="empty-state">
+                <i class="fas fa-door-open"></i>
+                <h5 class="mt-2">Aucune salle</h5>
+                <p class="text-muted">Commencez par créer votre première salle.</p>
+                <a href="/admin/salles/nouvelle" class="btn btn-primary mt-2">
+                    <i class="fas fa-plus me-1"></i> Nouvelle Salle
+                </a>
+            </div>
+
+            <!-- Cards -->
+            <div id="sallesList">
+                <div id="noResultMsg" class="empty-state d-none">
+                    <i class="fas fa-filter"></i>
+                    <h5 class="mt-2">Aucun résultat</h5>
+                    <p class="text-muted">Aucune salle ne correspond aux filtres.</p>
+                    <button class="btn btn-primary btn-sm mt-2" onclick="resetFiltres()">
+                        <i class="fas fa-rotate-left me-1"></i> Réinitialiser
+                    </button>
+                </div>
+
+                <th:block th:each="s : ${salles}" th:if="${salles != null}">
+                <div class="salle-card"
+                     th:data-nom="${s.nomSalle}"
+                     th:data-type="${s.typeSalle != null ? s.typeSalle.name() : ''}"
+                     th:data-batiment="${s.batiment != null ? s.batiment : ''}"
+                     th:data-statut="${s.statut != null ? s.statut.name() : ''}">
+                    <div class="row align-items-center">
+
+                        <!-- Avatar + nom -->
+                        <div class="col-md-4 d-flex align-items-center gap-3">
+                            <div class="salle-avatar"
+                                 th:classappend="${s.typeSalle != null and s.typeSalle.name() == 'SALLE_DE_COURS'}      ? 'av-cours' :
+                                               (${s.typeSalle != null and s.typeSalle.name() == 'SALLE_DE_TD'}         ? 'av-td' :
+                                               (${s.typeSalle != null and s.typeSalle.name() == 'SALLE_INFORMATIQUE'}  ? 'av-info' :
+                                               (${s.typeSalle != null and s.typeSalle.name() == 'SALLE_DE_CONFERENCE'} ? 'av-conf' : 'av-labo')))">
+                                <i class="fas"
+                                   th:classappend="${s.typeSalle != null and s.typeSalle.name() == 'SALLE_DE_COURS'}      ? 'fa-chalkboard-teacher' :
+                                                 (${s.typeSalle != null and s.typeSalle.name() == 'SALLE_DE_TD'}         ? 'fa-chalkboard' :
+                                                 (${s.typeSalle != null and s.typeSalle.name() == 'SALLE_INFORMATIQUE'}  ? 'fa-laptop' :
+                                                 (${s.typeSalle != null and s.typeSalle.name() == 'SALLE_DE_CONFERENCE'} ? 'fa-microphone-alt' : 'fa-flask')))"></i>
+                            </div>
+                            <div>
+                                <div class="fw-semibold" style="color:var(--gray-900);" th:text="${s.nomSalle}">—</div>
+                                <span class="badge-type"
+                                      th:classappend="${s.typeSalle != null and s.typeSalle.name() == 'SALLE_DE_COURS'}      ? 'badge-cours' :
+                                                    (${s.typeSalle != null and s.typeSalle.name() == 'SALLE_DE_TD'}         ? 'badge-td' :
+                                                    (${s.typeSalle != null and s.typeSalle.name() == 'SALLE_INFORMATIQUE'}  ? 'badge-info' :
+                                                    (${s.typeSalle != null and s.typeSalle.name() == 'SALLE_DE_CONFERENCE'} ? 'badge-conf' : 'badge-labo')))"
+                                      th:text="${s.typeSalle}">—</span>
+                            </div>
+                        </div>
+
+                        <!-- Capacité + localisation -->
+                        <div class="col-md-3">
+                            <div class="d-flex gap-4">
+                                <div>
+                                    <small class="text-muted d-block">Capacité</small>
+                                    <span class="fw-semibold">
+                                        <i class="fas fa-users text-muted me-1" style="font-size:0.8rem;"></i>
+                                        <span th:text="${s.capacite}">0</span> places
+                                    </span>
+                                </div>
+                                <div th:if="${s.etage != null and !#strings.isEmpty(s.etage)}">
+                                    <small class="text-muted d-block">Étage</small>
+                                    <span class="fw-semibold" th:text="${s.etage}">—</span>
+                                </div>
+                                <div th:if="${s.batiment != null and !#strings.isEmpty(s.batiment)}">
+                                    <small class="text-muted d-block">Bâtiment</small>
+                                    <span class="fw-semibold" th:text="${s.batiment}">—</span>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- Statut -->
+                        <div class="col-md-2 text-center">
+                            <span class="badge-statut"
+                                  th:classappend="${s.statut != null and s.statut.name() == 'DISPONIBLE'}      ? 'statut-dispo' :
+                                                (${s.statut != null and s.statut.name() == 'OCCUPE'}           ? 'statut-occupe' : 'statut-maintenance')"
+                                  th:text="${s.statut != null and s.statut.name() == 'DISPONIBLE'} ? 'Disponible' :
+                                           (${s.statut != null and s.statut.name() == 'OCCUPE'}    ? 'Occupé' : 'En maintenance')">—</span>
+                        </div>
+
+                        <!-- Actions -->
+                        <div class="col-md-3 text-end">
+                            <a th:href="@{/admin/salles/details/{id}(id=${s.idSalle})}"
+                               class="btn btn-outline-primary btn-sm me-1" title="Détails">
+                                <i class="fas fa-eye"></i>
+                            </a>
+                            <a th:href="@{/admin/salles/modifier/{id}(id=${s.idSalle})}"
+                               class="btn btn-outline-primary btn-sm me-1" title="Modifier">
+                                <i class="fas fa-edit"></i>
+                            </a>
+                            <button class="btn btn-outline-danger btn-sm"
+                                    th:attr="data-id=${s.idSalle}, data-nom=${s.nomSalle}"
+                                    onclick="showDelete(this)" title="Supprimer">
+                                <i class="fas fa-trash"></i>
+                            </button>
+                        </div>
+                    </div>
+                </div>
+                </th:block>
+            </div>
+
+        </main>
+    </div>
+
+    <!-- Modal suppression -->
+    <div class="modal fade" id="deleteModal" tabindex="-1">
+        <div class="modal-dialog modal-sm">
+            <div class="modal-content">
+                <div class="modal-header border-0 pb-0">
+                    <h5 class="modal-title text-danger"><i class="fas fa-exclamation-triangle me-2"></i>Supprimer</h5>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+                </div>
+                <div class="modal-body pt-2">
+                    Supprimer la salle <strong id="deleteNom"></strong> ?<br>
+                    <small class="text-muted">Cette action est irréversible.</small>
+                </div>
+                <div class="modal-footer border-0 pt-0">
+                    <button class="btn btn-secondary btn-sm" data-bs-dismiss="modal">Annuler</button>
+                    <form id="deleteForm" method="post">
+                        <button type="submit" class="btn btn-danger btn-sm">
+                            <i class="fas fa-trash me-1"></i> Supprimer
+                        </button>
+                    </form>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Modal import -->
+    <div class="modal fade" id="importModal" tabindex="-1">
+        <div class="modal-dialog">
+            <div class="modal-content">
+                <div class="modal-header border-0">
+                    <h5 class="modal-title"><i class="fas fa-file-import me-2 text-primary"></i>Importer des salles</h5>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+                </div>
+                <div class="modal-body">
+                    <div id="dropZone" class="border border-2 border-dashed rounded-3 p-4 text-center mb-3"
+                         style="border-color:var(--gray-300)!important; cursor:pointer;"
+                         onclick="document.getElementById('fileInput').click()"
+                         ondragover="event.preventDefault(); this.style.borderColor='var(--primary-color)'"
+                         ondragleave="this.style.borderColor='var(--gray-300)'"
+                         ondrop="onDrop(event)">
+                        <i class="fas fa-cloud-upload-alt fa-2x text-muted mb-2"></i>
+                        <p class="mb-1 fw-semibold">Glissez votre fichier ici</p>
+                        <p class="text-muted small mb-0">ou cliquez pour sélectionner (.xlsx, .xls)</p>
+                    </div>
+                    <input type="file" id="fileInput" accept=".xlsx,.xls" class="d-none" onchange="onFileSelect(this)">
+                    <div id="fileInfo" class="d-none alert alert-info py-2">
+                        <i class="fas fa-file-excel me-2"></i><span id="fileName"></span>
+                    </div>
+                    <div id="importResult"></div>
+                    <small class="text-muted">
+                        <i class="fas fa-info-circle me-1"></i>
+                        Colonnes : Nom, Type, Capacité, Étage, Bâtiment.
+                        Téléchargez d'abord le modèle via <strong>Exporter</strong>.
+                    </small>
+                </div>
+                <div class="modal-footer border-0">
+                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Fermer</button>
+                    <button type="button" class="btn btn-primary" id="importBtn" onclick="doImport()" disabled>
+                        <i class="fas fa-upload me-1"></i> Importer
+                    </button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js"></script>
+    <script src="/js/modern-layout.js"></script>
+    <script>
+        function filterSalles() {
+            const search   = document.getElementById('searchInput').value.toLowerCase();
+            const type     = document.getElementById('typeFilter').value;
+            const batiment = document.getElementById('batimentFilter').value;
+            const statut   = document.getElementById('statutFilter').value;
+            const cards    = document.querySelectorAll('#sallesList .salle-card');
+            let visible    = 0;
+            cards.forEach(card => {
+                const ok = (card.dataset.nom || '').toLowerCase().includes(search)
+                        && (!type     || card.dataset.type === type)
+                        && (!batiment || card.dataset.batiment === batiment)
+                        && (!statut   || card.dataset.statut === statut);
+                card.style.display = ok ? '' : 'none';
+                if (ok) visible++;
+            });
+            document.getElementById('countInfo').textContent = visible + ' salle(s)';
+            document.getElementById('noResultMsg').classList.toggle('d-none', visible > 0 || cards.length === 0);
+        }
+
+        function resetFiltres() {
+            ['searchInput','typeFilter','batimentFilter','statutFilter'].forEach(id => {
+                const el = document.getElementById(id); if (el) el.value = '';
+            });
+            filterSalles();
+        }
+
+        function showDelete(btn) {
+            document.getElementById('deleteNom').textContent = btn.dataset.nom;
+            document.getElementById('deleteForm').action = '/admin/salles/supprimer/' + btn.dataset.id;
+            new bootstrap.Modal(document.getElementById('deleteModal')).show();
+        }
+
+        function onFileSelect(input) {
+            if (input.files.length > 0) {
+                document.getElementById('fileName').textContent = input.files[0].name;
+                document.getElementById('fileInfo').classList.remove('d-none');
+                document.getElementById('importBtn').disabled = false;
+                document.getElementById('importResult').innerHTML = '';
+            }
+        }
+
+        function onDrop(event) {
+            event.preventDefault();
+            document.getElementById('dropZone').style.borderColor = 'var(--gray-300)';
+            const file = event.dataTransfer.files[0];
+            if (file) {
+                const input = document.getElementById('fileInput');
+                const dt = new DataTransfer(); dt.items.add(file); input.files = dt.files;
+                onFileSelect(input);
+            }
+        }
+
+        async function doImport() {
+            const input = document.getElementById('fileInput');
+            if (!input.files.length) return;
+            const btn = document.getElementById('importBtn');
+            btn.disabled = true;
+            btn.innerHTML = '<span class="spinner-border spinner-border-sm me-1"></span> Import…';
+
+            const formData = new FormData();
+            formData.append('file', input.files[0]);
+
+            try {
+                const res  = await fetch('/api/admin/salles/import', { method: 'POST', body: formData });
+                const data = await res.json();
+                const div  = document.getElementById('importResult');
+
+                if (data.success) {
+                    let html = `<div class="alert alert-success mt-2"><i class="fas fa-check-circle me-2"></i>${data.message || data.succes + ' salle(s) importée(s)'}</div>`;
+                    if (data.avertissements && data.avertissements.length) {
+                        html += `<div class="alert alert-warning mt-1"><strong>Avertissements :</strong><ul class="mb-0 mt-1">`;
+                        data.avertissements.forEach(a => { html += `<li>${a}</li>`; });
+                        html += `</ul></div>`;
+                    }
+                    if (data.erreurs && data.erreurs.length) {
+                        html += `<div class="alert alert-danger mt-1"><strong>Erreurs :</strong><ul class="mb-0 mt-1">`;
+                        data.erreurs.forEach(e => { html += `<li>${e}</li>`; });
+                        html += `</ul></div>`;
+                    }
+                    div.innerHTML = html;
+                    if (data.succes > 0) setTimeout(() => location.reload(), 1500);
+                } else {
+                    div.innerHTML = `<div class="alert alert-danger mt-2"><i class="fas fa-times-circle me-2"></i>${data.message}</div>`;
+                }
+            } catch (e) {
+                document.getElementById('importResult').innerHTML = `<div class="alert alert-danger mt-2">Erreur de connexion</div>`;
+            }
+
+            btn.disabled = false;
+            btn.innerHTML = '<i class="fas fa-upload me-1"></i> Importer';
+        }
+    </script>
+</body>
+</html>

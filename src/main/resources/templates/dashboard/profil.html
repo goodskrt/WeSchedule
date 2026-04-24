@@ -2,65 +2,372 @@
 <html lang="fr" xmlns:th="http://www.thymeleaf.org">
 <head>
     <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Mon Profil - WeSchedule</title>
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
-    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css" rel="stylesheet">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
-    <link rel="stylesheet" href="/css/dashboard-professional.css">
+    <link rel="stylesheet" href="/css/modern-layout.css">
+    <style>
+        .profile-header-card {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            border-radius: var(--radius-xl);
+            padding: 2rem;
+            color: white;
+            margin-bottom: 2rem;
+            box-shadow: var(--shadow-lg);
+            position: relative;
+            overflow: hidden;
+        }
+        .profile-header-card::before {
+            content: '';
+            position: absolute;
+            top: -50%;
+            right: -10%;
+            width: 300px;
+            height: 300px;
+            background: rgba(255, 255, 255, 0.1);
+            border-radius: 50%;
+        }
+        .user-avatar-large {
+            width: 100px;
+            height: 100px;
+            background: rgba(255, 255, 255, 0.2);
+            backdrop-filter: blur(10px);
+            border: 4px solid rgba(255, 255, 255, 0.3);
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 2.5rem;
+            color: white;
+            font-weight: 700;
+            box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
+            position: relative;
+            z-index: 1;
+        }
+        .profile-info { position: relative; z-index: 1; }
+        .profile-name { font-size: 1.75rem; font-weight: 700; margin-bottom: 0.5rem; }
+        .profile-meta { display: flex; flex-wrap: wrap; gap: 1.5rem; margin-top: 1rem; opacity: 0.95; }
+        .profile-meta-item { display: flex; align-items: center; gap: 0.5rem; }
+        .section-card {
+            background: white;
+            border-radius: var(--radius-xl);
+            padding: 2rem;
+            margin-bottom: 1.5rem;
+            box-shadow: var(--shadow-sm);
+            border: 1px solid var(--gray-200);
+            transition: all var(--transition-normal);
+        }
+        .section-card:hover { box-shadow: var(--shadow-md); border-color: var(--primary-color); }
+        .section-header {
+            display: flex;
+            align-items: center;
+            gap: 0.75rem;
+            margin-bottom: 1.5rem;
+            padding-bottom: 1rem;
+            border-bottom: 2px solid var(--gray-100);
+        }
+        .section-icon {
+            width: 40px;
+            height: 40px;
+            background: linear-gradient(135deg, #667eea, #764ba2);
+            border-radius: var(--radius-lg);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            color: white;
+            font-size: 1.1rem;
+        }
+        .section-title { font-size: 1.25rem; font-weight: 600; color: var(--gray-900); margin: 0; }
+        .form-label { font-weight: 600; color: var(--gray-700); margin-bottom: 0.5rem; font-size: 0.9rem; }
+        .form-control {
+            border: 2px solid var(--gray-200);
+            border-radius: var(--radius-lg);
+            padding: 0.75rem 1rem;
+            transition: all var(--transition-fast);
+            font-size: 0.95rem;
+        }
+        .form-control:focus { border-color: var(--primary-color); box-shadow: 0 0 0 0.2rem rgba(5, 150, 105, 0.1); }
+        .ue-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(280px, 1fr)); gap: 1rem; }
+        .ue-card {
+            background: linear-gradient(135deg, #f0f4ff 0%, #e8eaff 100%);
+            border: 2px solid var(--gray-200);
+            border-radius: var(--radius-lg);
+            padding: 1.25rem;
+            transition: all var(--transition-normal);
+            position: relative;
+            overflow: hidden;
+        }
+        .ue-card::before {
+            content: '';
+            position: absolute;
+            top: 0; left: 0;
+            width: 4px; height: 100%;
+            background: linear-gradient(180deg, #667eea, #764ba2);
+        }
+        .ue-card:hover { transform: translateY(-4px); box-shadow: 0 8px 20px rgba(102, 126, 234, 0.2); border-color: #667eea; }
+        .ue-code { font-weight: 700; color: #667eea; font-size: 1rem; display: block; margin-bottom: 0.5rem; }
+        .ue-title { color: var(--gray-800); font-weight: 500; font-size: 0.95rem; line-height: 1.4; margin-bottom: 0.75rem; }
+        .ue-meta { display: flex; align-items: center; gap: 0.5rem; color: var(--gray-600); font-size: 0.85rem; }
+        .ue-meta i { color: #667eea; }
+        .empty-ue-state {
+            text-align: center;
+            padding: 4rem 2rem;
+            color: var(--gray-500);
+            background: var(--gray-50);
+            border-radius: var(--radius-lg);
+            border: 2px dashed var(--gray-300);
+        }
+        .empty-ue-state i { font-size: 4rem; color: var(--gray-300); margin-bottom: 1.5rem; }
+        .empty-ue-state h5 { color: var(--gray-700); margin-bottom: 0.5rem; }
+        .info-note {
+            background: linear-gradient(135deg, #dbeafe 0%, #e0f2fe 100%);
+            border-left: 4px solid #3b82f6;
+            padding: 1.25rem;
+            border-radius: var(--radius-lg);
+            margin-bottom: 1.5rem;
+            display: flex;
+            align-items: start;
+            gap: 1rem;
+        }
+        .info-note i { color: #3b82f6; font-size: 1.25rem; margin-top: 0.125rem; }
+        .info-note-title { font-weight: 600; color: #1e40af; margin-bottom: 0.25rem; }
+        .info-note-text { color: #1e3a8a; margin: 0; font-size: 0.9rem; }
+        .btn { padding: 0.75rem 1.5rem; border-radius: var(--radius-lg); font-weight: 600; transition: all var(--transition-normal); border: none; }
+        .btn-primary { background: linear-gradient(135deg, #667eea, #764ba2); box-shadow: 0 4px 12px rgba(102, 126, 234, 0.3); color: white; }
+        .btn-primary:hover { transform: translateY(-2px); box-shadow: 0 6px 16px rgba(102, 126, 234, 0.4); color: white; }
+        .btn-secondary { background: var(--gray-200); color: var(--gray-700); }
+        .btn-secondary:hover { background: var(--gray-300); color: var(--gray-900); }
+        .password-strength { height: 4px; background: var(--gray-200); border-radius: 2px; margin-top: 0.5rem; overflow: hidden; }
+        .password-strength-bar { height: 100%; width: 0%; transition: all var(--transition-normal); border-radius: 2px; }
+        .password-strength-bar.weak { width: 33%; background: #ef4444; }
+        .password-strength-bar.medium { width: 66%; background: #f59e0b; }
+        .password-strength-bar.strong { width: 100%; background: #10b981; }
+        .alert { border-radius: var(--radius-lg); border: none; padding: 1rem 1.25rem; box-shadow: var(--shadow-sm); }
+        .alert-success { background: linear-gradient(135deg, #d1fae5 0%, #a7f3d0 100%); color: #065f46; }
+        .alert-danger { background: linear-gradient(135deg, #fee2e2 0%, #fecaca 100%); color: #991b1b; }
+        .stats-badge {
+            display: inline-flex;
+            align-items: center;
+            gap: 0.5rem;
+            background: rgba(255, 255, 255, 0.2);
+            backdrop-filter: blur(10px);
+            padding: 0.5rem 1rem;
+            border-radius: 2rem;
+            font-weight: 600;
+            margin-top: 1rem;
+        }
+        .d-flex { display: flex; }
+        .align-items-center { align-items: center; }
+        .flex-grow-1 { flex-grow: 1; }
+        .me-4 { margin-right: 1.5rem; }
+        .me-2 { margin-right: 0.5rem; }
+        .me-1 { margin-right: 0.25rem; }
+        .mb-3 { margin-bottom: 1rem; }
+        .mb-4 { margin-bottom: 1.5rem; }
+        .mt-4 { margin-top: 1.5rem; }
+        .gap-2 { gap: 0.5rem; }
+        .row { display: flex; flex-wrap: wrap; margin: 0 -0.75rem; }
+        .col-md-6 { flex: 0 0 50%; max-width: 50%; padding: 0 0.75rem; }
+        .text-danger { color: #ef4444; }
+        .text-muted { color: var(--gray-500); }
+        @media (max-width: 768px) { .col-md-6 { flex: 0 0 100%; max-width: 100%; } }
+    </style>
 </head>
 <body>
-    <nav class="navbar navbar-expand-lg navbar-custom">
-        <div class="container-fluid">
-            <a class="navbar-brand" href="/dashboard/enseignant"><img src="/images/logo.jpeg" alt="Logo">WeSchedule</a>
-            <div class="collapse navbar-collapse">
-                <ul class="navbar-nav ms-auto">
-                    <li class="nav-item dropdown">
-                        <a class="nav-link p-0" href="#" data-bs-toggle="dropdown">
-                            <div class="user-info-nav">
-                                <div class="user-avatar-small"><i class="fas fa-chalkboard-teacher"></i></div>
-                                <div class="user-details"><div class="user-name-small" th:text="${nomComplet}">Enseignant</div><div class="user-role-small">Enseignant</div></div>
+    <div th:replace="~{fragments/sidebar :: enseignant-sidebar('profil')}"></div>
+    <div class="ws-wrapper">
+        <div th:replace="~{fragments/header :: enseignant-header}"></div>
+        <main class="ws-main-content">
+            <!-- Messages de succès/erreur -->
+            <div th:if="${successMessage}" class="alert alert-success alert-dismissible fade show" role="alert">
+                <i class="fas fa-check-circle me-2"></i>
+                <span th:text="${successMessage}"></span>
+                <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+            </div>
+            <div th:if="${errorMessage}" class="alert alert-danger alert-dismissible fade show" role="alert">
+                <i class="fas fa-exclamation-circle me-2"></i>
+                <span th:text="${errorMessage}"></span>
+                <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+            </div>
+
+            <!-- Profile Header Card -->
+            <div class="profile-header-card">
+                <div class="d-flex align-items-center">
+                    <div class="user-avatar-large me-4">
+                        <span th:text="${enseignant != null and enseignant.prenom != null and enseignant.nom != null ? enseignant.prenom.substring(0,1).toUpperCase() + enseignant.nom.substring(0,1).toUpperCase() : 'EN'}">EN</span>
+                    </div>
+                    <div class="profile-info flex-grow-1">
+                        <h2 class="profile-name" th:text="${enseignant != null ? enseignant.prenom + ' ' + enseignant.nom : 'Enseignant'}">Nom Prénom</h2>
+                        <div class="profile-meta">
+                            <div class="profile-meta-item">
+                                <i class="fas fa-envelope"></i>
+                                <span th:text="${enseignant != null ? enseignant.email : 'email@example.com'}">email@example.com</span>
                             </div>
-                        </a>
-                        <ul class="dropdown-menu dropdown-menu-end">
-                            <li><a class="dropdown-item" href="/dashboard/enseignant/profil"><i class="fas fa-user"></i> Mon profil</a></li>
-                            <li><hr class="dropdown-divider"></li>
-                            <li><form th:action="@{/logout}" method="post" style="margin: 0;"><button type="submit" class="dropdown-item"><i class="fas fa-sign-out-alt"></i> Deconnexion</button></form></li>
-                        </ul>
-                    </li>
-                </ul>
-            </div>
-        </div>
-    </nav>
-
-    <div class="container-fluid">
-        <div class="row">
-            <div class="col-lg-2 col-md-3 p-0">
-                <div class="sidebar">
-                    <div class="sidebar-menu">
-                        <div class="menu-section-title">Tableau de bord</div>
-                        <a href="/dashboard/enseignant" class="nav-link"><i class="fas fa-tachometer-alt"></i><span>Vue d'ensemble</span></a>
-                        <div class="menu-section-title">Mon activite</div>
-                        <a href="/dashboard/enseignant/cours" class="nav-link"><i class="fas fa-book"></i><span>Mes Cours</span></a>
-                        <a href="/dashboard/enseignant/emploi-temps" class="nav-link"><i class="fas fa-calendar-alt"></i><span>Mon Emploi du temps</span></a>
-                        <a href="/dashboard/enseignant/disponibilites" class="nav-link"><i class="fas fa-clock"></i><span>Mes Disponibilites</span></a>
-                        <div class="menu-section-title">Compte</div>
-                        <a href="/dashboard/enseignant/profil" class="nav-link active"><i class="fas fa-user-cog"></i><span>Mon Profil</span></a>
+                            <div class="profile-meta-item" th:if="${enseignant != null and enseignant.phone != null and enseignant.phone != ''}">
+                                <i class="fas fa-phone"></i>
+                                <span th:text="${enseignant.phone}">+237 6XX XXX XXX</span>
+                            </div>
+                            <div class="profile-meta-item" th:if="${enseignant != null and enseignant.grade != null and enseignant.grade != ''}">
+                                <i class="fas fa-graduation-cap"></i>
+                                <span th:text="${enseignant.grade}">Grade</span>
+                            </div>
+                        </div>
+                        <div class="stats-badge" th:if="${ues != null and !ues.isEmpty()}">
+                            <i class="fas fa-book"></i>
+                            <span th:text="${ues.size() + ' UE' + (ues.size() > 1 ? 's' : '')}">0 UE</span>
+                        </div>
                     </div>
                 </div>
             </div>
 
-            <div class="col-lg-10 col-md-9">
-                <div class="main-content">
-                    <h2 class="page-title">Mon Profil</h2>
-                    <p class="page-subtitle">Modifier mes informations personnelles</p>
-                    <div class="card-custom p-5 text-center mt-4">
-                        <div class="empty-state-icon"><i class="fas fa-user-cog"></i></div>
-                        <p class="text-muted">Fonctionnalite en cours de developpement</p>
+            <!-- Informations personnelles -->
+            <div class="section-card">
+                <div class="section-header">
+                    <div class="section-icon"><i class="fas fa-user-edit"></i></div>
+                    <h3 class="section-title">Informations personnelles</h3>
+                </div>
+                <form th:action="@{/dashboard/enseignant/profil/update}" method="post" id="profileForm">
+                    <div class="row">
+                        <div class="col-md-6 mb-3">
+                            <label for="nom" class="form-label"><i class="fas fa-user me-1"></i>Nom <span class="text-danger">*</span></label>
+                            <input type="text" class="form-control" id="nom" name="nom" th:value="${enseignant != null ? enseignant.nom : ''}" required>
+                        </div>
+                        <div class="col-md-6 mb-3">
+                            <label for="prenom" class="form-label"><i class="fas fa-user me-1"></i>Prénom</label>
+                            <input type="text" class="form-control" id="prenom" name="prenom" th:value="${enseignant != null ? enseignant.prenom : ''}">
+                        </div>
+                    </div>
+                    <div class="row">
+                        <div class="col-md-6 mb-3">
+                            <label for="email" class="form-label"><i class="fas fa-envelope me-1"></i>Email <span class="text-danger">*</span></label>
+                            <input type="email" class="form-control" id="email" name="email" th:value="${enseignant != null ? enseignant.email : ''}" required>
+                        </div>
+                        <div class="col-md-6 mb-3">
+                            <label for="phone" class="form-label"><i class="fas fa-phone me-1"></i>Téléphone</label>
+                            <input type="tel" class="form-control" id="phone" name="phone" th:value="${enseignant != null ? enseignant.phone : ''}" placeholder="+237 6XX XXX XXX">
+                        </div>
+                    </div>
+                    <div class="mb-4">
+                        <label for="grade" class="form-label"><i class="fas fa-graduation-cap me-1"></i>Grade</label>
+                        <input type="text" class="form-control" id="grade" name="grade" th:value="${enseignant != null ? enseignant.grade : ''}" placeholder="Ex: Maître de conférences">
+                    </div>
+                    <div class="d-flex gap-2">
+                        <button type="submit" class="btn btn-primary"><i class="fas fa-save me-2"></i>Enregistrer les modifications</button>
+                        <button type="reset" class="btn btn-secondary"><i class="fas fa-undo me-2"></i>Réinitialiser</button>
+                    </div>
+                </form>
+            </div>
+
+            <!-- Mes UE -->
+            <div class="section-card">
+                <div class="section-header">
+                    <div class="section-icon"><i class="fas fa-book-open"></i></div>
+                    <h3 class="section-title">Mes unités d'enseignement</h3>
+                </div>
+                <div class="info-note">
+                    <i class="fas fa-info-circle"></i>
+                    <div class="info-note-content">
+                        <div class="info-note-title">Information</div>
+                        <p class="info-note-text">Vous ne pouvez pas modifier vos UE. Contactez l'administrateur pour toute modification.</p>
                     </div>
                 </div>
+                <div th:if="${ues != null and !ues.isEmpty()}">
+                    <div class="ue-grid">
+                        <div th:each="ue : ${ues}" class="ue-card">
+                            <span class="ue-code" th:text="${ue.code}">CODE</span>
+                            <div class="ue-title" th:text="${ue.intitule}">Intitulé de l'UE</div>
+                            <div class="ue-meta">
+                                <i class="fas fa-clock"></i>
+                                <span th:text="${ue.duree != null ? ue.duree + ' minutes' : 'Durée non définie'}">0 minutes</span>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                <div th:if="${ues == null or ues.isEmpty()}" class="empty-ue-state">
+                    <i class="fas fa-book"></i>
+                    <h5>Aucune unité d'enseignement</h5>
+                    <p class="mb-0">Vous n'avez pas encore d'UE assignée. Contactez l'administrateur.</p>
+                </div>
             </div>
-        </div>
+
+            <!-- Changement de mot de passe -->
+            <div class="section-card">
+                <div class="section-header">
+                    <div class="section-icon"><i class="fas fa-lock"></i></div>
+                    <h3 class="section-title">Sécurité du compte</h3>
+                </div>
+                <form th:action="@{/dashboard/enseignant/profil/change-password}" method="post" id="passwordForm">
+                    <div class="mb-3">
+                        <label for="ancienMotDePasse" class="form-label"><i class="fas fa-key me-1"></i>Ancien mot de passe <span class="text-danger">*</span></label>
+                        <input type="password" class="form-control" id="ancienMotDePasse" name="ancienMotDePasse" required>
+                    </div>
+                    <div class="mb-3">
+                        <label for="nouveauMotDePasse" class="form-label"><i class="fas fa-lock me-1"></i>Nouveau mot de passe <span class="text-danger">*</span></label>
+                        <input type="password" class="form-control" id="nouveauMotDePasse" name="nouveauMotDePasse" required minlength="6">
+                        <div class="password-strength">
+                            <div class="password-strength-bar" id="strengthBar"></div>
+                        </div>
+                        <small class="text-muted"><i class="fas fa-info-circle"></i> Le mot de passe doit contenir au moins 6 caractères</small>
+                    </div>
+                    <div class="mb-4">
+                        <label for="confirmationMotDePasse" class="form-label"><i class="fas fa-check-circle me-1"></i>Confirmer le nouveau mot de passe <span class="text-danger">*</span></label>
+                        <input type="password" class="form-control" id="confirmationMotDePasse" name="confirmationMotDePasse" required>
+                        <small class="text-danger" id="passwordMatchError" style="display: none;"><i class="fas fa-exclamation-triangle"></i> Les mots de passe ne correspondent pas</small>
+                    </div>
+                    <button type="submit" class="btn btn-primary" id="changePasswordBtn"><i class="fas fa-key me-2"></i>Changer le mot de passe</button>
+                </form>
+            </div>
+        </main>
     </div>
+
     <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js"></script>
+    <script src="/js/modern-layout.js"></script>
+    <script>
+        setTimeout(function() {
+            document.querySelectorAll('.alert').forEach(alert => new bootstrap.Alert(alert).close());
+        }, 5000);
+
+        const passwordInput = document.getElementById('nouveauMotDePasse');
+        const strengthBar = document.getElementById('strengthBar');
+        if (passwordInput && strengthBar) {
+            passwordInput.addEventListener('input', function() {
+                const p = this.value;
+                let s = 0;
+                if (p.length >= 6) s++;
+                if (p.length >= 10) s++;
+                if (/[a-z]/.test(p) && /[A-Z]/.test(p)) s++;
+                if (/\d/.test(p)) s++;
+                if (/[^a-zA-Z0-9]/.test(p)) s++;
+                strengthBar.className = 'password-strength-bar';
+                strengthBar.classList.add(s <= 2 ? 'weak' : s <= 4 ? 'medium' : 'strong');
+            });
+        }
+
+        const confirmInput = document.getElementById('confirmationMotDePasse');
+        const matchError = document.getElementById('passwordMatchError');
+        const submitBtn = document.getElementById('changePasswordBtn');
+        function checkMatch() {
+            const mismatch = confirmInput.value && passwordInput.value !== confirmInput.value;
+            matchError.style.display = mismatch ? 'block' : 'none';
+            confirmInput.classList.toggle('is-invalid', mismatch);
+            submitBtn.disabled = mismatch;
+        }
+        if (confirmInput && passwordInput) {
+            confirmInput.addEventListener('input', checkMatch);
+            passwordInput.addEventListener('input', checkMatch);
+        }
+
+        document.querySelectorAll('form').forEach(form => {
+            form.addEventListener('submit', function(e) {
+                if (!form.checkValidity()) { e.preventDefault(); e.stopPropagation(); }
+                form.classList.add('was-validated');
+            });
+        });
+
+        if (document.querySelectorAll('.alert').length > 0) {
+            window.scrollTo({ top: 0, behavior: 'smooth' });
+        }
+    </script>
 </body>
 </html>

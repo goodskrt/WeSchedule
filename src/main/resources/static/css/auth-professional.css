@@ -67,7 +67,7 @@
 
 body {
     font-family: 'Inter', 'Segoe UI', -apple-system, BlinkMacSystemFont, sans-serif;
-    background: linear-gradient(135deg, var(--gray-50) 0%, var(--green-50) 100%);
+    background: #ffffff !important;
     color: var(--gray-900);
     line-height: 1.6;
     min-height: 100vh;
@@ -126,10 +126,6 @@ body {
     font-weight: 700;
     color: var(--gray-900);
     margin-bottom: 0.5rem;
-    background: linear-gradient(135deg, var(--primary-color), var(--green-600));
-    -webkit-background-clip: text;
-    -webkit-text-fill-color: transparent;
-    background-clip: text;
 }
 
 .auth-subtitle {
@@ -242,25 +238,25 @@ body {
 }
 
 .btn-primary {
-    background: linear-gradient(135deg, var(--primary-color), var(--green-600));
+    background: var(--primary-color);
     color: var(--white);
     box-shadow: var(--shadow-md);
 }
 
 .btn-primary:hover:not(:disabled) {
-    background: linear-gradient(135deg, var(--primary-hover), var(--green-700));
+    background: var(--primary-hover);
     box-shadow: var(--shadow-lg);
     transform: translateY(-2px);
 }
 
 .btn-success {
-    background: linear-gradient(135deg, var(--success-color), var(--green-500));
+    background: var(--success-color);
     color: var(--white);
     box-shadow: var(--shadow-md);
 }
 
 .btn-success:hover:not(:disabled) {
-    background: linear-gradient(135deg, var(--success-hover), var(--green-600));
+    background: var(--success-hover);
     box-shadow: var(--shadow-lg);
     transform: translateY(-2px);
 }
@@ -328,25 +324,25 @@ body {
 }
 
 .alert-success {
-    background: linear-gradient(135deg, var(--green-50), var(--green-100));
+    background: var(--green-50);
     border-color: var(--green-200);
     color: var(--green-800);
 }
 
 .alert-danger {
-    background: linear-gradient(135deg, #fef2f2, #fee2e2);
+    background: #fef2f2;
     border-color: #fecaca;
     color: #991b1b;
 }
 
 .alert-warning {
-    background: linear-gradient(135deg, #fffbeb, #fef3c7);
+    background: #fffbeb;
     border-color: #fed7aa;
     color: #92400e;
 }
 
 .alert-info {
-    background: linear-gradient(135deg, #eff6ff, #dbeafe);
+    background: #eff6ff;
     border-color: #bfdbfe;
     color: #1e40af;
 }
@@ -410,7 +406,7 @@ body {
 .password-requirements {
     margin-top: 0.75rem;
     padding: 1rem;
-    background: linear-gradient(135deg, var(--gray-50), var(--green-50));
+    background: var(--gray-50);
     border-radius: var(--radius-lg);
     border: 1px solid var(--gray-200);
 }
@@ -442,7 +438,7 @@ body {
 }
 
 .requirement-icon.valid {
-    background: linear-gradient(135deg, var(--success-color), var(--green-500));
+    background: var(--success-color);
     transform: scale(1.1);
 }
 
@@ -483,7 +479,7 @@ body {
 .success-icon {
     width: 6rem;
     height: 6rem;
-    background: linear-gradient(135deg, var(--success-color), var(--green-500));
+    background: var(--success-color);
     border-radius: 50%;
     display: flex;
     align-items: center;
@@ -517,7 +513,7 @@ body {
 .error-icon {
     width: 6rem;
     height: 6rem;
-    background: linear-gradient(135deg, var(--danger-color), #ef4444);
+    background: var(--danger-color);
     border-radius: 50%;
     display: flex;
     align-items: center;
@@ -544,7 +540,7 @@ body {
 
 /* Info box */
 .info-box {
-    background: linear-gradient(135deg, var(--gray-50), var(--green-50));
+    background: var(--gray-50);
     border: 1px solid var(--gray-200);
     border-radius: var(--radius-lg);
     padding: 1rem;
@@ -630,24 +626,10 @@ body {
     }
 }
 
-/* Mode sombre (optionnel) */
+/* Mode sombre désactivé — fond blanc forcé */
 @media (prefers-color-scheme: dark) {
-    :root {
-        --white: #1e293b;
-        --gray-50: #0f172a;
-        --gray-100: #1e293b;
-        --gray-200: #334155;
-        --gray-300: #475569;
-        --gray-400: #64748b;
-        --gray-500: #94a3b8;
-        --gray-600: #cbd5e1;
-        --gray-700: #e2e8f0;
-        --gray-800: #f1f5f9;
-        --gray-900: #f8fafc;
-    }
-    
     body {
-        background-color: var(--gray-50);
-        color: var(--gray-900);
+        background: #ffffff !important;
+        color: #111827;
     }
 }

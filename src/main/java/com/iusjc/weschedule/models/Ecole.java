@@ -1,9 +1,6 @@
 package com.iusjc.weschedule.models;
 
-import jakarta.persistence.Entity;
-import jakarta.persistence.GeneratedValue;
-import jakarta.persistence.Id;
-import jakarta.persistence.Table;
+import jakarta.persistence.*;
 import lombok.AllArgsConstructor;
 import lombok.Data;
 import lombok.NoArgsConstructor;
@@ -22,6 +19,13 @@ public class Ecole {
     private UUID idEcole;
 
     private String nomEcole;
+    
+    @Column(unique = true, length = 50)
+    private String code;
+    
+    @Column(length = 50)
+    private String couleur;
+    
     private String adresse;
     private String telephone;
     private String email;

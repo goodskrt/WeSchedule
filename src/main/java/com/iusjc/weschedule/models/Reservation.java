@@ -25,6 +25,17 @@ public class Reservation {
 
     private LocalDateTime dateCreation = LocalDateTime.now();
 
+    @Column(columnDefinition = "TEXT")
+    private String motif;
+
+    @ManyToMany(fetch = FetchType.LAZY)
+    @JoinTable(
+            name = "reservation_equipment",
+            joinColumns = @JoinColumn(name = "reservation_id"),
+            inverseJoinColumns = @JoinColumn(name = "equipment_id")
+    )
+    private java.util.Set<Equipment> equipements = new java.util.HashSet<>();
+
     // Relations
     @ManyToOne
     private Salle salle;
@@ -32,10 +43,13 @@ public class Reservation {
     @ManyToOne
     private PlageHoraire plageHoraire;
 
+    private LocalDateTime startAt;
+    private LocalDateTime endAt;
+
     @ManyToOne
     private Cours cours;
 
     @ManyToOne(fetch = FetchType.LAZY)
-    @JoinColumn(name = "enseignant_id", nullable = false)
-    private Enseignant enseignant;
+    @JoinColumn(name = "reserve_par_id", nullable = false)
+    private Utilisateur reservePar;
 }

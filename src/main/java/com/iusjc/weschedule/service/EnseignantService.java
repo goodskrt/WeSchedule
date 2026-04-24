@@ -29,6 +29,9 @@ public class EnseignantService {
 
     @Autowired
     private DisponibiliteEnseignantRepository disponibiliteRepository;
+    
+    @Autowired
+    private CoursRepository coursRepository;
 
     @Autowired
     private PasswordEncoder passwordEncoder;
@@ -36,14 +39,21 @@ public class EnseignantService {
     @Autowired
     private EmailService emailService;
 
+    @org.springframework.beans.factory.annotation.Value("${app.base-url}")
+    private String baseUrl;
+
     private static final String CHARACTERS = "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789!@#$%";
     private static final SecureRandom random = new SecureRandom();
 
     public List<Enseignant> getAllEnseignants() {
         log.info("Récupération de tous les enseignants");
-        List<Enseignant> enseignants = enseignantRepository.findAll();
+        List<Enseignant> enseignants = enseignantRepository.findAllWithUEs();
         log.info("Nombre d'enseignants trouvés: {}", enseignants.size());
         return enseignants;
+    }
+    
+    public long countEnseignants() {
+        return enseignantRepository.count();
     }
 
     public Optional<Enseignant> getEnseignantById(UUID id) {
@@ -60,7 +70,7 @@ public class EnseignantService {
     }
 
     public List<UE> getUEsEnseignant(UUID enseignantId) {
-        Optional<Enseignant> enseignantOpt = enseignantRepository.findById(enseignantId);
+        Optional<Enseignant> enseignantOpt = enseignantRepository.findByIdWithUEs(enseignantId);
         if (enseignantOpt.isEmpty() || enseignantOpt.get().getUesEnseignees() == null) {
             return new ArrayList<>();
         }
@@ -88,7 +98,7 @@ public class EnseignantService {
         // Créer l'enseignant
         Enseignant enseignant = new Enseignant();
         enseignant.setNom(nom.trim());
-        enseignant.setPrenom(prenom.trim());
+        enseignant.setPrenom(prenom != null ? prenom.trim() : "");
         enseignant.setEmail(email.trim().toLowerCase());
         enseignant.setPhone(phone != null ? phone.trim() : null);
         enseignant.setGrade(grade != null ? grade.trim() : null);
@@ -129,7 +139,7 @@ public class EnseignantService {
         }
 
         enseignant.setNom(nom.trim());
-        enseignant.setPrenom(prenom.trim());
+        enseignant.setPrenom(prenom != null ? prenom.trim() : "");
         enseignant.setEmail(email.trim().toLowerCase());
         enseignant.setPhone(phone != null ? phone.trim() : null);
         enseignant.setGrade(grade != null ? grade.trim() : null);
@@ -146,21 +156,77 @@ public class EnseignantService {
     }
 
     /**
+     * Mettre à jour le profil de l'enseignant (sans les UEs)
+     */
+    public Enseignant updateProfilEnseignant(UUID id, String nom, String prenom, String email, String phone, String grade) {
+        Enseignant enseignant = enseignantRepository.findById(id)
+            .orElseThrow(() -> new IllegalArgumentException("Enseignant non trouvé"));
+
+        // Vérifier si le nouvel email n'est pas déjà utilisé par un autre utilisateur
+        if (!enseignant.getEmail().equalsIgnoreCase(email)) {
+            Optional<Utilisateur> existingUser = utilisateurRepository.findByEmail(email.toLowerCase());
+            if (existingUser.isPresent() && !existingUser.get().getIdUser().equals(id)) {
+                throw new IllegalArgumentException("Cet email est déjà utilisé par un autre utilisateur");
+            }
+        }
+
+        enseignant.setNom(nom.trim());
+        enseignant.setPrenom(prenom != null ? prenom.trim() : "");
+        enseignant.setEmail(email.trim().toLowerCase());
+        enseignant.setPhone(phone != null ? phone.trim() : null);
+        enseignant.setGrade(grade != null ? grade.trim() : null);
+
+        return enseignantRepository.save(enseignant);
+    }
+
+    /**
+     * Changer le mot de passe de l'enseignant
+     */
+    public void changerMotDePasse(UUID id, String ancienMotDePasse, String nouveauMotDePasse) {
+        Enseignant enseignant = enseignantRepository.findById(id)
+            .orElseThrow(() -> new IllegalArgumentException("Enseignant non trouvé"));
+
+        // Vérifier l'ancien mot de passe
+        if (!passwordEncoder.matches(ancienMotDePasse, enseignant.getMotDePasse())) {
+            throw new IllegalArgumentException("L'ancien mot de passe est incorrect");
+        }
+
+        // Mettre à jour le mot de passe
+        enseignant.setMotDePasse(passwordEncoder.encode(nouveauMotDePasse));
+        enseignantRepository.save(enseignant);
+        log.info("Mot de passe changé pour l'enseignant {}", enseignant.getEmail());
+    }
+
+    /**
      * Supprimer un enseignant
      */
     public void supprimerEnseignant(UUID id) {
         Enseignant enseignant = enseignantRepository.findById(id)
             .orElseThrow(() -> new IllegalArgumentException("Enseignant non trouvé"));
         
-        // Supprimer les relations avec les UEs via requête native
-        enseignantRepository.deleteUERelations(id);
+        // Supprimer les relations avec les UEs (nettoyer les associations ManyToMany)
+        enseignant.setUesEnseignees(new HashSet<>());
+        enseignant.setEcoles(new HashSet<>());
+        enseignant.setSpecialites(new HashSet<>());
         
-        // Supprimer les disponibilités
-        disponibiliteRepository.deleteByEnseignant(enseignant);
+        // Dissocier les cours sans les supprimer
+        coursRepository.detachFromEnseignant(id);
+        
+        // Supprimer les créneaux de disponibilité en cascades
+        if (enseignant.getDisponibilites() != null && !enseignant.getDisponibilites().isEmpty()) {
+            // Supprimer explicitement tous les créneaux avant les disponibilités
+            for (DisponibiliteEnseignant disponibilite : new HashSet<>(enseignant.getDisponibilites())) {
+                if (disponibilite.getCreneauxParJour() != null) {
+                    disponibilite.getCreneauxParJour().clear();
+                }
+            }
+            // Vider les disponibilités (orphanRemoval supprimera les orphans)
+            enseignant.getDisponibilites().clear();
+        }
         
         // Supprimer l'enseignant
-        enseignantRepository.deleteById(id);
-        log.info("Enseignant {} supprimé", id);
+        enseignantRepository.delete(enseignant);
+        log.info("Enseignant {} supprimé avec succès", id);
     }
 
     /**
@@ -203,7 +269,7 @@ public class EnseignantService {
             "───────────────────────────────────────────────────────────\n" +
             "🔗 ACCÉDER À LA PLATEFORME\n" +
             "───────────────────────────────────────────────────────────\n\n" +
-            "   👉 http://localhost:8080/login\n\n" +
+            "   👉 " + baseUrl + "/login\n\n" +
             "🔒 Pour des raisons de sécurité, nous vous recommandons de\n" +
             "   changer votre mot de passe dès votre première connexion.\n\n" +
             "═══════════════════════════════════════════════════════════\n\n" +

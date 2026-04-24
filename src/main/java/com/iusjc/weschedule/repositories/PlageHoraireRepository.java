@@ -22,17 +22,8 @@ public interface PlageHoraireRepository extends JpaRepository<PlageHoraire, UUID
     @Modifying
     @Query("DELETE FROM PlageHoraire p WHERE p.creneauDisponibilite.id = :creneauId")
     void deleteByCreneauDisponibiliteId(@Param("creneauId") UUID creneauId);
-
-    // Vérifie si un enseignant est disponible sur un créneau précis
-    @Query("SELECT COUNT(ph) > 0 FROM PlageHoraire ph " +
-           "JOIN ph.creneauDisponibilite cd " +
-           "JOIN cd.disponibilite d " +
-           "WHERE d.enseignant = :enseignant " +
-           "AND cd.date = :date " +
-           "AND ph.heureDebut <= :heureDebut " +
-           "AND ph.heureFin >= :heureFin")
-    boolean isEnseignantDisponible(@Param("enseignant") Enseignant enseignant,
-                                   @Param("date") LocalDate date,
-                                   @Param("heureDebut") LocalTime heureDebut,
-                                   @Param("heureFin") LocalTime heureFin);
+    
+    @Modifying
+    @Query("DELETE FROM PlageHoraire p WHERE p.creneauDisponibilite.id IN (SELECT c.id FROM CreneauDisponibilite c WHERE c.disponibilite.id = :disponibiliteId)")
+    void deleteByDisponibiliteIdViaCreneaux(@Param("disponibiliteId") UUID disponibiliteId);
 }
