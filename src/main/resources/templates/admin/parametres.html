@@ -1,0 +1,27 @@
+<!DOCTYPE html>
+<html lang="fr" xmlns:th="http://www.thymeleaf.org">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Paramètres - WeSchedule</title>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <link rel="stylesheet" href="/css/modern-layout.css">
+</head>
+<body>
+    <div th:replace="~{fragments/sidebar :: admin-sidebar('parametres')}"></div>
+    <div class="ws-wrapper">
+        <div th:replace="~{fragments/header :: admin-header}"></div>
+        <main class="ws-main-content">
+            <h2 style="font-size:22px;font-weight:700;color:#1e293b;margin:0 0 4px;">Paramètres</h2>
+            <p style="font-size:14px;color:#64748b;margin:0 0 24px;">Configurer les paramètres du système</p>
+            <div th:replace="~{fragments/admin-stats :: stat-row(${pageStats})}"></div>
+            <div style="background:white;border-radius:16px;padding:48px;text-align:center;border:1px solid rgba(226,232,240,0.6);box-shadow:0 2px 12px rgba(0,0,0,0.04);">
+                <i class="fas fa-cog" style="font-size:48px;color:#cbd5e1;margin-bottom:16px;display:block;"></i>
+                <p style="color:#64748b;">Fonctionnalité en cours de développement</p>
+            </div>
+        </main>
+    </div>
+    <script src="/js/modern-layout.js"></script>
+</body>
+</html>

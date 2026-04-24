@@ -1,0 +1,164 @@
+<!DOCTYPE html>
+<html lang="fr" xmlns:th="http://www.thymeleaf.org">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Semaine de Disponibilite - WeSchedule</title>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <link rel="stylesheet" href="/css/modern-layout.css">
+    <style>
+        .emploi-du-temps { background: white; border-radius: var(--radius-xl); box-shadow: var(--shadow-sm); border: 1px solid var(--gray-200); overflow: hidden; }
+        .jour-header { background: linear-gradient(135deg, var(--primary-color), var(--green-600)); color: white; padding: 1rem 1.25rem; font-weight: 600; display: flex; justify-content: space-between; align-items: center; }
+        .jour-content { padding: 1.25rem; min-height: 120px; }
+        .creneau-item { background: var(--green-50); border: 1px solid var(--green-200); border-radius: var(--radius-lg); padding: 0.625rem 1rem; margin-bottom: 0.625rem; display: flex; justify-content: space-between; align-items: center; transition: all var(--transition-normal); }
+        .creneau-item:hover { transform: translateY(-2px); box-shadow: var(--shadow-md); }
+        .creneau-horaire { font-weight: 600; color: var(--primary-color); }
+        .creneau-actions { display: flex; gap: 0.25rem; }
+        .btn-xs { padding: 0.25rem 0.5rem; font-size: 0.75rem; border-radius: var(--radius-sm); }
+        .jour-vide { text-align: center; color: var(--gray-400); font-style: italic; padding: 1.25rem; }
+        .btn-ajouter-creneau { background: rgba(5,150,105,0.1); border: 1px dashed var(--primary-color); color: white; padding: 0.5rem 0.75rem; border-radius: var(--radius-md); font-size: 0.85rem; transition: all var(--transition-normal); cursor: pointer; }
+        .btn-ajouter-creneau:hover { background: rgba(255,255,255,0.2); }
+        .breadcrumb { display: flex; list-style: none; padding: 0; margin-bottom: 1rem; gap: 0.5rem; font-size: 0.9rem; color: var(--gray-500); }
+        .breadcrumb-item a { color: var(--primary-color); text-decoration: none; }
+        .breadcrumb-item.active { color: var(--gray-700); }
+        .breadcrumb-item + .breadcrumb-item::before { content: '/'; margin-right: 0.5rem; }
+        .grid-jours { display: grid; grid-template-columns: repeat(auto-fill, minmax(300px, 1fr)); gap: 1.5rem; margin-top: 1.5rem; }
+        .btn-back { display: inline-flex; align-items: center; gap: 0.5rem; padding: 0.6rem 1.25rem; background: var(--gray-100); color: var(--gray-700); border-radius: var(--radius-lg); text-decoration: none; font-weight: 500; transition: all var(--transition-fast); border: 1px solid var(--gray-200); }
+        .btn-back:hover { background: var(--gray-200); color: var(--gray-900); }
+        .page-header-row { display: flex; justify-content: space-between; align-items: flex-start; margin-bottom: 1.5rem; }
+    </style>
+</head>
+<body>
+    <div th:replace="~{fragments/sidebar :: enseignant-sidebar('disponibilites')}"></div>
+    <div class="ws-wrapper">
+        <div th:replace="~{fragments/header :: enseignant-header}"></div>
+        <main class="ws-main-content">
+            <nav aria-label="breadcrumb">
+                <ol class="breadcrumb">
+                    <li class="breadcrumb-item"><a href="/dashboard/enseignant/disponibilites">Mes Disponibilites</a></li>
+                    <li class="breadcrumb-item active">Semaine du <span th:text="${#temporals.format(disponibilite.dateDebut, 'dd/MM/yyyy')}"></span></li>
+                </ol>
+            </nav>
+
+            <div class="page-header-row">
+                <div>
+                    <h2 class="page-title">Semaine du <span th:text="${#temporals.format(disponibilite.dateDebut, 'dd/MM/yyyy')}"></span></h2>
+                    <p class="page-subtitle">Du <span th:text="${#temporals.format(disponibilite.dateDebut, 'dd/MM')}"></span> au <span th:text="${#temporals.format(disponibilite.dateFin, 'dd/MM/yyyy')}"></span></p>
+                </div>
+                <a href="/dashboard/enseignant/disponibilites" class="btn-back"><i class="fas fa-arrow-left"></i> Retour</a>
+            </div>
+
+            <div class="grid-jours">
+                <div th:each="entry : ${emploiDuTemps}">
+                    <div class="emploi-du-temps">
+                        <div class="jour-header">
+                            <div>
+                                <div th:text="${#temporals.format(entry.key, 'EEEE', #locale)}">Jour</div>
+                                <small th:text="${#temporals.format(entry.key, 'dd/MM')}">Date</small>
+                            </div>
+                            <button class="btn-ajouter-creneau" th:onclick="'ouvrirModalCreneau(\'' + ${entry.key} + '\')'">
+                                <i class="fas fa-plus"></i> Ajouter
+                            </button>
+                        </div>
+                        <div class="jour-content">
+                            <div th:if="${entry.value.empty}" class="jour-vide">Aucun creneau defini</div>
+                            <div th:if="${!entry.value.empty}">
+                                <div th:each="plage : ${entry.value}" class="creneau-item">
+                                    <div class="creneau-horaire">
+                                        <span th:text="${#temporals.format(plage.heureDebut, 'HH:mm')}">08:00</span> -
+                                        <span th:text="${#temporals.format(plage.heureFin, 'HH:mm')}">10:00</span>
+                                    </div>
+                                    <div class="creneau-actions">
+                                        <button class="btn btn-outline-danger btn-xs" th:onclick="'supprimerPlageHoraire(\'' + ${plage.id} + '\')'">
+                                            <i class="fas fa-trash"></i>
+                                        </button>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </main>
+    </div>
+
+    <!-- Modal Ajouter Créneau -->
+    <div class="modal fade" id="ajouterCreneauModal" tabindex="-1">
+        <div class="modal-dialog">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h5 class="modal-title">Ajouter un creneau</h5>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+                </div>
+                <div class="modal-body">
+                    <form id="ajouterCreneauForm">
+                        <input type="hidden" id="dateSelectionnee">
+                        <div class="mb-3">
+                            <label class="form-label">Date selectionnee</label>
+                            <input type="text" class="form-control" id="dateAffichee" readonly>
+                        </div>
+                        <div class="row">
+                            <div class="col-md-6">
+                                <div class="mb-3">
+                                    <label for="heureDebut" class="form-label">Heure de debut</label>
+                                    <input type="time" class="form-control" id="heureDebut" required>
+                                </div>
+                            </div>
+                            <div class="col-md-6">
+                                <div class="mb-3">
+                                    <label for="heureFin" class="form-label">Heure de fin</label>
+                                    <input type="time" class="form-control" id="heureFin" required>
+                                </div>
+                            </div>
+                        </div>
+                    </form>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Annuler</button>
+                    <button type="button" class="btn btn-primary" onclick="ajouterCreneau()"><i class="fas fa-plus"></i> Ajouter</button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js"></script>
+    <script src="/js/modern-layout.js"></script>
+    <script th:inline="javascript">
+        const disponibiliteId = /*[[${disponibilite.id}]]*/ '';
+
+        function ouvrirModalCreneau(date) {
+            document.getElementById('dateSelectionnee').value = date;
+            document.getElementById('dateAffichee').value = new Date(date).toLocaleDateString('fr-FR', { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' });
+            document.getElementById('heureDebut').value = '';
+            document.getElementById('heureFin').value = '';
+            new bootstrap.Modal(document.getElementById('ajouterCreneauModal')).show();
+        }
+
+        function ajouterCreneau() {
+            const date = document.getElementById('dateSelectionnee').value;
+            const heureDebut = document.getElementById('heureDebut').value;
+            const heureFin = document.getElementById('heureFin').value;
+            if (!date || !heureDebut || !heureFin) { alert('Veuillez remplir tous les champs'); return; }
+            if (heureDebut >= heureFin) { alert("L'heure de fin doit etre apres l'heure de debut"); return; }
+            fetch(`/dashboard/enseignant/api/disponibilites/${disponibiliteId}/creneaux`, {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
+                body: `date=${date}&heureDebut=${heureDebut}&heureFin=${heureFin}`
+            })
+            .then(r => r.json())
+            .then(data => { if (data.success) location.reload(); else alert(data.message || 'Erreur lors de l\'ajout'); })
+            .catch(() => alert('Erreur lors de l\'ajout du creneau'));
+        }
+
+        function supprimerPlageHoraire(id) {
+            if (confirm('Etes-vous sur de vouloir supprimer ce creneau ?')) {
+                fetch(`/dashboard/enseignant/api/plages-horaires/${id}`, { method: 'DELETE' })
+                .then(r => r.json())
+                .then(data => { if (data.success) location.reload(); else alert(data.message || 'Erreur lors de la suppression'); })
+                .catch(() => alert('Erreur lors de la suppression'));
+            }
+        }
+    </script>
+</body>
+</html>

@@ -1,0 +1,584 @@
+<!DOCTYPE html>
+<html lang="fr" xmlns:th="http://www.thymeleaf.org">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title th:text="${isEdit ? 'Modifier' : 'Nouvelle'} + ' Disponibilité - WeSchedule'">Disponibilité - WeSchedule</title>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <link rel="stylesheet" href="/css/modern-layout.css">
+    <style>
+        .page-header {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            padding: 2rem;
+            border-radius: var(--radius-xl);
+            margin-bottom: 2rem;
+            box-shadow: var(--shadow-lg);
+        }
+        .step-card {
+            background: white;
+            border-radius: var(--radius-xl);
+            padding: 2rem;
+            box-shadow: var(--shadow-sm);
+            border: 1px solid var(--gray-200);
+            margin-bottom: 1.5rem;
+        }
+        .step-header {
+            display: flex;
+            align-items: center;
+            gap: 1rem;
+            margin-bottom: 1.5rem;
+            padding-bottom: 1rem;
+            border-bottom: 2px solid var(--gray-100);
+        }
+        .step-number {
+            width: 40px;
+            height: 40px;
+            background: linear-gradient(135deg, #667eea, #764ba2);
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            color: white;
+            font-weight: 700;
+            font-size: 1.1rem;
+        }
+        .step-title {
+            font-size: 1.25rem;
+            font-weight: 600;
+            color: var(--gray-900);
+            margin: 0;
+        }
+        .timetable-wrap { overflow-x: auto; }
+        .timetable {
+            display: grid;
+            grid-template-columns: 70px repeat(6, 1fr);
+            border-radius: var(--radius-xl);
+            overflow: hidden;
+            border: 1px solid var(--gray-200);
+            background: var(--gray-200);
+            gap: 1px;
+            min-width: 800px;
+            box-shadow: var(--shadow-md);
+        }
+        .tt-head {
+            background: linear-gradient(135deg, #667eea, #764ba2);
+            color: white;
+            padding: 1rem 0.5rem;
+            text-align: center;
+            font-weight: 600;
+            font-size: 0.85rem;
+        }
+        .tt-head.corner {
+            background: #5568d3;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+        .tt-time {
+            background: #f8fafc;
+            padding: 0.75rem 0.5rem;
+            text-align: center;
+            font-size: 0.75rem;
+            color: var(--gray-600);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-weight: 600;
+        }
+        .tt-cell {
+            background: white;
+            min-height: 60px;
+            cursor: pointer;
+            transition: all 0.2s;
+            position: relative;
+            padding: 4px;
+            user-select: none;
+        }
+        .tt-cell:hover {
+            background: #f0f4ff;
+        }
+        .tt-cell.selected {
+            background: linear-gradient(135deg, rgba(102, 126, 234, 0.3), rgba(118, 75, 162, 0.3));
+            border: 2px solid #667eea;
+        }
+        .tt-cell.selected::after {
+            content: '✓';
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            color: #667eea;
+            font-weight: bold;
+            font-size: 1.3rem;
+        }
+        .stats-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
+            gap: 1rem;
+            margin-bottom: 1.5rem;
+        }
+        .stat-card {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            border-radius: var(--radius-lg);
+            padding: 1.25rem;
+            text-align: center;
+            box-shadow: var(--shadow-md);
+        }
+        .stat-value {
+            font-size: 2rem;
+            font-weight: 700;
+            margin-bottom: 0.25rem;
+        }
+        .stat-label {
+            font-size: 0.85rem;
+            opacity: 0.9;
+        }
+        .legend-item {
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+            font-size: 0.875rem;
+        }
+        .legend-box {
+            width: 24px;
+            height: 24px;
+            border-radius: 6px;
+            border: 2px solid var(--gray-300);
+        }
+        .legend-box.selected {
+            background: linear-gradient(135deg, rgba(102, 126, 234, 0.3), rgba(118, 75, 162, 0.3));
+            border-color: #667eea;
+        }
+        .action-buttons {
+            display: flex;
+            gap: 0.75rem;
+            flex-wrap: wrap;
+        }
+        .week-info-card {
+            background: linear-gradient(135deg, #f0f4ff 0%, #e8eaff 100%);
+            border: 2px solid #667eea;
+            border-radius: var(--radius-lg);
+            padding: 1.25rem;
+            text-align: center;
+        }
+        .week-info-title {
+            font-size: 1.1rem;
+            font-weight: 600;
+            color: #667eea;
+            margin-bottom: 0.5rem;
+        }
+        .week-info-dates {
+            font-size: 0.9rem;
+            color: var(--gray-600);
+        }
+    </style>
+</head>
+<body>
+    <div th:replace="~{fragments/sidebar :: enseignant-sidebar('disponibilites')}"></div>
+    <div class="ws-wrapper">
+        <div th:replace="~{fragments/header :: enseignant-header}"></div>
+        <main class="ws-main-content">
+            <!-- Page Header -->
+            <div class="page-header">
+                <div class="d-flex justify-content-between align-items-center">
+                    <div>
+                        <h2 class="mb-2" style="font-size: 1.75rem; font-weight: 700;">
+                            <i th:class="${isEdit ? 'fas fa-edit' : 'fas fa-plus-circle'}" class="me-2"></i>
+                            <span th:text="${isEdit ? 'Modifier la disponibilité' : 'Nouvelle disponibilité'}">Titre</span>
+                        </h2>
+                        <p class="mb-0 opacity-90">Définissez vos créneaux de disponibilité pour la semaine</p>
+                    </div>
+                    <a href="/dashboard/enseignant/disponibilites" class="btn btn-light">
+                        <i class="fas fa-arrow-left me-1"></i> Retour
+                    </a>
+                </div>
+            </div>
+
+            <!-- Étape 1: Sélection de semaine (mode création uniquement) -->
+            <div th:if="${!isEdit}" class="step-card" id="weekSelectorCard">
+                <div class="step-header">
+                    <div class="step-number">1</div>
+                    <h3 class="step-title">Choisissez la semaine</h3>
+                </div>
+                <div class="row align-items-end">
+                    <div class="col-md-5">
+                        <label class="form-label fw-semibold">Date de début de semaine</label>
+                        <input type="date" class="form-control form-control-lg" id="dateDebut">
+                        <small class="text-muted">La semaine commencera automatiquement le lundi</small>
+                    </div>
+                    <div class="col-md-4">
+                        <button class="btn btn-primary btn-lg" onclick="validerSemaine()">
+                            <i class="fas fa-check me-2"></i> Valider et continuer
+                        </button>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Info semaine (mode édition) -->
+            <div th:if="${isEdit}" class="week-info-card mb-3">
+                <div class="week-info-title">
+                    <i class="fas fa-calendar-week me-2"></i>
+                    Semaine du <span th:text="${#temporals.format(disponibilite.dateDebut, 'dd MMMM yyyy')}"></span>
+                </div>
+                <div class="week-info-dates">
+                    Du <span th:text="${#temporals.format(disponibilite.dateDebut, 'EEEE dd/MM')}"></span>
+                    au <span th:text="${#temporals.format(disponibilite.dateFin, 'EEEE dd/MM/yyyy')}"></span>
+                </div>
+            </div>
+
+            <!-- Étape 2: Grille de sélection -->
+            <div class="step-card" id="scheduleCard" th:style="${isEdit ? '' : 'display: none;'}">
+                <div class="step-header">
+                    <div class="step-number" th:text="${isEdit ? '' : '2'}">2</div>
+                    <h3 class="step-title">Sélectionnez vos créneaux disponibles</h3>
+                </div>
+
+                <!-- Statistiques -->
+                <div class="stats-grid">
+                    <div class="stat-card">
+                        <div class="stat-value" id="statTotal">0</div>
+                        <div class="stat-label">Créneaux sélectionnés</div>
+                    </div>
+                    <div class="stat-card">
+                        <div class="stat-value" id="statHeures">0h</div>
+                        <div class="stat-label">Heures disponibles</div>
+                    </div>
+                </div>
+
+                <!-- Légende -->
+                <div class="d-flex gap-4 mb-4 flex-wrap">
+                    <div class="legend-item">
+                        <div class="legend-box selected"></div>
+                        <span>Disponible</span>
+                    </div>
+                    <div class="legend-item">
+                        <div class="legend-box"></div>
+                        <span>Non disponible</span>
+                    </div>
+                    <div class="ms-auto text-muted small">
+                        <i class="fas fa-info-circle me-1"></i>
+                        Cliquez sur les créneaux pour les sélectionner/désélectionner
+                    </div>
+                </div>
+
+                <!-- Grille -->
+                <div class="timetable-wrap mb-4">
+                    <div class="timetable" id="timetable"></div>
+                </div>
+
+                <!-- Actions -->
+                <div class="action-buttons">
+                    <button class="btn btn-primary btn-lg" onclick="saveDisponibilite()">
+                        <i class="fas fa-save me-2"></i>
+                        <span th:text="${isEdit ? 'Enregistrer les modifications' : 'Créer la disponibilité'}">Enregistrer</span>
+                    </button>
+                    <button class="btn btn-outline-primary" onclick="selectAll()">
+                        <i class="fas fa-check-double me-1"></i> Tout sélectionner
+                    </button>
+                    <button class="btn btn-outline-secondary" onclick="deselectAll()">
+                        <i class="fas fa-times me-1"></i> Tout désélectionner
+                    </button>
+                    <button class="btn btn-outline-secondary" onclick="clearSelection()">
+                        <i class="fas fa-eraser me-1"></i> Effacer
+                    </button>
+                    <a href="/dashboard/enseignant/disponibilites" class="btn btn-outline-danger ms-auto">
+                        <i class="fas fa-ban me-1"></i> Annuler
+                    </a>
+                </div>
+            </div>
+        </main>
+    </div>
+
+    <!-- Modal résultat -->
+    <div class="modal fade" id="resultModal" tabindex="-1">
+        <div class="modal-dialog">
+            <div class="modal-content">
+                <div class="modal-header border-0">
+                    <h5 class="modal-title" id="resultModalTitle">Résultat</h5>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+                </div>
+                <div class="modal-body" id="resultModalBody"></div>
+                <div class="modal-footer border-0">
+                    <button type="button" class="btn btn-primary" id="resultModalBtn" data-bs-dismiss="modal">OK</button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js"></script>
+    <script src="/js/modern-layout.js"></script>
+    <script th:inline="javascript">
+        const isEdit = /*[[${isEdit}]]*/ false;
+        const disponibiliteId = /*[[${isEdit ? disponibilite.id.toString() : null}]]*/ null;
+        const existingSlots = [];
+        /*[# th:if="${creneauxList != null && !creneauxList.isEmpty()}"]*/
+        /*[# th:each="slot : ${creneauxList}"]*/
+        existingSlots.push({ dayIndex: /*[[${slot.get('dayIndex')}]]*/ 0, heureDebut: /*[[${slot.get('heureDebut')}]]*/ '08:00', heureFin: /*[[${slot.get('heureFin')}]]*/ '09:00' });
+        /*[/]*/
+        /*[/]*/
+        
+        const JOURS  = ['Lundi','Mardi','Mercredi','Jeudi','Vendredi','Samedi'];
+        const HEURES = ['08:00','09:00','10:00','11:00','12:00','13:00','14:00','15:00','16:00','17:00','18:00','19:00'];
+        const PAUSE_INDEX = 4; // Index de 12h00-13h00
+        
+        let weekDates = [];
+        let selectedSlots = [];
+        let resultModal;
+
+        document.addEventListener('DOMContentLoaded', function() {
+            resultModal = new bootstrap.Modal(document.getElementById('resultModal'));
+            buildGrid();
+            if (isEdit) loadExistingSlots();
+        });
+
+        function buildGrid() {
+            const grid = document.getElementById('timetable');
+            grid.innerHTML = '';
+            
+            const corner = document.createElement('div');
+            corner.className = 'tt-head corner';
+            corner.innerHTML = '<i class="fas fa-clock"></i>';
+            grid.appendChild(corner);
+
+            JOURS.forEach((j, i) => {
+                const h = document.createElement('div');
+                h.className = 'tt-head';
+                h.id = 'header-' + i;
+                h.innerHTML = '<div>' + j + '</div>';
+                grid.appendChild(h);
+            });
+
+            for (let hi = 0; hi < HEURES.length - 1; hi++) {
+                const timeCell = document.createElement('div');
+                timeCell.className = 'tt-time';
+                const heureDebut = HEURES[hi].replace(':', 'h');
+                const heureFin = HEURES[hi + 1].replace(':', 'h');
+                timeCell.textContent = heureDebut + '-' + heureFin;
+                
+                // Marquer la pause
+                if (hi === PAUSE_INDEX) {
+                    timeCell.style.background = '#f3f4f6';
+                    timeCell.style.fontWeight = '700';
+                    timeCell.style.color = '#6b7280';
+                }
+                
+                grid.appendChild(timeCell);
+
+                for (let di = 0; di < 6; di++) {
+                    const cell = document.createElement('div');
+                    cell.className = 'tt-cell';
+                    cell.dataset.day = di;
+                    cell.dataset.slot = hi;
+                    
+                    // Griser et désactiver la ligne de pause
+                    if (hi === PAUSE_INDEX) {
+                        cell.style.background = '#f3f4f6';
+                        cell.style.cursor = 'not-allowed';
+                        cell.innerHTML = '<span style="color: #9ca3af; font-size: 0.75rem; font-weight: 600;">PAUSE</span>';
+                    } else {
+                        cell.onclick = (e) => onCellClick(di, hi, e);
+                    }
+                    
+                    grid.appendChild(cell);
+                }
+            }
+        }
+
+        function onCellClick(day, slot, event) {
+            // Toujours permettre la sélection multiple avec Ctrl/Cmd
+            if (event.ctrlKey || event.metaKey) {
+                toggleSlotSelection(day, slot);
+            } else {
+                // Clic simple : toggle le créneau sans effacer les autres
+                toggleSlotSelection(day, slot);
+            }
+        }
+
+        function toggleSlotSelection(day, slot) {
+            const cell = document.querySelector('.tt-cell[data-day="' + day + '"][data-slot="' + slot + '"]');
+            if (!cell) return;
+            
+            const index = selectedSlots.findIndex(s => s.day === day && s.slot === slot);
+            if (index >= 0) {
+                selectedSlots.splice(index, 1);
+                cell.classList.remove('selected');
+            } else {
+                selectedSlots.push({ day, slot });
+                cell.classList.add('selected');
+            }
+            updateStats();
+        }
+
+        function clearSelection() {
+            selectedSlots = [];
+            document.querySelectorAll('.tt-cell').forEach(cell => cell.classList.remove('selected'));
+            updateStats();
+        }
+
+        function selectAll() {
+            clearSelection();
+            for (let day = 0; day < 6; day++) {
+                for (let slot = 0; slot < HEURES.length - 1; slot++) {
+                    selectedSlots.push({ day, slot });
+                    const cell = document.querySelector('.tt-cell[data-day="' + day + '"][data-slot="' + slot + '"]');
+                    if (cell) cell.classList.add('selected');
+                }
+            }
+            updateStats();
+        }
+
+        function deselectAll() {
+            clearSelection();
+        }
+
+        function updateStats() {
+            document.getElementById('statTotal').textContent = selectedSlots.length;
+            document.getElementById('statHeures').textContent = selectedSlots.length + 'h';
+        }
+
+        function validerSemaine() {
+            const dateInput = document.getElementById('dateDebut');
+            if (!dateInput.value) {
+                showResult('Erreur', 'Veuillez sélectionner une date', 'danger');
+                return;
+            }
+            
+            const date = new Date(dateInput.value + 'T12:00:00');
+            const day = date.getDay();
+            const diff = date.getDate() - day + (day === 0 ? -6 : 1);
+            const monday = new Date(date.setDate(diff));
+            
+            weekDates = [];
+            for (let i = 0; i < 6; i++) {
+                const d = new Date(monday);
+                d.setDate(monday.getDate() + i);
+                weekDates.push(d.toISOString().split('T')[0]);
+                
+                const header = document.getElementById('header-' + i);
+                header.innerHTML = '<div>' + JOURS[i] + '</div><small style="opacity:.9;font-weight:400;font-size:.75rem;">' +
+                    d.toLocaleDateString('fr-FR', {day:'2-digit', month:'2-digit'}) + '</small>';
+            }
+            
+            document.getElementById('weekSelectorCard').style.display = 'none';
+            document.getElementById('scheduleCard').style.display = 'block';
+            window.scrollTo({ top: 0, behavior: 'smooth' });
+        }
+
+        function loadExistingSlots() {
+            if (!existingSlots || existingSlots.length === 0) return;
+            
+            existingSlots.forEach(slot => {
+                const dayIndex = parseInt(slot.dayIndex);
+                const startHour = parseInt(slot.heureDebut.split(':')[0]);
+                const endHour = parseInt(slot.heureFin.split(':')[0]);
+                
+                for (let hour = startHour; hour < endHour; hour++) {
+                    const slotIndex = hour - 8;
+                    if (slotIndex >= 0 && slotIndex < HEURES.length) {
+                        selectedSlots.push({ day: dayIndex, slot: slotIndex });
+                        const cell = document.querySelector('.tt-cell[data-day="' + dayIndex + '"][data-slot="' + slotIndex + '"]');
+                        if (cell) cell.classList.add('selected');
+                    }
+                }
+            });
+            updateStats();
+        }
+
+        function saveDisponibilite() {
+            if (!isEdit && weekDates.length === 0) {
+                showResult('Erreur', 'Veuillez d\'abord sélectionner une semaine', 'danger');
+                return;
+            }
+            
+            if (selectedSlots.length === 0) {
+                showResult('Erreur', 'Veuillez sélectionner au moins un créneau', 'danger');
+                return;
+            }
+            
+            // Grouper les créneaux par jour
+            const slotsByDay = {};
+            selectedSlots.forEach(({ day, slot }) => {
+                if (!slotsByDay[day]) slotsByDay[day] = [];
+                slotsByDay[day].push(slot);
+            });
+            
+            // Créer les créneaux continus
+            const creneaux = [];
+            Object.keys(slotsByDay).forEach(day => {
+                const slots = slotsByDay[day].sort((a, b) => a - b);
+                let start = slots[0], end = slots[0];
+                
+                for (let i = 1; i <= slots.length; i++) {
+                    if (i < slots.length && slots[i] === end + 1) {
+                        end = slots[i];
+                    } else {
+                        creneaux.push({
+                            dayIndex: parseInt(day),
+                            heureDebut: (start + 8).toString().padStart(2, '0') + ':00',
+                            heureFin: (end + 9).toString().padStart(2, '0') + ':00'
+                        });
+                        if (i < slots.length) {
+                            start = slots[i];
+                            end = slots[i];
+                        }
+                    }
+                }
+            });
+            
+            const url = isEdit 
+                ? '/dashboard/enseignant/api/disponibilites/' + disponibiliteId + '/update'
+                : '/dashboard/enseignant/api/disponibilites/create';
+            
+            const payload = {
+                dateDebut: isEdit ? null : weekDates[0],
+                creneaux: creneaux
+            };
+            
+            console.log('Envoi de la requête:', url);
+            console.log('Payload:', JSON.stringify(payload, null, 2));
+            
+            fetch(url, {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify(payload)
+            })
+            .then(r => {
+                console.log('Réponse status:', r.status);
+                if (!r.ok) {
+                    return r.text().then(text => {
+                        console.error('Erreur réponse:', text);
+                        throw new Error('Erreur serveur: ' + r.status);
+                    });
+                }
+                return r.json();
+            })
+            .then(result => {
+                console.log('Résultat:', result);
+                if (result.success) {
+                    showResult('Succès', isEdit ? 'Disponibilité mise à jour avec succès' : 'Disponibilité créée avec succès', 'success', true);
+                } else {
+                    showResult('Erreur', result.message || 'Une erreur est survenue', 'danger');
+                }
+            })
+            .catch(e => {
+                console.error('Erreur catch:', e);
+                showResult('Erreur', e.message || 'Erreur de connexion au serveur', 'danger');
+            });
+        }
+
+        function showResult(title, message, type, redirect) {
+            document.getElementById('resultModalTitle').innerHTML = 
+                (type === 'danger' ? '<i class="fas fa-times-circle text-danger me-2"></i>' : '<i class="fas fa-check-circle text-success me-2"></i>') + title;
+            document.getElementById('resultModalBody').textContent = message;
+            if (redirect) {
+                document.getElementById('resultModalBtn').onclick = () => window.location.href = '/dashboard/enseignant/disponibilites';
+            }
+            resultModal.show();
+        }
+    </script>
+</body>
+</html>

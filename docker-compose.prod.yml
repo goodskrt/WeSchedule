@@ -1,0 +1,36 @@
+services:
+  db:
+    image: mysql:8.0
+    container_name: weschedule-db-prod
+    restart: always
+    environment:
+      MYSQL_DATABASE: weschedule
+      MYSQL_USER: weschedule
+      MYSQL_PASSWORD: ${DB_PASSWORD}
+      MYSQL_ROOT_PASSWORD: ${DB_ROOT_PASSWORD}
+    ports:
+      - "3306:3306"
+    volumes:
+      - weschedule-db-data-prod:/var/lib/mysql
+
+  app:
+    image: ghcr.io/goodskrt/weschedule:main
+    container_name: weschedule-app-prod
+    restart: always
+    depends_on:
+      - db
+    ports:
+      - "80:8080"
+    environment:
+      - DB_URL=jdbc:mysql://db:3306/weschedule?useSSL=false&serverTimezone=UTC&allowPublicKeyRetrieval=true&createDatabaseIfNotExist=true
+      - DB_USERNAME=weschedule
+      - DB_PASSWORD=${DB_PASSWORD}
+      - MAIL_USERNAME=${MAIL_USERNAME}
+      - MAIL_PASSWORD=${MAIL_PASSWORD}
+      - JWT_SECRET=${JWT_SECRET}
+      - APP_BASE_URL=${APP_BASE_URL}
+    env_file:
+      - .env.prod
+
+volumes:
+  weschedule-db-data-prod:

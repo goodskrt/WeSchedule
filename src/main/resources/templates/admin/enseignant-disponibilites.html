@@ -1,0 +1,263 @@
+<!DOCTYPE html>
+<html lang="fr" xmlns:th="http://www.thymeleaf.org">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Disponibilités - WeSchedule</title>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <link rel="stylesheet" href="/css/modern-layout.css">
+    <style>
+        /* ── Hero ── */
+        .hero-banner {
+            background: linear-gradient(135deg, #06b6d4 0%, #0891b2 100%);
+            border-radius: var(--radius-xl); padding: 1.75rem 2rem;
+            color: white; margin-bottom: 1.5rem; position: relative; overflow: hidden;
+            display: flex; align-items: center; gap: 1.5rem;
+        }
+        .hero-banner::before {
+            content: ''; position: absolute; top: -40px; right: -40px;
+            width: 180px; height: 180px; border-radius: 50%;
+            background: rgba(255,255,255,0.07);
+        }
+        .hero-avatar {
+            width: 64px; height: 64px; min-width: 64px; border-radius: 50%;
+            background: rgba(255,255,255,0.2); border: 2px solid rgba(255,255,255,0.4);
+            display: flex; align-items: center; justify-content: center;
+            font-size: 1.4rem; font-weight: 800;
+        }
+        .hero-name  { font-size: 1.2rem; font-weight: 800; }
+        .hero-email { font-size: 0.82rem; opacity: 0.75; margin-top: 0.2rem; }
+
+        /* ── Dispo card ── */
+        .dispo-card {
+            background: var(--white); border-radius: var(--radius-xl);
+            border: 1px solid var(--gray-200); box-shadow: var(--shadow-sm);
+            padding: 1.25rem 1.5rem; margin-bottom: 0.75rem;
+            display: flex; align-items: center; justify-content: space-between;
+            transition: all 0.2s;
+        }
+        .dispo-card:hover { transform: translateY(-2px); box-shadow: var(--shadow-md); border-color: #06b6d4; }
+        .dispo-icon {
+            width: 44px; height: 44px; min-width: 44px; border-radius: var(--radius-lg);
+            background: linear-gradient(135deg, #06b6d4, #0891b2);
+            display: flex; align-items: center; justify-content: center;
+            color: white; font-size: 1rem;
+        }
+        .dispo-title { font-size: 0.9rem; font-weight: 600; color: var(--gray-900); }
+        .dispo-sub   { font-size: 0.78rem; color: var(--gray-500); margin-top: 0.15rem; }
+
+        /* ── Empty state ── */
+        .empty-state {
+            text-align: center; padding: 4rem 2rem;
+            background: var(--white); border-radius: var(--radius-xl);
+            border: 1px solid var(--gray-200);
+        }
+        .empty-state i { font-size: 3rem; color: var(--gray-300); margin-bottom: 1rem; display: block; }
+
+        /* ── Créneau badge ── */
+        .creneau-badge {
+            display: inline-block; padding: 0.2rem 0.65rem;
+            border-radius: 1rem; font-size: 0.78rem; margin: 0.15rem;
+            background: #cffafe; color: #0e7490; font-weight: 600;
+        }
+    </style>
+</head>
+<body>
+    <div th:replace="~{fragments/sidebar :: admin-sidebar('enseignants')}"></div>
+    <div class="ws-wrapper">
+        <div th:replace="~{fragments/header :: admin-header}"></div>
+        <main class="ws-main-content">
+
+            <!-- Breadcrumb -->
+            <nav aria-label="breadcrumb" class="mb-3">
+                <ol class="breadcrumb">
+                    <li class="breadcrumb-item"><a href="/dashboard/admin/enseignants">Enseignants</a></li>
+                    <li class="breadcrumb-item" id="breadcrumbName">Enseignant</li>
+                    <li class="breadcrumb-item active">Disponibilités</li>
+                </ol>
+            </nav>
+
+            <!-- Header page -->
+            <div class="d-flex justify-content-between align-items-center mb-3">
+                <div>
+                    <h2 class="page-title">Disponibilités</h2>
+                    <p class="page-subtitle">Semaines de disponibilité déclarées par l'enseignant</p>
+                </div>
+                <a th:href="@{/dashboard/admin/enseignants/{id}(id=${enseignantId})}"
+                   class="btn btn-secondary btn-sm">
+                    <i class="fas fa-arrow-left me-1"></i> Retour à la fiche
+                </a>
+            </div>
+
+            <!-- Hero enseignant -->
+            <div class="hero-banner">
+                <div class="hero-avatar" id="heroAvatar">--</div>
+                <div style="flex:1;">
+                    <div class="hero-name"  id="heroName">Chargement…</div>
+                    <div class="hero-email" id="heroEmail"></div>
+                </div>
+                <div style="position:relative;z-index:1;">
+                    <div style="background:rgba(255,255,255,0.15);border-radius:var(--radius-lg);padding:0.75rem 1.25rem;text-align:center;">
+                        <div style="font-size:1.5rem;font-weight:800;" id="nbDispos">—</div>
+                        <div style="font-size:0.78rem;opacity:0.8;">semaine(s)</div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Loading -->
+            <div id="loadingState" class="text-center py-5">
+                <div class="spinner-border text-primary" role="status"></div>
+                <p class="mt-3 text-muted">Chargement des disponibilités…</p>
+            </div>
+
+            <!-- Empty -->
+            <div id="emptyState" class="empty-state" style="display:none;">
+                <i class="fas fa-calendar-times"></i>
+                <h5>Aucune disponibilité</h5>
+                <p class="text-muted">Cet enseignant n'a pas encore défini ses disponibilités.</p>
+            </div>
+
+            <!-- Liste -->
+            <div id="disponibilitesContainer"></div>
+
+        </main>
+    </div>
+
+    <!-- Modal détail semaine -->
+    <div class="modal fade" id="detailModal" tabindex="-1">
+        <div class="modal-dialog modal-lg">
+            <div class="modal-content">
+                <div class="modal-header"
+                     style="background:linear-gradient(135deg,#06b6d4,#0891b2);color:white;">
+                    <h5 class="modal-title">
+                        <i class="fas fa-calendar-week me-2"></i>Détail de la semaine
+                    </h5>
+                    <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
+                </div>
+                <div class="modal-body" id="detailModalBody">
+                    <div class="text-center py-4">
+                        <div class="spinner-border text-primary" role="status"></div>
+                    </div>
+                </div>
+                <div class="modal-footer border-0">
+                    <button type="button" class="btn btn-secondary btn-sm" data-bs-dismiss="modal">Fermer</button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js"></script>
+    <script src="/js/modern-layout.js"></script>
+    <script th:inline="javascript">
+        const enseignantId = /*[[${enseignantId}]]*/ null;
+        let detailModal;
+        const JOURS = ['Lundi','Mardi','Mercredi','Jeudi','Vendredi','Samedi','Dimanche'];
+        const COLORS = ['#6366f1','#0ea5e9','#d97706','#8b5cf6','#ec4899','#06b6d4','#10b981'];
+
+        document.addEventListener('DOMContentLoaded', () => {
+            detailModal = new bootstrap.Modal(document.getElementById('detailModal'));
+            loadEnseignant();
+            loadDisponibilites();
+        });
+
+        async function loadEnseignant() {
+            try {
+                const res = await fetch(`/api/admin/enseignants/${enseignantId}`);
+                if (!res.ok) return;
+                const data = await res.json();
+                const initials = ((data.prenom||'X')[0] + (data.nom||'X')[0]).toUpperCase();
+                const color = COLORS[(data.nom||'').charCodeAt(0) % COLORS.length];
+                document.getElementById('heroAvatar').textContent = initials;
+                document.getElementById('heroAvatar').style.background = color + '55';
+                document.getElementById('heroName').textContent  = data.prenom + ' ' + data.nom;
+                document.getElementById('heroEmail').textContent = data.email;
+                document.getElementById('breadcrumbName').textContent = data.prenom + ' ' + data.nom;
+            } catch (e) { console.error(e); }
+        }
+
+        async function loadDisponibilites() {
+            try {
+                const res = await fetch(`/api/admin/enseignants/${enseignantId}/disponibilites`);
+                document.getElementById('loadingState').style.display = 'none';
+                if (!res.ok) throw new Error();
+                const list = await res.json();
+                document.getElementById('nbDispos').textContent = list.length;
+                if (!list.length) { document.getElementById('emptyState').style.display = 'block'; return; }
+                renderDisponibilites(list);
+            } catch {
+                document.getElementById('loadingState').innerHTML =
+                    '<p class="text-danger"><i class="fas fa-exclamation-circle me-2"></i>Erreur de chargement</p>';
+            }
+        }
+
+        function renderDisponibilites(list) {
+            const container = document.getElementById('disponibilitesContainer');
+            const opts = { day:'numeric', month:'long', year:'numeric' };
+            const optsShort = { weekday:'long', day:'2-digit', month:'2-digit' };
+
+            container.innerHTML = list.map(d => {
+                const debut = new Date(d.dateDebut);
+                const fin   = new Date(d.dateFin);
+                return `
+                <div class="dispo-card">
+                    <div class="d-flex align-items-center gap-3">
+                        <div class="dispo-icon"><i class="fas fa-calendar-week"></i></div>
+                        <div>
+                            <div class="dispo-title">Semaine du ${debut.toLocaleDateString('fr-FR', opts)}</div>
+                            <div class="dispo-sub">
+                                Du ${debut.toLocaleDateString('fr-FR', optsShort)}
+                                au ${fin.toLocaleDateString('fr-FR', optsShort)}/${fin.getFullYear()}
+                            </div>
+                        </div>
+                    </div>
+                    <a href="/dashboard/admin/enseignants/${enseignantId}/disponibilites/${d.id}/voir" class="btn btn-outline-primary btn-sm">
+                        <i class="fas fa-eye me-1"></i> Voir le détail
+                    </a>
+                </div>`;
+            }).join('');
+        }
+
+        async function voirDetail(dispoId) {
+            document.getElementById('detailModalBody').innerHTML =
+                '<div class="text-center py-4"><div class="spinner-border text-primary" role="status"></div></div>';
+            detailModal.show();
+            try {
+                const res = await fetch(`/api/admin/disponibilites/${dispoId}/creneaux`);
+                if (!res.ok) throw new Error();
+                const data = await res.json();
+                renderDetail(data);
+            } catch {
+                document.getElementById('detailModalBody').innerHTML =
+                    '<p class="text-danger text-center">Erreur de chargement</p>';
+            }
+        }
+
+        function renderDetail(data) {
+            if (!data.creneaux || !Object.keys(data.creneaux).length) {
+                document.getElementById('detailModalBody').innerHTML =
+                    '<p class="text-muted text-center py-3">Aucun créneau défini pour cette semaine</p>';
+                return;
+            }
+            let html = `<div class="table-responsive">
+                <table class="table table-bordered table-sm">
+                    <thead class="table-light">
+                        <tr><th>Jour</th><th>Créneaux disponibles</th></tr>
+                    </thead><tbody>`;
+            JOURS.forEach(jour => {
+                const creneaux = data.creneaux[jour] || [];
+                html += `<tr>
+                    <td><strong>${jour}</strong></td>
+                    <td>${creneaux.length
+                        ? creneaux.map(c => `<span class="creneau-badge">${c.heureDebut} – ${c.heureFin}</span>`).join(' ')
+                        : '<span class="text-muted small">Non disponible</span>'
+                    }</td>
+                </tr>`;
+            });
+            html += '</tbody></table></div>';
+            document.getElementById('detailModalBody').innerHTML = html;
+        }
+    </script>
+</body>
+</html>

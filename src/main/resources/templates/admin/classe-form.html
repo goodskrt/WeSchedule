@@ -1,0 +1,331 @@
+<!DOCTYPE html>
+<html lang="fr" xmlns:th="http://www.thymeleaf.org">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title th:text="${mode == 'creation' ? 'Nouvelle Classe - WeSchedule' : 'Modifier Classe - WeSchedule'}">Classe</title>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <link rel="stylesheet" href="/css/modern-layout.css">
+    <style>
+        .form-layout { display: grid; grid-template-columns: 280px 1fr; gap: 1.5rem; align-items: start; }
+        @media(max-width:900px){ .form-layout{grid-template-columns:1fr;} .form-sidebar{display:none;} }
+
+        .form-sidebar { position: sticky; top: 1.5rem; }
+        .preview-card { background:var(--white); border-radius:var(--radius-xl); border:1px solid var(--gray-200); box-shadow:var(--shadow-sm); overflow:hidden; }
+        .preview-banner { height:90px; display:flex; align-items:center; justify-content:center; font-size:2rem; font-weight:800; color:white; background:linear-gradient(135deg,#3b82f6,#2563eb); transition:background 0.3s; letter-spacing:0.05em; }
+        .preview-body { padding:1.25rem; }
+        .preview-name { font-size:1rem; font-weight:700; color:var(--gray-900); margin-bottom:0.2rem; min-height:1.4rem; }
+        .preview-sub  { font-size:0.8rem; color:var(--gray-500); margin-bottom:0.75rem; }
+        .preview-meta { display:flex; flex-direction:column; gap:0.4rem; }
+        .preview-meta-item { display:flex; align-items:center; gap:0.5rem; font-size:0.82rem; color:var(--gray-600); }
+        .preview-meta-item i { width:14px; color:var(--primary-color); font-size:0.75rem; }
+
+        .form-card { background:var(--white); border-radius:var(--radius-xl); border:1px solid var(--gray-200); box-shadow:var(--shadow-sm); padding:1.75rem; margin-bottom:1rem; }
+        .form-section-title { font-size:0.68rem; font-weight:700; text-transform:uppercase; letter-spacing:0.08em; color:var(--gray-400); margin-bottom:1rem; padding-bottom:0.5rem; border-bottom:1px solid var(--gray-100); }
+
+        .form-control, .form-select { border-radius:var(--radius-md); border:1.5px solid var(--gray-200); padding:0.6rem 0.9rem; font-size:0.9rem; transition:border-color 0.15s,box-shadow 0.15s; }
+        .form-control:focus, .form-select:focus { border-color:var(--primary-color); box-shadow:0 0 0 3px rgba(5,150,105,0.12); }
+        .input-icon-wrap { position:relative; }
+        .input-icon-wrap .input-icon { position:absolute; left:0.85rem; top:50%; transform:translateY(-50%); color:var(--gray-400); font-size:0.82rem; pointer-events:none; }
+        .input-icon-wrap .form-control, .input-icon-wrap .form-select { padding-left:2.25rem; }
+
+        /* Niveau pills */
+        .niveau-grid { display:flex; flex-wrap:wrap; gap:0.5rem; }
+        .niveau-radio { display:none; }
+        .niveau-pill {
+            padding:0.35rem 0.9rem; border-radius:2rem; border:1.5px solid var(--gray-200);
+            font-size:0.82rem; font-weight:600; cursor:pointer; transition:all 0.15s;
+            background:var(--white); color:var(--gray-600);
+        }
+        .niveau-pill:hover { border-color:var(--primary-color); color:var(--primary-color); }
+        .niveau-radio:checked + .niveau-pill { background:var(--primary-color); border-color:var(--primary-color); color:white; }
+
+        /* Langue pills */
+        .langue-radio { display:none; }
+        .langue-pill {
+            display:inline-flex; align-items:center; gap:0.35rem;
+            padding:0.35rem 0.9rem; border-radius:2rem; border:1.5px solid var(--gray-200);
+            font-size:0.82rem; font-weight:600; cursor:pointer; transition:all 0.15s;
+            background:var(--white); color:var(--gray-600);
+        }
+        .langue-pill:hover { border-color:#059669; color:#059669; }
+        .langue-radio:checked + .langue-pill { background:#059669; border-color:#059669; color:white; }
+
+        .actions-bar { display:flex; align-items:center; justify-content:space-between; padding-top:1.25rem; border-top:1px solid var(--gray-100); margin-top:0.5rem; }
+    </style>
+</head>
+<body>
+    <div th:replace="~{fragments/sidebar :: admin-sidebar('classes')}"></div>
+    <div class="ws-wrapper">
+        <div th:replace="~{fragments/header :: admin-header}"></div>
+        <main class="ws-main-content">
+
+            <div class="mb-4">
+                <nav aria-label="breadcrumb">
+                    <ol class="breadcrumb mb-1">
+                        <li class="breadcrumb-item"><a href="/admin/classes">Classes</a></li>
+                        <li class="breadcrumb-item active" th:text="${mode == 'creation' ? 'Nouvelle classe' : 'Modifier'}"></li>
+                    </ol>
+                </nav>
+                <h2 class="page-title mb-0" th:text="${mode == 'creation' ? 'Nouvelle classe' : 'Modifier la classe'}"></h2>
+                <p class="page-subtitle" th:text="${mode == 'creation' ? 'Renseignez les informations de la nouvelle classe' : 'Mettez à jour les informations'}"></p>
+            </div>
+
+            <div th:if="${error}" class="alert alert-danger alert-dismissible fade show mb-4">
+                <i class="fas fa-exclamation-circle me-2"></i><span th:text="${error}"></span>
+                <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+            </div>
+
+            <form th:action="${mode == 'creation' ? '/admin/classes/creer' : '/admin/classes/modifier/' + classe.idClasse}"
+                  method="post">
+                <div class="form-layout">
+
+                    <!-- Aperçu -->
+                    <div class="form-sidebar">
+                        <p class="form-section-title ms-1">Aperçu</p>
+                        <div class="preview-card">
+                            <div class="preview-banner" id="previewBanner">
+                                <span id="previewNiveauBanner">?</span>
+                            </div>
+                            <div class="preview-body">
+                                <div class="preview-name" id="previewNom">Nom de la classe</div>
+                                <div class="preview-sub" id="previewEcole">École non définie</div>
+                                <div class="preview-meta">
+                                    <div class="preview-meta-item"><i class="fas fa-sitemap"></i><span id="previewFiliere">Filière non définie</span></div>
+                                    <div class="preview-meta-item"><i class="fas fa-users"></i><span id="previewEffectif">— étudiants</span></div>
+                                    <div class="preview-meta-item"><i class="fas fa-globe"></i><span id="previewLangue">Langue non précisée</span></div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Formulaire -->
+                    <div>
+                        <!-- Identité -->
+                        <div class="form-card">
+                            <p class="form-section-title">Identité</p>
+                            <div class="row g-3">
+                                <div class="col-12">
+                                    <label class="form-label fw-semibold">Nom de la classe <span class="text-danger">*</span></label>
+                                    <div class="input-icon-wrap">
+                                        <i class="fas fa-users input-icon"></i>
+                                        <input type="text" class="form-control" name="nom" id="nomInput"
+                                               th:value="${classe.nom}" required placeholder="Ex : Informatique L1A"
+                                               oninput="updatePreview()">
+                                    </div>
+                                </div>
+                                <!-- 1. École -->
+                                <div class="col-sm-6">
+                                    <label class="form-label fw-semibold">École</label>
+                                    <div class="input-icon-wrap">
+                                        <i class="fas fa-school input-icon"></i>
+                                        <select class="form-select" name="ecoleId" id="ecoleSelect" onchange="onEcoleChange()">
+                                            <option value="">— Sélectionner —</option>
+                                            <option th:each="e : ${ecoles}"
+                                                    th:value="${e.idEcole}"
+                                                    th:text="${e.nomEcole}"
+                                                    th:selected="${classe.ecole != null and classe.ecole.idEcole == e.idEcole}">
+                                            </option>
+                                        </select>
+                                    </div>
+                                </div>
+                                <div class="col-sm-6">
+                                    <label class="form-label fw-semibold">Effectif</label>
+                                    <div class="input-icon-wrap">
+                                        <i class="fas fa-user-graduate input-icon"></i>
+                                        <input type="number" class="form-control" name="effectif" id="effectifInput"
+                                               th:value="${classe.effectif}" min="1" placeholder="Ex : 45"
+                                               oninput="updatePreview()">
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- 2. Niveau (pills) -->
+                        <div class="form-card">
+                            <p class="form-section-title">Niveau</p>
+                            <div class="niveau-grid" id="niveauGrid">
+                                <th:block th:each="n : ${niveaux}">
+                                    <input type="radio" class="niveau-radio" name="niveau"
+                                           th:id="'niv-' + ${n}" th:value="${n}"
+                                           th:checked="${classe.niveau == n}"
+                                           onchange="onNiveauChange()">
+                                    <label th:for="'niv-' + ${n}" class="niveau-pill" th:text="${n}"></label>
+                                </th:block>
+                            </div>
+                        </div>
+
+                        <!-- 3. Filière (chargée dynamiquement) -->
+                        <div class="form-card">
+                            <p class="form-section-title">Filière</p>
+                            <div id="filiereLoading" class="text-muted small d-none">
+                                <span class="spinner-border spinner-border-sm me-1"></span> Chargement…
+                            </div>
+                            <div id="filiereEmpty" class="text-muted small d-none">
+                                <i class="fas fa-info-circle me-1"></i> Sélectionnez une école et un niveau pour voir les filières disponibles.
+                            </div>
+                            <div class="input-icon-wrap" id="filiereWrap">
+                                <i class="fas fa-sitemap input-icon"></i>
+                                <select class="form-select" name="filiereId" id="filiereSelect" onchange="updatePreview()" disabled>
+                                    <option value="">— Sélectionnez d'abord une école et un niveau —</option>
+                                    <!-- options injectées par JS, ou pré-sélectionnées en mode édition -->
+                                    <option th:if="${classe.filiere != null}"
+                                            th:value="${classe.filiere.idFiliere}"
+                                            th:text="${classe.filiere.nomFiliere}"
+                                            selected>
+                                    </option>
+                                </select>
+                            </div>
+                        </div>
+
+                        <!-- Langue -->
+                        <div class="form-card">
+                            <p class="form-section-title">Langue d'enseignement</p>
+                            <div class="d-flex flex-wrap gap-2">
+                                <th:block th:each="l : ${langues}">
+                                    <input type="radio" class="langue-radio" name="langue"
+                                           th:id="'lang-' + ${l}" th:value="${l}"
+                                           th:checked="${classe.langue == l}"
+                                           onchange="updatePreview()">
+                                    <label th:for="'lang-' + ${l}" class="langue-pill">
+                                        <i class="fas fa-globe" style="font-size:0.72rem;"></i>
+                                        <span th:text="${l}"></span>
+                                    </label>
+                                </th:block>
+                                <!-- Aucune -->
+                                <input type="radio" class="langue-radio" name="langue" id="lang-none" value=""
+                                       th:checked="${classe.langue == null or classe.langue == ''}"
+                                       onchange="updatePreview()">
+                                <label for="lang-none" class="langue-pill" style="color:var(--gray-400);border-style:dashed;">
+                                    <i class="fas fa-times" style="font-size:0.7rem;"></i> Aucune
+                                </label>
+                            </div>
+                        </div>
+
+                        <!-- Description -->
+                        <div class="form-card">
+                            <p class="form-section-title">Description <span class="text-muted fw-normal">(optionnel)</span></p>
+                            <textarea class="form-control" name="description" rows="3"
+                                      placeholder="Informations complémentaires sur la classe…"
+                                      th:text="${classe.description}"></textarea>
+                        </div>
+
+                        <div class="actions-bar">
+                            <a href="/admin/classes" class="btn btn-secondary">
+                                <i class="fas fa-arrow-left me-1"></i> Annuler
+                            </a>
+                            <button type="submit" class="btn btn-primary px-4">
+                                <i class="fas fa-save me-1"></i>
+                                <span th:text="${mode == 'creation' ? 'Créer la classe' : 'Enregistrer'}"></span>
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            </form>
+        </main>
+    </div>
+
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js"></script>
+    <script src="/js/modern-layout.js"></script>
+    <script>
+        const NIVEAU_COLORS = {
+            'Niveau 1':'linear-gradient(135deg,#3b82f6,#2563eb)',
+            'Niveau 2':'linear-gradient(135deg,#06b6d4,#0891b2)',
+            'Niveau 3':'linear-gradient(135deg,#8b5cf6,#7c3aed)',
+            'Niveau 4':'linear-gradient(135deg,#f59e0b,#d97706)',
+            'Niveau 5':'linear-gradient(135deg,#ef4444,#dc2626)',
+        };
+
+        // ── Chargement dynamique des filières ────────────────────────────────
+        function getSelectedNiveau() {
+            const el = document.querySelector('input[name="niveau"]:checked');
+            return el ? el.value : null;
+        }
+
+        function onEcoleChange() { loadFilieres(); updatePreview(); }
+        function onNiveauChange() { loadFilieres(); updatePreview(); }
+
+        function loadFilieres() {
+            const ecoleId = document.getElementById('ecoleSelect').value;
+            const niveau  = getSelectedNiveau();
+            const sel     = document.getElementById('filiereSelect');
+            const loading = document.getElementById('filiereLoading');
+            const empty   = document.getElementById('filiereEmpty');
+
+            if (!ecoleId || !niveau) {
+                sel.innerHTML = '<option value="">— Sélectionnez d\'abord une école et un niveau —</option>';
+                sel.disabled = true;
+                empty.classList.remove('d-none');
+                loading.classList.add('d-none');
+                return;
+            }
+
+            loading.classList.remove('d-none');
+            empty.classList.add('d-none');
+            sel.disabled = true;
+
+            fetch(`/api/admin/filieres?ecoleId=${ecoleId}&niveau=${encodeURIComponent(niveau)}`)
+                .then(r => r.json())
+                .then(data => {
+                    loading.classList.add('d-none');
+                    sel.innerHTML = '<option value="">— Sélectionner —</option>';
+                    if (data.length === 0) {
+                        sel.innerHTML = '<option value="">Aucune filière pour ce niveau</option>';
+                        empty.classList.remove('d-none');
+                        empty.textContent = 'Aucune filière disponible pour cette école et ce niveau.';
+                    } else {
+                        data.forEach(f => {
+                            const opt = document.createElement('option');
+                            opt.value = f.idFiliere;
+                            opt.textContent = f.nomFiliere;
+                            // Pré-sélectionner si mode édition
+                            if (CURRENT_FILIERE_ID && f.idFiliere === CURRENT_FILIERE_ID) opt.selected = true;
+                            sel.appendChild(opt);
+                        });
+                        sel.disabled = false;
+                        empty.classList.add('d-none');
+                    }
+                    updatePreview();
+                })
+                .catch(() => { loading.classList.add('d-none'); });
+        }
+
+        // ── Aperçu ───────────────────────────────────────────────────────────
+        function updatePreview() {
+            const nom      = document.getElementById('nomInput').value.trim();
+            const effectif = document.getElementById('effectifInput').value;
+            const ecoleEl  = document.getElementById('ecoleSelect');
+            const filEl    = document.getElementById('filiereSelect');
+            const niveauEl = document.querySelector('input[name="niveau"]:checked');
+            const langueEl = document.querySelector('input[name="langue"]:checked');
+
+            document.getElementById('previewNom').textContent     = nom || 'Nom de la classe';
+            document.getElementById('previewEffectif').textContent = effectif ? effectif + ' étudiants' : '— étudiants';
+            document.getElementById('previewEcole').textContent    = ecoleEl.options[ecoleEl.selectedIndex]?.text || 'École non définie';
+            document.getElementById('previewFiliere').textContent  = filEl.options[filEl.selectedIndex]?.text || 'Filière non définie';
+            document.getElementById('previewLangue').textContent   = (langueEl && langueEl.value) ? langueEl.value : 'Langue non précisée';
+
+            if (niveauEl && niveauEl.value) {
+                const niv = niveauEl.value;
+                document.getElementById('previewNiveauBanner').textContent = niv.replace('Niveau ', '');
+                document.getElementById('previewBanner').style.background  = NIVEAU_COLORS[niv] || 'linear-gradient(135deg,#059669,#10b981)';
+            }
+        }
+
+        // ID filière courant (mode édition) — injecté par Thymeleaf
+        const CURRENT_FILIERE_ID = /*[[${classe.filiere != null ? classe.filiere.idFiliere : null}]]*/ null;
+
+        document.addEventListener('DOMContentLoaded', () => {
+            // En mode édition, charger les filières pour pré-sélectionner
+            const ecoleId = document.getElementById('ecoleSelect').value;
+            const niveau  = getSelectedNiveau();
+            if (ecoleId && niveau) {
+                loadFilieres();
+            }
+            updatePreview();
+        });
+    </script>
+</body>
+</html>

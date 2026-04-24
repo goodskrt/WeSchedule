@@ -1,0 +1,944 @@
+<!DOCTYPE html>
+<html lang="fr" xmlns:th="http://www.thymeleaf.org">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Dashboard Admin - WeSchedule</title>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background: #f5f5f5;
+            min-height: 100vh;
+            position: relative;
+        }
+
+
+
+        /* Navbar */
+        .navbar-custom {
+            background: rgba(51, 51, 51, 0.95);
+            backdrop-filter: blur(10px);
+            -webkit-backdrop-filter: blur(10px);
+            box-shadow: 0 2px 10px rgba(0, 0, 0, 0.1);
+            position: relative;
+            z-index: 1000;
+        }
+
+        .navbar-brand {
+            font-weight: 800;
+            font-size: 1.5rem;
+            color: white !important;
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+
+        .navbar-brand img {
+            height: 40px;
+            border-radius: 50%;
+            object-fit: cover;
+        }
+
+        .nav-link {
+            color: rgba(255, 255, 255, 0.9) !important;
+            font-weight: 500;
+        }
+
+        .nav-link:hover {
+            color: white !important;
+        }
+
+        .dropdown-menu {
+            background: rgba(255, 255, 255, 0.95);
+            backdrop-filter: blur(10px);
+            border: 1px solid rgba(0, 0, 0, 0.1);
+        }
+
+        /* Main Content */
+        .main-content {
+            position: relative;
+            z-index: 2;
+            padding: 30px 0;
+        }
+
+        /* Cards */
+        .card-custom {
+            background: rgba(255, 255, 255, 0.7);
+            backdrop-filter: blur(15px);
+            -webkit-backdrop-filter: blur(15px);
+            border-radius: 15px;
+            border: 1px solid rgba(255, 255, 255, 0.3);
+            box-shadow: 0 8px 32px rgba(0, 0, 0, 0.1);
+            margin-bottom: 20px;
+        }
+
+        .card-header-custom {
+            background: rgba(51, 51, 51, 0.9);
+            color: white;
+            border-radius: 15px 15px 0 0;
+            padding: 15px 20px;
+            font-weight: 700;
+            border: none;
+        }
+
+        .stat-card {
+            text-align: center;
+            padding: 30px 20px;
+        }
+
+        .stat-icon {
+            width: 60px;
+            height: 60px;
+            background: #333;
+            border-radius: 12px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            color: white;
+            font-size: 1.8rem;
+            margin: 0 auto 15px;
+        }
+
+        .stat-number {
+            font-size: 2.5rem;
+            font-weight: 800;
+            color: #333;
+            margin: 10px 0;
+        }
+
+        .stat-label {
+            color: #666;
+            font-size: 0.95rem;
+            font-weight: 600;
+        }
+
+        /* User Info */
+        .user-info-card {
+            padding: 20px;
+            text-align: center;
+        }
+
+        .user-avatar {
+            width: 80px;
+            height: 80px;
+            background: #333;
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            color: white;
+            font-size: 2rem;
+            margin: 0 auto 15px;
+        }
+
+        .user-name {
+            font-size: 1.3rem;
+            font-weight: 700;
+            color: #333;
+            margin-bottom: 5px;
+        }
+
+        .user-role {
+            color: #666;
+            font-size: 0.9rem;
+            padding: 5px 15px;
+            background: rgba(51, 51, 51, 0.1);
+            border-radius: 20px;
+            display: inline-block;
+        }
+
+        /* Table */
+        .table-custom {
+            background: transparent;
+        }
+
+        .table-custom thead {
+            background: rgba(51, 51, 51, 0.05);
+        }
+
+        .table-custom th {
+            color: #333;
+            font-weight: 700;
+            border: none;
+            padding: 15px;
+        }
+
+        .table-custom td {
+            padding: 15px;
+            vertical-align: middle;
+            border-bottom: 1px solid rgba(0, 0, 0, 0.05);
+        }
+
+        .table-custom tbody tr {
+            background: rgba(255, 255, 255, 0.3);
+            transition: all 0.3s;
+        }
+
+        .table-custom tbody tr:hover {
+            background: rgba(255, 255, 255, 0.5);
+        }
+
+        /* Buttons */
+        .btn-custom-primary {
+            background: #333;
+            color: white;
+            border: none;
+            padding: 10px 20px;
+            border-radius: 8px;
+            font-weight: 600;
+            transition: all 0.3s;
+        }
+
+        .btn-custom-primary:hover {
+            background: #555;
+            transform: translateY(-2px);
+            box-shadow: 0 5px 15px rgba(0, 0, 0, 0.2);
+        }
+
+        .btn-custom-secondary {
+            background: rgba(255, 255, 255, 0.8);
+            color: #333;
+            border: 1px solid rgba(0, 0, 0, 0.1);
+            padding: 8px 15px;
+            border-radius: 6px;
+            font-weight: 600;
+            transition: all 0.3s;
+        }
+
+        .btn-custom-secondary:hover {
+            background: white;
+            transform: translateY(-2px);
+        }
+
+        .btn-action {
+            padding: 6px 12px;
+            border-radius: 6px;
+            border: none;
+            font-size: 0.85rem;
+            margin: 0 3px;
+            transition: all 0.3s;
+        }
+
+        .btn-edit {
+            background: rgba(0, 123, 255, 0.1);
+            color: #007bff;
+        }
+
+        .btn-edit:hover {
+            background: #007bff;
+            color: white;
+        }
+
+        .btn-delete {
+            background: rgba(220, 53, 69, 0.1);
+            color: #dc3545;
+        }
+
+        .btn-delete:hover {
+            background: #dc3545;
+            color: white;
+        }
+
+        /* Modal */
+        .modal-backdrop {
+            background-color: rgba(0, 0, 0, 0.5);
+        }
+
+        .modal-content {
+            background: rgba(255, 255, 255, 0.98);
+            backdrop-filter: blur(20px);
+            border-radius: 15px;
+            border: none;
+            box-shadow: 0 20px 60px rgba(0, 0, 0, 0.3);
+        }
+
+        .modal-header {
+            background: rgba(51, 51, 51, 0.05);
+            border-bottom: 1px solid rgba(0, 0, 0, 0.1);
+            border-radius: 15px 15px 0 0;
+        }
+
+        .form-control-custom {
+            background: rgba(255, 255, 255, 0.6);
+            border: 1px solid rgba(0, 0, 0, 0.1);
+            border-radius: 8px;
+            padding: 10px 15px;
+        }
+
+        .form-control-custom:focus {
+            background: rgba(255, 255, 255, 0.9);
+            border-color: #333;
+            box-shadow: 0 0 0 3px rgba(51, 51, 51, 0.1);
+        }
+
+        /* Badge */
+        .badge-custom {
+            padding: 6px 12px;
+            border-radius: 6px;
+            font-weight: 600;
+            font-size: 0.85rem;
+        }
+
+        /* Sidebar Menu */
+        .sidebar-menu {
+            background: rgba(255, 255, 255, 0.7);
+            backdrop-filter: blur(15px);
+            -webkit-backdrop-filter: blur(15px);
+            border-radius: 15px;
+            border: 1px solid rgba(255, 255, 255, 0.3);
+            box-shadow: 0 8px 32px rgba(0, 0, 0, 0.1);
+            padding: 20px;
+            position: sticky;
+            top: 90px;
+        }
+
+        .sidebar-menu .nav-link {
+            color: #555;
+            background: transparent;
+            border-radius: 10px;
+            padding: 15px 20px;
+            margin-bottom: 10px;
+            transition: all 0.3s;
+            border: 1px solid transparent;
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            font-weight: 600;
+            text-decoration: none;
+        }
+
+        .sidebar-menu .nav-link i {
+            font-size: 1.2rem;
+            width: 25px;
+            text-align: center;
+        }
+
+        .sidebar-menu .nav-link:hover {
+            background: rgba(255, 255, 255, 0.8);
+            color: #333;
+            border-color: rgba(0, 0, 0, 0.1);
+            transform: translateX(5px);
+        }
+
+        .sidebar-menu .nav-link.active {
+            background: #333;
+            color: white;
+            border-color: #333;
+        }
+
+        .sidebar-menu .nav-link.active:hover {
+            transform: translateX(0);
+        }
+
+        .menu-section-title {
+            font-size: 0.75rem;
+            text-transform: uppercase;
+            letter-spacing: 1px;
+            color: #999;
+            font-weight: 700;
+            margin: 20px 0 10px 10px;
+        }
+
+        .menu-section-title:first-child {
+            margin-top: 0;
+        }
+
+        /* Content Sections */
+        .content-section {
+            display: none;
+        }
+
+        .content-section.active {
+            display: block;
+        }
+
+        /* Responsive */
+        @media (max-width: 768px) {
+            .stat-number {
+                font-size: 2rem;
+            }
+            
+            .table-responsive {
+                font-size: 0.9rem;
+            }
+
+            .sidebar-menu {
+                position: relative;
+                top: 0;
+            }
+        }
+    </style>
+</head>
+<body>
+    <!-- Navbar -->
+    <nav class="navbar navbar-expand-lg navbar-custom">
+        <div class="container-fluid">
+            <a class="navbar-brand" href="/dashboard">
+                <img src="/images/logo.jpeg" alt="Logo">
+                WeSchedule
+            </a>
+            <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbarNav">
+                <span class="navbar-toggler-icon"></span>
+            </button>
+            <div class="collapse navbar-collapse" id="navbarNav">
+                <ul class="navbar-nav ms-auto">
+                    <li class="nav-item dropdown">
+                        <a class="nav-link dropdown-toggle" href="#" id="userDropdown" role="button" data-bs-toggle="dropdown">
+                            <i class="fas fa-user-circle"></i> <span th:text="${nomComplet}">Admin</span>
+                        </a>
+                        <ul class="dropdown-menu dropdown-menu-end">
+                            <li><a class="dropdown-item" href="/profile"><i class="fas fa-user"></i> Mon profil</a></li>
+                            <li><hr class="dropdown-divider"></li>
+                            <li>
+                                <form th:action="@{/logout}" method="post" style="margin: 0;">
+                                    <button type="submit" class="dropdown-item" style="border: none; background: none; width: 100%; text-align: left;">
+                                        <i class="fas fa-sign-out-alt"></i> Déconnexion
+                                    </button>
+                                </form>
+                            </li>
+                        </ul>
+                    </li>
+                </ul>
+            </div>
+        </div>
+    </nav>
+
+    <!-- Main Content -->
+    <div class="main-content">
+        <div class="container-fluid">
+            <div class="row">
+                <!-- Sidebar Menu -->
+                <div class="col-lg-3 col-md-4 mb-4">
+                    <!-- User Info Card -->
+                    <div class="card-custom user-info-card mb-4">
+                        <div class="user-avatar">
+                            <i class="fas fa-user-shield"></i>
+                        </div>
+                        <div class="user-name" th:text="${nomComplet}">Administrateur</div>
+                        <div class="user-role">
+                            <i class="fas fa-crown"></i> Administrateur
+                        </div>
+                        <hr style="margin: 20px 0; opacity: 0.2;">
+                        <div class="text-start">
+                            <p class="mb-2" style="font-size: 0.9rem;"><i class="fas fa-envelope text-muted"></i> <span th:text="${email}">admin@weschedule.com</span></p>
+                            <p class="mb-0" style="font-size: 0.9rem;"><i class="fas fa-calendar text-muted"></i> Connecté aujourd'hui</p>
+                        </div>
+                    </div>
+
+                    <!-- Navigation Menu -->
+                    <div class="sidebar-menu">
+                        <div class="menu-section-title">Tableau de bord</div>
+                        <a href="#" class="nav-link active" onclick="showSection('overview'); return false;">
+                            <i class="fas fa-tachometer-alt"></i>
+                            <span>Vue d'ensemble</span>
+                        </a>
+                        
+                        <div class="menu-section-title">Gestion</div>
+                        <a href="#" class="nav-link" onclick="showSection('enseignants'); return false;">
+                            <i class="fas fa-chalkboard-teacher"></i>
+                            <span>Enseignants</span>
+                        </a>
+                        <a href="#" class="nav-link" onclick="showSection('salles'); return false;">
+                            <i class="fas fa-door-open"></i>
+                            <span>Salles</span>
+                        </a>
+                        <a href="#" class="nav-link" onclick="showSection('cours'); return false;">
+                            <i class="fas fa-book"></i>
+                            <span>Cours</span>
+                        </a>
+                        <a href="#" class="nav-link" onclick="showSection('emplois'); return false;">
+                            <i class="fas fa-calendar-alt"></i>
+                            <span>Emplois du temps</span>
+                        </a>
+                        
+                        <div class="menu-section-title">Système</div>
+                        <a href="#" class="nav-link" onclick="showSection('rapports'); return false;">
+                            <i class="fas fa-chart-bar"></i>
+                            <span>Rapports</span>
+                        </a>
+                        <a href="#" class="nav-link" onclick="showSection('parametres'); return false;">
+                            <i class="fas fa-cog"></i>
+                            <span>Paramètres</span>
+                        </a>
+                    </div>
+                </div>
+
+                <!-- Stats Cards -->
+                <div class="col-lg-9 col-md-8">
+                    <div class="row">
+                        <div class="col-md-4 mb-4">
+                            <div class="card-custom stat-card">
+                                <div class="stat-icon">
+                                    <i class="fas fa-chalkboard-teacher"></i>
+                                </div>
+                                <div class="stat-number" id="totalEnseignants">0</div>
+                                <div class="stat-label">Enseignants</div>
+                            </div>
+                        </div>
+                        <div class="col-md-4 mb-4">
+                            <div class="card-custom stat-card">
+                                <div class="stat-icon">
+                                    <i class="fas fa-door-open"></i>
+                                </div>
+                                <div class="stat-number">0</div>
+                                <div class="stat-label">Salles</div>
+                            </div>
+                        </div>
+                        <div class="col-md-4 mb-4">
+                            <div class="card-custom stat-card">
+                                <div class="stat-icon">
+                                    <i class="fas fa-book"></i>
+                                </div>
+                                <div class="stat-number">0</div>
+                                <div class="stat-label">Cours</div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Content Sections -->
+            <div class="content-sections">
+                <!-- Enseignants Section -->
+                <div class="content-section active" id="section-enseignants">
+                    <div class="row">
+                        <div class="col-12">
+                            <div class="card-custom">
+                                <div class="card-header-custom d-flex justify-content-between align-items-center">
+                                    <span><i class="fas fa-users"></i> Gestion des Enseignants</span>
+                                    <button class="btn btn-custom-secondary btn-sm" onclick="openCreateModal()">
+                                        <i class="fas fa-plus"></i> Nouvel Enseignant
+                                    </button>
+                                </div>
+                        <div class="card-body p-0">
+                            <div class="table-responsive">
+                                <table class="table table-custom mb-0">
+                                    <thead>
+                                        <tr>
+                                            <th>Nom Complet</th>
+                                            <th>Email</th>
+                                            <th>Téléphone</th>
+                                            <th>Grade</th>
+                                            <th>Matière</th>
+                                            <th>Actions</th>
+                                        </tr>
+                                    </thead>
+                                    <tbody id="enseignantsTableBody">
+                                        <tr>
+                                            <td colspan="6" class="text-center py-4">
+                                                <div class="spinner-border text-secondary" role="status">
+                                                    <span class="visually-hidden">Chargement...</span>
+                                                </div>
+                                            </td>
+                                        </tr>
+                                    </tbody>
+                                </table>
+                            </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                        <!-- Salles Section -->
+                        <div class="content-section" id="section-salles" style="display: none;">
+                            <div class="row mb-4">
+                                <div class="col-12">
+                                    <div class="card-custom stat-card" style="text-align: left; padding: 20px;">
+                                        <div class="d-flex justify-content-between align-items-center">
+                                            <div>
+                                                <h4 style="margin: 0; color: #333;"><i class="fas fa-door-open"></i> Gestion des Salles</h4>
+                                                <p style="margin: 5px 0 0 0; color: #666;">Gérer les salles de classe et leurs disponibilités</p>
+                                            </div>
+                                            <button class="btn btn-custom-primary">
+                                                <i class="fas fa-plus"></i> Nouvelle Salle
+                                            </button>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                            <div class="row">
+                                <div class="col-12">
+                                    <div class="card-custom">
+                                        <div class="card-body p-4 text-center">
+                                            <i class="fas fa-door-open fa-3x text-muted mb-3"></i>
+                                            <p class="text-muted">Fonctionnalité en cours de développement</p>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- Cours Section -->
+                        <div class="content-section" id="section-cours" style="display: none;">
+                            <div class="row mb-4">
+                                <div class="col-12">
+                                    <div class="card-custom stat-card" style="text-align: left; padding: 20px;">
+                                        <div class="d-flex justify-content-between align-items-center">
+                                            <div>
+                                                <h4 style="margin: 0; color: #333;"><i class="fas fa-book"></i> Gestion des Cours</h4>
+                                                <p style="margin: 5px 0 0 0; color: #666;">Créer et organiser les cours et matières</p>
+                                            </div>
+                                            <button class="btn btn-custom-primary">
+                                                <i class="fas fa-plus"></i> Nouveau Cours
+                                            </button>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                            <div class="row">
+                                <div class="col-12">
+                                    <div class="card-custom">
+                                        <div class="card-body p-4 text-center">
+                                            <i class="fas fa-book fa-3x text-muted mb-3"></i>
+                                            <p class="text-muted">Fonctionnalité en cours de développement</p>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- Emplois du temps Section -->
+                        <div class="content-section" id="section-emplois" style="display: none;">
+                            <div class="row mb-4">
+                                <div class="col-12">
+                                    <div class="card-custom stat-card" style="text-align: left; padding: 20px;">
+                                        <div class="d-flex justify-content-between align-items-center">
+                                            <div>
+                                                <h4 style="margin: 0; color: #333;"><i class="fas fa-calendar-alt"></i> Gestion des Emplois du temps</h4>
+                                                <p style="margin: 5px 0 0 0; color: #666;">Planifier et organiser les emplois du temps</p>
+                                            </div>
+                                            <button class="btn btn-custom-primary">
+                                                <i class="fas fa-plus"></i> Nouvel Emploi du temps
+                                            </button>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                            <div class="row">
+                                <div class="col-12">
+                                    <div class="card-custom">
+                                        <div class="card-body p-4 text-center">
+                                            <i class="fas fa-calendar-alt fa-3x text-muted mb-3"></i>
+                                            <p class="text-muted">Fonctionnalité en cours de développement</p>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- Rapports Section -->
+                        <div class="content-section" id="section-rapports" style="display: none;">
+                            <div class="row mb-4">
+                                <div class="col-12">
+                                    <div class="card-custom stat-card" style="text-align: left; padding: 20px;">
+                                        <h4 style="margin: 0; color: #333;"><i class="fas fa-chart-bar"></i> Rapports et Statistiques</h4>
+                                        <p style="margin: 5px 0 0 0; color: #666;">Consulter les rapports et analyses du système</p>
+                                    </div>
+                                </div>
+                            </div>
+                            <div class="row">
+                                <div class="col-12">
+                                    <div class="card-custom">
+                                        <div class="card-body p-4 text-center">
+                                            <i class="fas fa-chart-bar fa-3x text-muted mb-3"></i>
+                                            <p class="text-muted">Fonctionnalité en cours de développement</p>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- Paramètres Section -->
+                        <div class="content-section" id="section-parametres" style="display: none;">
+                            <div class="row mb-4">
+                                <div class="col-12">
+                                    <div class="card-custom stat-card" style="text-align: left; padding: 20px;">
+                                        <h4 style="margin: 0; color: #333;"><i class="fas fa-cog"></i> Paramètres du système</h4>
+                                        <p style="margin: 5px 0 0 0; color: #666;">Configurer les paramètres de l'application</p>
+                                    </div>
+                                </div>
+                            </div>
+                            <div class="row">
+                                <div class="col-12">
+                                    <div class="card-custom">
+                                        <div class="card-body p-4 text-center">
+                                            <i class="fas fa-cog fa-3x text-muted mb-3"></i>
+                                            <p class="text-muted">Fonctionnalité en cours de développement</p>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+        </div>
+    </div>
+
+    <!-- Modal Create/Edit Enseignant -->
+    <div class="modal fade" id="enseignantModal" tabindex="-1">
+        <div class="modal-dialog modal-lg">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h5 class="modal-title" id="modalTitle">Nouvel Enseignant</h5>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+                </div>
+                <div class="modal-body">
+                    <form id="enseignantForm">
+                        <input type="hidden" id="enseignantId">
+                        <div class="alert alert-info">
+                            <i class="fas fa-info-circle"></i> Un mot de passe sera généré automatiquement et envoyé par email à l'enseignant.
+                        </div>
+                        <div class="row">
+                            <div class="col-md-6 mb-3">
+                                <label class="form-label">Nom <span class="text-danger">*</span></label>
+                                <input type="text" class="form-control form-control-custom" id="nom" required>
+                            </div>
+                            <div class="col-md-6 mb-3">
+                                <label class="form-label">Prénom <span class="text-danger">*</span></label>
+                                <input type="text" class="form-control form-control-custom" id="prenom" required>
+                            </div>
+                        </div>
+                        <div class="mb-3">
+                            <label class="form-label">Email <span class="text-danger">*</span></label>
+                            <input type="email" class="form-control form-control-custom" id="email" required>
+                            <small class="text-muted">L'enseignant recevra ses identifiants à cette adresse</small>
+                        </div>
+                    </form>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-custom-secondary" data-bs-dismiss="modal">Annuler</button>
+                    <button type="button" class="btn btn-custom-primary" onclick="saveEnseignant()">
+                        <i class="fas fa-save"></i> Enregistrer
+                    </button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js"></script>
+    <script>
+        // Navigation entre sections
+        function showSection(sectionName) {
+            // Cacher toutes les sections
+            document.querySelectorAll('.content-section').forEach(section => {
+                section.style.display = 'none';
+            });
+            
+            // Retirer la classe active de tous les liens
+            document.querySelectorAll('.sidebar-menu .nav-link').forEach(link => {
+                link.classList.remove('active');
+            });
+            
+            // Afficher la section sélectionnée
+            const section = document.getElementById('section-' + sectionName);
+            if (section) {
+                section.style.display = 'block';
+            }
+            
+            // Activer le lien correspondant
+            event.target.closest('.nav-link').classList.add('active');
+        }
+
+        // Variables globales
+        let enseignants = [];
+        let editingId = null;
+        let modal = null;
+
+        // Initialiser le modal après le chargement du DOM
+        document.addEventListener('DOMContentLoaded', function() {
+            const modalElement = document.getElementById('enseignantModal');
+            if (modalElement) {
+                modal = new bootstrap.Modal(modalElement, {
+                    backdrop: true,
+                    keyboard: true,
+                    focus: true
+                });
+            }
+        });
+
+        // Charger les enseignants au démarrage
+        document.addEventListener('DOMContentLoaded', function() {
+            loadEnseignants();
+        });
+
+        // Charger tous les enseignants
+        async function loadEnseignants() {
+            try {
+                const response = await fetch('/api/admin/enseignants');
+                if (response.ok) {
+                    enseignants = await response.json();
+                    displayEnseignants();
+                    updateStats();
+                } else {
+                    showError('Erreur lors du chargement des enseignants');
+                }
+            } catch (error) {
+                console.error('Erreur:', error);
+                showError('Erreur de connexion au serveur');
+            }
+        }
+
+        // Afficher les enseignants dans le tableau
+        function displayEnseignants() {
+            const tbody = document.getElementById('enseignantsTableBody');
+            
+            if (enseignants.length === 0) {
+                tbody.innerHTML = `
+                    <tr>
+                        <td colspan="6" class="text-center py-4 text-muted">
+                            <i class="fas fa-inbox fa-3x mb-3"></i>
+                            <p>Aucun enseignant enregistré</p>
+                        </td>
+                    </tr>
+                `;
+                return;
+            }
+
+            tbody.innerHTML = enseignants.map(ens => `
+                <tr>
+                    <td><strong>${ens.prenom} ${ens.nom}</strong></td>
+                    <td>${ens.email}</td>
+                    <td>${ens.phone || '-'}</td>
+                    <td><span class="badge-custom bg-light text-dark">${ens.grade || 'Non défini'}</span></td>
+                    <td>${ens.matiere || 'Non défini'}</td>
+                    <td>
+                        <button class="btn btn-action btn-edit" onclick="editEnseignant('${ens.idUser}')" title="Modifier">
+                            <i class="fas fa-edit"></i>
+                        </button>
+                        <button class="btn btn-action btn-delete" onclick="deleteEnseignant('${ens.idUser}', '${ens.prenom} ${ens.nom}')" title="Supprimer">
+                            <i class="fas fa-trash"></i>
+                        </button>
+                    </td>
+                </tr>
+            `).join('');
+        }
+
+        // Mettre à jour les statistiques
+        function updateStats() {
+            document.getElementById('totalEnseignants').textContent = enseignants.length;
+        }
+
+        // Ouvrir le modal de création
+        function openCreateModal() {
+            if (!modal) {
+                console.error('Modal non initialisé');
+                return;
+            }
+            editingId = null;
+            document.getElementById('modalTitle').textContent = 'Nouvel Enseignant';
+            document.getElementById('enseignantForm').reset();
+            modal.show();
+        }
+
+        // Éditer un enseignant
+        async function editEnseignant(id) {
+            if (!modal) {
+                console.error('Modal non initialisé');
+                return;
+            }
+            editingId = id;
+            const enseignant = enseignants.find(e => e.idUser === id);
+            
+            if (!enseignant) return;
+
+            document.getElementById('modalTitle').textContent = 'Modifier l\'Enseignant';
+            document.getElementById('enseignantId').value = id;
+            document.getElementById('nom').value = enseignant.nom;
+            document.getElementById('prenom').value = enseignant.prenom;
+            document.getElementById('email').value = enseignant.email;
+            
+            modal.show();
+        }
+
+        // Sauvegarder un enseignant
+        async function saveEnseignant() {
+            const form = document.getElementById('enseignantForm');
+            
+            if (!form.checkValidity()) {
+                form.reportValidity();
+                return;
+            }
+
+            const data = {
+                nom: document.getElementById('nom').value.trim(),
+                prenom: document.getElementById('prenom').value.trim(),
+                email: document.getElementById('email').value.trim()
+            };
+
+            try {
+                const url = editingId 
+                    ? `/api/admin/enseignants/${editingId}`
+                    : '/api/admin/enseignants';
+                
+                const method = editingId ? 'PUT' : 'POST';
+
+                const response = await fetch(url, {
+                    method: method,
+                    headers: {
+                        'Content-Type': 'application/json',
+                    },
+                    body: JSON.stringify(data)
+                });
+
+                const result = await response.json();
+
+                if (result.success) {
+                    if (modal) {
+                        modal.hide();
+                    }
+                    showSuccess(result.message);
+                    loadEnseignants();
+                } else {
+                    showError(result.message);
+                }
+            } catch (error) {
+                console.error('Erreur:', error);
+                showError('Erreur lors de l\'enregistrement');
+            }
+        }
+
+        // Supprimer un enseignant
+        async function deleteEnseignant(id, nom) {
+            if (!confirm(`Êtes-vous sûr de vouloir supprimer ${nom} ?`)) {
+                return;
+            }
+
+            try {
+                const response = await fetch(`/api/admin/enseignants/${id}`, {
+                    method: 'DELETE'
+                });
+
+                const result = await response.json();
+
+                if (result.success) {
+                    showSuccess(result.message);
+                    loadEnseignants();
+                } else {
+                    showError(result.message);
+                }
+            } catch (error) {
+                console.error('Erreur:', error);
+                showError('Erreur lors de la suppression');
+            }
+        }
+
+        // Afficher un message de succès
+        function showSuccess(message) {
+            // Vous pouvez utiliser une bibliothèque de notifications ou créer votre propre système
+            alert(message);
+        }
+
+        // Afficher un message d'erreur
+        function showError(message) {
+            alert(message);
+        }
+    </script>
+</body>
+</html>

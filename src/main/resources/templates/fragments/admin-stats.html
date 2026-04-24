@@ -1,0 +1,48 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org">
+<body>
+<!--
+  Fragment : rangée de statistiques (pastilles) pour les pages admin.
+  Usage : <div th:replace="~{fragments/admin-stats :: stat-row(${pageStats})}"></div>
+  Attend model attribute "pageStats" : List<AdminStatChip> (label, value, icon, hint optionnel)
+-->
+<div th:fragment="stat-row(stats)" class="admin-page-stats mb-4" th:if="${stats != null and !stats.isEmpty()}">
+    <style>
+        .admin-page-stats-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(140px, 1fr));
+            gap: 0.65rem;
+        }
+        .admin-stat-chip {
+            background: var(--white, #fff);
+            border-radius: var(--radius-xl, 12px);
+            padding: 0.95rem 1rem;
+            border: 1px solid var(--gray-200, #e5e7eb);
+            box-shadow: var(--shadow-sm, 0 1px 2px rgba(0,0,0,.05));
+            display: flex;
+            align-items: center;
+            gap: 0.75rem;
+        }
+        .admin-stat-chip i {
+            font-size: 1.2rem;
+            width: 36px;
+            text-align: center;
+            color: var(--primary-color, #059669);
+        }
+        .admin-stat-chip .val { font-size: 1.28rem; font-weight: 800; color: var(--gray-900, #111827); line-height: 1.1; }
+        .admin-stat-chip .lbl { font-size: 0.7rem; color: var(--gray-500, #6b7280); text-transform: uppercase; letter-spacing: 0.04em; }
+        .admin-stat-chip .hint { font-size: 0.68rem; color: var(--gray-400, #9ca3af); margin-top: 0.15rem; }
+    </style>
+    <div class="admin-page-stats-grid">
+        <div class="admin-stat-chip" th:each="s : ${stats}">
+            <i th:class="${'fas ' + s.icon}"></i>
+            <div>
+                <div class="val" th:text="${s.value}">0</div>
+                <div class="lbl" th:text="${s.label}">—</div>
+                <div class="hint" th:if="${s.hint != null and !#strings.isEmpty(s.hint)}" th:text="${s.hint}"></div>
+            </div>
+        </div>
+    </div>
+</div>
+</body>
+</html>

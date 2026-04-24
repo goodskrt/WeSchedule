@@ -1,0 +1,283 @@
+<!DOCTYPE html>
+<html lang="fr" xmlns:th="http://www.thymeleaf.org">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Dashboard Enseignant - WeSchedule</title>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <link rel="stylesheet" href="/css/modern-layout.css">
+    <style>
+        .stat-card {
+            background: white; border-radius: var(--radius-xl); padding: 1.5rem;
+            border: 1px solid var(--gray-200); box-shadow: var(--shadow-sm);
+            transition: all 0.2s; position: relative; overflow: hidden;
+        }
+        .stat-card:hover { transform: translateY(-2px); box-shadow: var(--shadow-md); }
+        .stat-card::before {
+            content: ''; position: absolute; top: 0; right: 0;
+            width: 100px; height: 100px; opacity: 0.1;
+            background: linear-gradient(135deg, var(--primary-color), transparent);
+            border-radius: 0 0 0 100%;
+        }
+        .stat-icon {
+            width: 56px; height: 56px; border-radius: var(--radius-lg);
+            display: flex; align-items: center; justify-content: center;
+            font-size: 24px; margin-bottom: 1rem;
+        }
+        .stat-number { font-size: 2rem; font-weight: 700; color: var(--gray-900); line-height: 1; margin-bottom: 0.5rem; }
+        .stat-label { font-size: 0.875rem; color: var(--gray-500); }
+        .stat-trend { font-size: 0.75rem; font-weight: 600; margin-top: 0.5rem; }
+        .stat-trend.up { color: #10b981; }
+        .stat-trend.down { color: #ef4444; }
+        
+        .quick-card {
+            background: white; border-radius: var(--radius-xl); padding: 1.25rem;
+            border: 1px solid var(--gray-200); box-shadow: var(--shadow-sm);
+            text-decoration: none; display: flex; align-items: center; gap: 1rem;
+            transition: all 0.2s; color: inherit;
+        }
+        .quick-card:hover { box-shadow: var(--shadow-md); transform: translateY(-2px); border-color: var(--primary-color); }
+        .quick-icon {
+            width: 48px; height: 48px; min-width: 48px; border-radius: var(--radius-lg);
+            display: flex; align-items: center; justify-content: center; font-size: 20px;
+        }
+        .quick-title { font-size: 0.9375rem; font-weight: 600; color: var(--gray-900); margin-bottom: 0.25rem; }
+        .quick-desc { font-size: 0.8125rem; color: var(--gray-500); margin: 0; }
+        
+        .cours-item {
+            background: white; border-radius: var(--radius-lg); padding: 1rem;
+            border: 1px solid var(--gray-200); margin-bottom: 0.75rem;
+            transition: all 0.2s;
+        }
+        .cours-item:hover { border-color: var(--primary-color); box-shadow: var(--shadow-sm); }
+        .cours-type-badge { padding: 0.25rem 0.75rem; border-radius: 2rem; font-size: 0.75rem; font-weight: 600; }
+        .cours-type-badge.cm { background: #dbeafe; color: #1e3a8a; }
+        .cours-type-badge.td { background: #fef3c7; color: #78350f; }
+        .cours-type-badge.tp { background: #d1fae5; color: #064e3b; }
+        
+        .section-card {
+            background: white; border-radius: var(--radius-xl); padding: 1.5rem;
+            border: 1px solid var(--gray-200); box-shadow: var(--shadow-sm);
+        }
+        .section-title { font-size: 1.125rem; font-weight: 600; color: var(--gray-900); margin-bottom: 1rem; }
+        
+        .empty-state { text-align: center; padding: 2rem; color: var(--gray-400); }
+        .empty-state i { font-size: 3rem; margin-bottom: 1rem; }
+    </style>
+</head>
+<body>
+    <div th:replace="~{fragments/sidebar :: enseignant-sidebar('dashboard')}"></div>
+    <div class="ws-wrapper">
+        <div th:replace="~{fragments/header :: enseignant-header}"></div>
+        <main class="ws-main-content">
+            <div class="mb-4">
+                <h2 class="page-title">Tableau de bord</h2>
+                <p class="page-subtitle">Bienvenue, <span th:text="${nomComplet}">Enseignant</span></p>
+            </div>
+
+            <!-- Statistiques -->
+            <div class="row g-3 mb-4">
+                <div class="col-md-3">
+                    <div class="stat-card">
+                        <div class="stat-icon" style="background: linear-gradient(135deg, #6366f1, #4f46e5); color: white;">
+                            <i class="fas fa-book"></i>
+                        </div>
+                        <div class="stat-number" th:text="${nbCours}">0</div>
+                        <div class="stat-label">Cours assignés</div>
+                    </div>
+                </div>
+                <div class="col-md-3">
+                    <div class="stat-card">
+                        <div class="stat-icon" style="background: linear-gradient(135deg, #06b6d4, #0891b2); color: white;">
+                            <i class="fas fa-users"></i>
+                        </div>
+                        <div class="stat-number" th:text="${nbClasses}">0</div>
+                        <div class="stat-label">Classes assignées</div>
+                    </div>
+                </div>
+                <div class="col-md-3">
+                    <div class="stat-card">
+                        <div class="stat-icon" style="background: linear-gradient(135deg, #10b981, #059669); color: white;">
+                            <i class="fas fa-clock"></i>
+                        </div>
+                        <div class="stat-number" th:text="${totalHeures} + 'h'">0h</div>
+                        <div class="stat-label">Heures de cours</div>
+                    </div>
+                </div>
+                <div class="col-md-3">
+                    <div class="stat-card">
+                        <div class="stat-icon" style="background: linear-gradient(135deg, #f59e0b, #d97706); color: white;">
+                            <i class="fas fa-calendar-check"></i>
+                        </div>
+                        <div class="stat-number" th:text="${heuresRestantes} + 'h'">0h</div>
+                        <div class="stat-label">Heures restantes</div>
+                    </div>
+                </div>
+            </div>
+
+            <div class="row g-4">
+                <!-- Colonne gauche -->
+                <div class="col-lg-8">
+                    <!-- Mes prochains cours -->
+                    <div class="section-card mb-4">
+                        <div class="d-flex justify-content-between align-items-center mb-3">
+                            <h6 class="section-title mb-0">Mes cours récents</h6>
+                            <a href="/dashboard/enseignant/cours" class="btn btn-sm btn-outline-primary">Voir tout</a>
+                        </div>
+                        <div th:if="${#lists.isEmpty(coursRecents)}" class="empty-state">
+                            <i class="fas fa-book"></i>
+                            <p class="mb-0">Aucun cours assigné</p>
+                        </div>
+                        <div th:unless="${#lists.isEmpty(coursRecents)}">
+                            <div th:each="c : ${coursRecents}" class="cours-item">
+                                <div class="d-flex justify-content-between align-items-start">
+                                    <div class="flex-grow-1">
+                                        <div class="d-flex align-items-center gap-2 mb-1">
+                                            <span class="cours-type-badge" 
+                                                  th:classappend="${c.typeCours != null ? c.typeCours.name().toLowerCase() : 'cm'}"
+                                                  th:text="${c.typeCours != null ? c.typeCours.name() : 'CM'}">CM</span>
+                                            <span class="fw-semibold" th:text="${c.intitule}">Cours</span>
+                                        </div>
+                                        <div class="text-muted small">
+                                            <i class="fas fa-graduation-cap me-1"></i>
+                                            <span th:text="${c.classe != null ? c.classe.nom : 'Classe'}">Classe</span>
+                                            <span th:if="${c.ue != null}" class="ms-2">
+                                                <i class="fas fa-book me-1"></i>
+                                                <span th:text="${c.ue.code}">UE</span>
+                                            </span>
+                                        </div>
+                                    </div>
+                                    <div class="text-end">
+                                        <div class="fw-bold text-primary">
+                                            <span th:text="${c.dureeRestante != null ? c.dureeRestante : 0}">0</span>h / 
+                                            <span th:text="${c.dureeTotal != null ? c.dureeTotal : 0}">0</span>h
+                                        </div>
+                                        <small class="text-muted">restantes</small>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Accès rapide -->
+                    <div class="section-card">
+                        <h6 class="section-title">Accès rapide</h6>
+                        <div class="row g-3">
+                            <div class="col-md-6">
+                                <a href="/dashboard/enseignant/cours" class="quick-card">
+                                    <div class="quick-icon" style="background: rgba(99,102,241,0.1); color: #6366f1;">
+                                        <i class="fas fa-book"></i>
+                                    </div>
+                                    <div>
+                                        <div class="quick-title">Mes Cours</div>
+                                        <p class="quick-desc">Consulter et gérer</p>
+                                    </div>
+                                </a>
+                            </div>
+                            <div class="col-md-6">
+                                <a href="/dashboard/enseignant/emploi-temps" class="quick-card">
+                                    <div class="quick-icon" style="background: rgba(6,182,212,0.1); color: #06b6d4;">
+                                        <i class="fas fa-calendar-alt"></i>
+                                    </div>
+                                    <div>
+                                        <div class="quick-title">Mon Emploi du temps</div>
+                                        <p class="quick-desc">Planning de la semaine</p>
+                                    </div>
+                                </a>
+                            </div>
+                            <div class="col-md-6">
+                                <a href="/dashboard/enseignant/disponibilites" class="quick-card">
+                                    <div class="quick-icon" style="background: rgba(16,185,129,0.1); color: #10b981;">
+                                        <i class="fas fa-clock"></i>
+                                    </div>
+                                    <div>
+                                        <div class="quick-title">Mes Disponibilités</div>
+                                        <p class="quick-desc">Gérer mes créneaux</p>
+                                    </div>
+                                </a>
+                            </div>
+                            <div class="col-md-6">
+                                <a href="/dashboard/enseignant/profil" class="quick-card">
+                                    <div class="quick-icon" style="background: rgba(245,158,11,0.1); color: #f59e0b;">
+                                        <i class="fas fa-user-cog"></i>
+                                    </div>
+                                    <div>
+                                        <div class="quick-title">Mon Profil</div>
+                                        <p class="quick-desc">Informations personnelles</p>
+                                    </div>
+                                </a>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Colonne droite -->
+                <div class="col-lg-4">
+                    <!-- Répartition par type -->
+                    <div class="section-card mb-4">
+                        <h6 class="section-title">Répartition des cours</h6>
+                        <div class="mb-3">
+                            <div class="d-flex justify-content-between align-items-center mb-2">
+                                <span class="small"><span class="cours-type-badge cm">CM</span></span>
+                                <span class="fw-semibold" th:text="${nbCM}">0</span>
+                            </div>
+                            <div class="progress" style="height: 8px;">
+                                <div class="progress-bar" style="background: #2563eb;" 
+                                     th:style="'width: ' + ${nbCours > 0 ? (nbCM * 100.0 / nbCours) : 0} + '%; background: #2563eb;'"></div>
+                            </div>
+                        </div>
+                        <div class="mb-3">
+                            <div class="d-flex justify-content-between align-items-center mb-2">
+                                <span class="small"><span class="cours-type-badge td">TD</span></span>
+                                <span class="fw-semibold" th:text="${nbTD}">0</span>
+                            </div>
+                            <div class="progress" style="height: 8px;">
+                                <div class="progress-bar" style="background: #d97706;" 
+                                     th:style="'width: ' + ${nbCours > 0 ? (nbTD * 100.0 / nbCours) : 0} + '%; background: #d97706;'"></div>
+                            </div>
+                        </div>
+                        <div>
+                            <div class="d-flex justify-content-between align-items-center mb-2">
+                                <span class="small"><span class="cours-type-badge tp">TP</span></span>
+                                <span class="fw-semibold" th:text="${nbTP}">0</span>
+                            </div>
+                            <div class="progress" style="height: 8px;">
+                                <div class="progress-bar" style="background: #059669;" 
+                                     th:style="'width: ' + ${nbCours > 0 ? (nbTP * 100.0 / nbCours) : 0} + '%; background: #059669;'"></div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Progression globale -->
+                    <div class="section-card">
+                        <h6 class="section-title">Progression globale</h6>
+                        <div class="text-center mb-3">
+                            <div class="position-relative d-inline-block">
+                                <svg width="120" height="120">
+                                    <circle cx="60" cy="60" r="50" fill="none" stroke="#e5e7eb" stroke-width="10"></circle>
+                                    <circle cx="60" cy="60" r="50" fill="none" stroke="#6366f1" stroke-width="10"
+                                            stroke-dasharray="314" 
+                                            th:attr="stroke-dashoffset=${314 - (totalHeures > 0 ? ((totalHeures - heuresRestantes) * 314.0 / totalHeures) : 0)}"
+                                            transform="rotate(-90 60 60)" stroke-linecap="round"></circle>
+                                </svg>
+                                <div class="position-absolute top-50 start-50 translate-middle">
+                                    <div class="fw-bold" style="font-size: 1.5rem;" 
+                                         th:text="${totalHeures > 0 ? ((totalHeures - heuresRestantes) * 100.0 / totalHeures) : 0} + '%'">0%</div>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="text-center">
+                            <div class="small text-muted mb-1">Heures effectuées</div>
+                            <div class="fw-bold" th:text="${totalHeures - heuresRestantes} + 'h / ' + ${totalHeures} + 'h'">0h / 0h</div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </main>
+    </div>
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js"></script>
+    <script src="/js/modern-layout.js"></script>
+</body>
+</html>

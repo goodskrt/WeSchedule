@@ -1,0 +1,385 @@
+<!DOCTYPE html>
+<html lang="fr" xmlns:th="http://www.thymeleaf.org">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Gestion des Cours - WeSchedule</title>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <link rel="stylesheet" href="/css/modern-layout.css">
+    <style>
+        .cours-card {
+            background: var(--white); border-radius: var(--radius-xl); padding: 1.25rem;
+            margin-bottom: 0.75rem; box-shadow: var(--shadow-sm); border: 1px solid var(--gray-200);
+            transition: all 0.2s;
+        }
+        .cours-card:hover { transform: translateY(-2px); box-shadow: var(--shadow-md); border-color: var(--primary-color); }
+        .cours-avatar {
+            width: 48px; height: 48px; border-radius: var(--radius-lg);
+            display: flex; align-items: center; justify-content: center;
+            font-weight: 800; color: white; font-size: 0.8rem; flex-shrink: 0;
+        }
+        .av-cm { background: linear-gradient(135deg, #3b82f6, #2563eb); }
+        .av-td { background: linear-gradient(135deg, #f59e0b, #d97706); }
+        .av-tp { background: linear-gradient(135deg, #10b981, #059669); }
+        .progress-track { height: 6px; border-radius: 3px; background: var(--gray-200); overflow: hidden; }
+        .progress-fill  { height: 100%; border-radius: 3px; background: linear-gradient(90deg, #3b82f6, #10b981); transition: width 0.3s; }
+        .badge-type { padding: 0.2rem 0.6rem; border-radius: 2rem; font-size: 0.72rem; font-weight: 700; }
+        .badge-cm { background: #dbeafe; color: #1e40af; }
+        .badge-td { background: #fef3c7; color: #92400e; }
+        .badge-tp { background: #d1fae5; color: #065f46; }
+        .search-box { background: var(--white); border-radius: 2rem; padding: 0.65rem 1.25rem; box-shadow: var(--shadow-sm); border: 1px solid var(--gray-200); display: flex; align-items: center; }
+        .search-box input { border: none; outline: none; width: 100%; background: transparent; font-size: 0.9rem; }
+        .empty-state { text-align: center; padding: 4rem 2rem; background: var(--white); border-radius: var(--radius-xl); }
+        .empty-state i { font-size: 3.5rem; color: var(--gray-300); margin-bottom: 1rem; }
+    </style>
+</head>
+<body>
+    <div th:replace="~{fragments/sidebar :: admin-sidebar('cours')}"></div>
+    <div class="ws-wrapper">
+        <div th:replace="~{fragments/header :: admin-header}"></div>
+        <main class="ws-main-content">
+
+            <!-- Header -->
+            <div class="d-flex justify-content-between align-items-center mb-4">
+                <div>
+                    <h2 class="page-title">Gestion des Cours</h2>
+                    <p class="page-subtitle">Gérez les cours et suivez leur avancement</p>
+                </div>
+                <div class="d-flex gap-2">
+                    <a href="/admin/cours/export" class="btn btn-outline-success">
+                        <i class="fas fa-file-excel me-1"></i> Exporter
+                    </a>
+                    <button class="btn btn-outline-primary" data-bs-toggle="modal" data-bs-target="#importModal">
+                        <i class="fas fa-file-import me-1"></i> Importer
+                    </button>
+                    <a href="/admin/cours/nouveau" class="btn btn-primary">
+                        <i class="fas fa-plus me-1"></i> Nouveau Cours
+                    </a>
+                </div>
+            </div>
+
+            <div th:replace="~{fragments/admin-stats :: stat-row(${pageStats})}"></div>
+
+            <!-- Alertes -->
+            <div th:if="${success}" class="alert alert-success alert-dismissible fade show mb-3">
+                <i class="fas fa-check-circle me-2"></i><span th:text="${success}"></span>
+                <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+            </div>
+            <div th:if="${error}" class="alert alert-danger alert-dismissible fade show mb-3">
+                <i class="fas fa-exclamation-circle me-2"></i><span th:text="${error}"></span>
+                <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+            </div>
+            <div th:if="${importErreurs}" class="alert alert-warning alert-dismissible fade show mb-3">
+                <i class="fas fa-exclamation-triangle me-2"></i>
+                <strong>Erreurs d'import :</strong>
+                <ul class="mb-0 mt-1">
+                    <li th:each="e : ${importErreurs}" th:text="${e}"></li>
+                </ul>
+                <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+            </div>
+            <div th:if="${importAvertissements}" class="alert alert-info alert-dismissible fade show mb-3">
+                <i class="fas fa-info-circle me-2"></i>
+                <strong>Avertissements :</strong>
+                <ul class="mb-0 mt-1">
+                    <li th:each="a : ${importAvertissements}" th:text="${a}"></li>
+                </ul>
+                <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+            </div>
+
+            <!-- Filtres -->
+            <div class="d-flex align-items-center gap-2 mb-3" style="flex-wrap:wrap;">
+                <div class="search-box" style="min-width:180px; flex:1;">
+                    <i class="fas fa-search text-muted me-2"></i>
+                    <input type="text" id="searchInput" placeholder="Rechercher…" oninput="filterCours()">
+                </div>
+                <select id="ecoleFilter" class="form-select form-select-sm" style="min-width:150px;width:auto;" onchange="onEcoleFilter()">
+                    <option value="">Toutes les écoles</option>
+                    <option th:each="e : ${ecoles}" th:value="${e.idEcole}" th:text="${e.nomEcole}"></option>
+                </select>
+                <select id="classeFilter" class="form-select form-select-sm" style="min-width:160px;width:auto;" onchange="filterCours()">
+                    <option value="">Toutes les classes</option>
+                </select>
+                <select id="ueFilter" class="form-select form-select-sm" style="min-width:160px;width:auto;" onchange="filterCours()">
+                    <option value="">Toutes les UEs</option>
+                    <option th:each="u : ${ues}" th:value="${u.idUE}" th:text="${u.code + ' - ' + u.intitule}"></option>
+                </select>
+                <select id="semestreFilter" class="form-select form-select-sm" style="min-width:120px;width:auto;" onchange="filterCours()">
+                    <option value="">Tous semestres</option>
+                    <option value="1">Semestre 1</option>
+                    <option value="2">Semestre 2</option>
+                </select>
+                <select id="typeFilter" class="form-select form-select-sm" style="min-width:110px;width:auto;" onchange="filterCours()">
+                    <option value="">Tous les types</option>
+                    <option value="CM">CM</option>
+                    <option value="TD">TD</option>
+                    <option value="TP">TP</option>
+                </select>
+                <span class="text-muted small" id="countInfo"
+                      th:text="${cours != null ? #lists.size(cours) : 0} + ' cours'"></span>
+            </div>
+
+            <!-- Liste vide -->
+            <div th:if="${cours == null or cours.isEmpty()}" class="empty-state">
+                <i class="fas fa-book-open"></i>
+                <h5 class="mt-2">Aucun cours</h5>
+                <p class="text-muted">Commencez par créer votre premier cours.</p>
+                <a href="/admin/cours/nouveau" class="btn btn-primary mt-2">
+                    <i class="fas fa-plus me-1"></i> Nouveau Cours
+                </a>
+            </div>
+
+            <!-- Cards -->
+            <div id="coursList">
+                <div id="noResultMsg" class="empty-state d-none">
+                    <i class="fas fa-filter"></i>
+                    <h5 class="mt-2">Aucun résultat</h5>
+                    <p class="text-muted">Aucun cours ne correspond aux filtres.</p>
+                    <button class="btn btn-primary btn-sm mt-2" onclick="resetFiltres()">
+                        <i class="fas fa-rotate-left me-1"></i> Réinitialiser
+                    </button>
+                </div>
+
+                <th:block th:each="c : ${cours}" th:if="${cours != null}">
+                <div class="cours-card"
+                     th:data-intitule="${c.intitule}"
+                     th:data-type="${c.typeCours != null ? c.typeCours.name() : ''}"
+                     th:data-classe="${c.classe != null ? c.classe.idClasse : ''}"
+                     th:data-ecole="${c.classe != null and c.classe.ecole != null ? c.classe.ecole.idEcole : ''}"
+                     th:data-ue="${c.ue != null ? c.ue.idUE : ''}"
+                     th:data-semestre="${c.ue != null and c.ue.semestre != null ? c.ue.semestre : ''}">
+                    <div class="row align-items-center">
+
+                        <!-- Avatar + intitulé -->
+                        <div class="col-md-4 d-flex align-items-center gap-3">
+                            <div class="cours-avatar"
+                                 th:classappend="${c.typeCours != null and c.typeCours.name() == 'CM'} ? 'av-cm' :
+                                                 (${c.typeCours != null and c.typeCours.name() == 'TD'} ? 'av-td' : 'av-tp')">
+                                <span th:text="${c.typeCours != null ? c.typeCours.name() : '?'}">?</span>
+                            </div>
+                            <div>
+                                <div class="fw-semibold" style="color:var(--gray-900);" th:text="${c.intitule}">—</div>
+                                <small class="text-muted" th:if="${c.ue != null}"
+                                       th:text="${c.ue.code + ' · S' + c.ue.semestre}">—</small>
+                            </div>
+                        </div>
+
+                        <!-- Classe + enseignant -->
+                        <div class="col-md-3">
+                            <div th:if="${c.classe != null}">
+                                <small class="text-muted d-block">Classe</small>
+                                <span class="fw-semibold" th:text="${c.classe.nom}">—</span>
+                                <small class="text-muted d-block" th:if="${c.classe.ecole != null}"
+                                       th:text="${c.classe.ecole.nomEcole}">—</small>
+                            </div>
+                            <div th:if="${c.enseignant != null}" class="mt-1">
+                                <small class="text-muted d-block">Enseignant</small>
+                                <span class="small" th:text="${c.enseignant.prenom + ' ' + c.enseignant.nom}">—</span>
+                            </div>
+                        </div>
+
+                        <!-- Progression -->
+                        <div class="col-md-3">
+                            <div th:if="${c.dureeTotal != null and c.dureeTotal > 0}">
+                                <div class="d-flex justify-content-between mb-1">
+                                    <small class="text-muted">Progression</small>
+                                    <small class="fw-bold"
+                                           th:text="${#numbers.formatDecimal(c.pourcentageAvancement, 1, 0)} + '%'">0%</small>
+                                </div>
+                                <div class="progress-track">
+                                    <div class="progress-fill"
+                                         th:style="'width:' + ${c.pourcentageAvancement} + '%'"></div>
+                                </div>
+                                <div class="d-flex gap-3 mt-1">
+                                    <small class="text-muted">
+                                        <span th:text="${c.heuresEffectuees}">0</span>h /
+                                        <span th:text="${c.dureeTotal}">0</span>h
+                                    </small>
+                                    <small class="text-muted">
+                                        (<span th:text="${c.dureeRestante}">0</span>h restantes)
+                                    </small>
+                                </div>
+                                <div th:if="${c.dureeSeanceParJour != null and c.dureeSeanceParJour > 0}" class="mt-1">
+                                    <small class="text-muted">
+                                        <i class="fas fa-calendar-day me-1"></i>
+                                        <span th:text="${c.dureeSeanceParJour}">0</span>h/jour
+                                    </small>
+                                </div>
+                            </div>
+                            <div th:if="${c.dureeTotal == null or c.dureeTotal == 0}">
+                                <small class="text-muted">Durée non définie</small>
+                            </div>
+                        </div>
+
+                        <!-- Statut + actions -->
+                        <div class="col-md-2 text-end">
+                            <a th:href="@{/admin/cours/details/{id}(id=${c.idCours})}"
+                               class="btn btn-outline-primary btn-sm me-1" title="Détails">
+                                <i class="fas fa-eye"></i>
+                            </a>
+                            <a th:href="@{/admin/cours/modifier/{id}(id=${c.idCours})}"
+                               class="btn btn-outline-primary btn-sm me-1" title="Modifier">
+                                <i class="fas fa-edit"></i>
+                            </a>
+                            <button class="btn btn-outline-danger btn-sm"
+                                    th:attr="data-id=${c.idCours}, data-nom=${c.intitule}"
+                                    onclick="showDelete(this)" title="Supprimer">
+                                <i class="fas fa-trash"></i>
+                            </button>
+                        </div>
+                    </div>
+                </div>
+                </th:block>
+            </div>
+
+        </main>
+    </div>
+
+    <!-- Modal suppression -->
+    <div class="modal fade" id="deleteModal" tabindex="-1">
+        <div class="modal-dialog modal-sm">
+            <div class="modal-content">
+                <div class="modal-header border-0 pb-0">
+                    <h5 class="modal-title text-danger"><i class="fas fa-exclamation-triangle me-2"></i>Supprimer</h5>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+                </div>
+                <div class="modal-body pt-2">
+                    Supprimer le cours <strong id="deleteNom"></strong> ?<br>
+                    <small class="text-muted">Cette action est irréversible.</small>
+                </div>
+                <div class="modal-footer border-0 pt-0">
+                    <button class="btn btn-secondary btn-sm" data-bs-dismiss="modal">Annuler</button>
+                    <form id="deleteForm" method="post">
+                        <button type="submit" class="btn btn-danger btn-sm">
+                            <i class="fas fa-trash me-1"></i> Supprimer
+                        </button>
+                    </form>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Modal import -->
+    <div class="modal fade" id="importModal" tabindex="-1">
+        <div class="modal-dialog">
+            <div class="modal-content">
+                <div class="modal-header border-0">
+                    <h5 class="modal-title"><i class="fas fa-file-import me-2 text-primary"></i>Importer des cours</h5>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+                </div>
+                <form action="/admin/cours/import" method="post" enctype="multipart/form-data">
+                    <div class="modal-body">
+                        <div id="dropZone" class="border border-2 border-dashed rounded-3 p-4 text-center mb-3"
+                             style="border-color:var(--gray-300)!important; cursor:pointer;"
+                             onclick="document.getElementById('fileInput').click()"
+                             ondragover="event.preventDefault(); this.style.borderColor='var(--primary-color)'"
+                             ondragleave="this.style.borderColor='var(--gray-300)'"
+                             ondrop="onDrop(event)">
+                            <i class="fas fa-cloud-upload-alt fa-2x text-muted mb-2"></i>
+                            <p class="mb-1 fw-semibold">Glissez votre fichier ici</p>
+                            <p class="text-muted small mb-0">ou cliquez pour sélectionner (.xlsx, .xls)</p>
+                        </div>
+                        <input type="file" id="fileInput" name="file" accept=".xlsx,.xls" class="d-none"
+                               onchange="onFileSelect(this)">
+                        <div id="fileInfo" class="d-none alert alert-info py-2">
+                            <i class="fas fa-file-excel me-2"></i><span id="fileName"></span>
+                        </div>
+                        <small class="text-muted">
+                            <i class="fas fa-info-circle me-1"></i>
+                            Colonnes : Intitulé, Type (CM/TD/TP), Classe, Code UE, Enseignant, Durée totale, Durée séance/jour, Durée restante, Description.
+                            Téléchargez d'abord le modèle via <strong>Exporter</strong>.
+                        </small>
+                    </div>
+                    <div class="modal-footer border-0">
+                        <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Annuler</button>
+                        <button type="submit" class="btn btn-primary" id="importBtn" disabled>
+                            <i class="fas fa-upload me-1"></i> Importer
+                        </button>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js"></script>
+    <script src="/js/modern-layout.js"></script>
+    <script>
+        function filterCours() {
+            const search  = document.getElementById('searchInput').value.toLowerCase();
+            const ecoleId = document.getElementById('ecoleFilter').value;
+            const classe  = document.getElementById('classeFilter').value;
+            const ue      = document.getElementById('ueFilter').value;
+            const semestre = document.getElementById('semestreFilter').value;
+            const type    = document.getElementById('typeFilter').value.toUpperCase();
+            const cards   = document.querySelectorAll('#coursList .cours-card');
+            let visible   = 0;
+            cards.forEach(card => {
+                const intitule = (card.dataset.intitule || '').toLowerCase();
+                const ok = intitule.includes(search)
+                        && (!ecoleId   || card.dataset.ecole === ecoleId)
+                        && (!classe    || card.dataset.classe === classe)
+                        && (!ue        || card.dataset.ue === ue)
+                        && (!semestre  || card.dataset.semestre === semestre)
+                        && (!type      || card.dataset.type === type);
+                card.style.display = ok ? '' : 'none';
+                if (ok) visible++;
+            });
+            document.getElementById('countInfo').textContent = visible + ' cours';
+            document.getElementById('noResultMsg').classList.toggle('d-none', visible > 0 || cards.length === 0);
+        }
+
+        function onEcoleFilter() {
+            const ecoleId = document.getElementById('ecoleFilter').value;
+            const sel = document.getElementById('classeFilter');
+            sel.innerHTML = '<option value="">Toutes les classes</option>';
+            if (!ecoleId) { filterCours(); return; }
+
+            fetch('/admin/cours/api/classes-par-ecole/' + ecoleId)
+                .then(r => r.json())
+                .then(classes => {
+                    classes.forEach(cl => {
+                        const opt = document.createElement('option');
+                        opt.value = cl.id;
+                        opt.textContent = cl.nom;
+                        sel.appendChild(opt);
+                    });
+                    filterCours();
+                });
+        }
+
+        function resetFiltres() {
+            ['searchInput','ecoleFilter','classeFilter','ueFilter','semestreFilter','typeFilter'].forEach(id => {
+                const el = document.getElementById(id); if (el) el.value = '';
+            });
+            document.getElementById('classeFilter').innerHTML = '<option value="">Toutes les classes</option>';
+            filterCours();
+        }
+
+        function showDelete(btn) {
+            document.getElementById('deleteNom').textContent = btn.dataset.nom;
+            document.getElementById('deleteForm').action = '/admin/cours/supprimer/' + btn.dataset.id;
+            new bootstrap.Modal(document.getElementById('deleteModal')).show();
+        }
+
+        function onFileSelect(input) {
+            if (input.files.length > 0) {
+                document.getElementById('fileName').textContent = input.files[0].name;
+                document.getElementById('fileInfo').classList.remove('d-none');
+                document.getElementById('importBtn').disabled = false;
+            }
+        }
+
+        function onDrop(event) {
+            event.preventDefault();
+            document.getElementById('dropZone').style.borderColor = 'var(--gray-300)';
+            const file = event.dataTransfer.files[0];
+            if (file) {
+                const input = document.getElementById('fileInput');
+                const dt = new DataTransfer(); dt.items.add(file); input.files = dt.files;
+                onFileSelect(input);
+            }
+        }
+    </script>
+</body>
+</html>

@@ -1,0 +1,137 @@
+<!DOCTYPE html>
+<html lang="fr" xmlns:th="http://www.thymeleaf.org">
+<head><meta charset="UTF-8"></head>
+<body>
+
+<!-- ============================================================
+     Fragment: Header Admin
+     ============================================================ -->
+<header th:fragment="admin-header" class="ws-header">
+
+  <div class="ws-search-wrap">
+    <i class="fas fa-search"></i>
+    <input type="text" placeholder="Rechercher..." />
+  </div>
+
+  <div class="ws-header-actions">
+
+    <button class="ws-action-btn" title="Notifications">
+      <i class="fas fa-bell"></i>
+      <span class="ws-notif-badge">3</span>
+    </button>
+
+    <button class="ws-action-btn" onclick="toggleFullscreen()" title="Plein écran">
+      <i class="fas fa-expand"></i>
+    </button>
+
+    <div class="ws-dropdown" id="userDropdown">
+      <button class="ws-user-btn" onclick="toggleDropdown('userDropdown')">
+        <div class="ws-avatar">
+          <span th:text="${(nomComplet != null and !nomComplet.isEmpty()) ? nomComplet.substring(0,1) : 'A'}">A</span>
+          <div class="ws-avatar-status"></div>
+        </div>
+        <div class="ws-user-info">
+          <div class="ws-user-name" th:text="${nomComplet} ?: 'Administrateur'">Administrateur</div>
+          <div class="ws-user-role">Administrateur</div>
+        </div>
+        <i class="fas fa-chevron-down" style="font-size:11px;color:#94a3b8;margin-left:4px;"></i>
+      </button>
+
+      <div class="ws-dropdown-menu">
+        <div class="ws-dropdown-header">
+          <div style="display:flex;align-items:center;gap:12px;">
+            <div class="ws-avatar-lg">
+              <span th:text="${(nomComplet != null and !nomComplet.isEmpty()) ? nomComplet.substring(0,1) : 'A'}">A</span>
+            </div>
+            <div>
+              <div class="ws-dropdown-name" th:text="${nomComplet} ?: 'Administrateur'">Administrateur</div>
+              <div class="ws-dropdown-email" th:text="${email} ?: ''">admin@weschedule.com</div>
+              <span class="ws-dropdown-role">Administrateur</span>
+            </div>
+          </div>
+        </div>
+        <a href="/profile" class="ws-dropdown-item">
+          <i class="fas fa-user"></i> Mon profil
+        </a>
+        <a href="/dashboard/admin/parametres" class="ws-dropdown-item">
+          <i class="fas fa-cog"></i> Paramètres
+        </a>
+        <div class="ws-dropdown-divider"></div>
+        <form th:action="@{/logout}" method="post" style="margin:0">
+          <button type="submit" class="ws-dropdown-item danger">
+            <i class="fas fa-sign-out-alt"></i> Déconnexion
+          </button>
+        </form>
+      </div>
+    </div>
+
+  </div>
+</header>
+
+
+<!-- ============================================================
+     Fragment: Header Enseignant
+     ============================================================ -->
+<header th:fragment="enseignant-header" class="ws-header">
+
+  <div class="ws-search-wrap">
+    <i class="fas fa-search"></i>
+    <input type="text" placeholder="Rechercher..." />
+  </div>
+
+  <div class="ws-header-actions">
+
+    <button class="ws-action-btn" title="Notifications">
+      <i class="fas fa-bell"></i>
+    </button>
+
+    <button class="ws-action-btn" onclick="toggleFullscreen()" title="Plein écran">
+      <i class="fas fa-expand"></i>
+    </button>
+
+    <div class="ws-dropdown" id="userDropdown">
+      <button class="ws-user-btn" onclick="toggleDropdown('userDropdown')">
+        <div class="ws-avatar">
+          <span th:text="${(nomComplet != null and !nomComplet.isEmpty()) ? nomComplet.substring(0,1) : 'E'}">E</span>
+          <div class="ws-avatar-status"></div>
+        </div>
+        <div class="ws-user-info">
+          <div class="ws-user-name" th:text="${nomComplet} ?: 'Enseignant'">Enseignant</div>
+          <div class="ws-user-role">Enseignant</div>
+        </div>
+        <i class="fas fa-chevron-down" style="font-size:11px;color:#94a3b8;margin-left:4px;"></i>
+      </button>
+
+      <div class="ws-dropdown-menu">
+        <div class="ws-dropdown-header">
+          <div style="display:flex;align-items:center;gap:12px;">
+            <div class="ws-avatar-lg">
+              <span th:text="${(nomComplet != null and !nomComplet.isEmpty()) ? nomComplet.substring(0,1) : 'E'}">E</span>
+            </div>
+            <div>
+              <div class="ws-dropdown-name" th:text="${nomComplet} ?: 'Enseignant'">Enseignant</div>
+              <div class="ws-dropdown-email" th:text="${email} ?: ''">enseignant@weschedule.com</div>
+              <span class="ws-dropdown-role">Enseignant</span>
+            </div>
+          </div>
+        </div>
+        <a href="/dashboard/enseignant/profil" class="ws-dropdown-item">
+          <i class="fas fa-user"></i> Mon profil
+        </a>
+        <a href="/dashboard/enseignant/disponibilites" class="ws-dropdown-item">
+          <i class="fas fa-clock"></i> Mes disponibilités
+        </a>
+        <div class="ws-dropdown-divider"></div>
+        <form th:action="@{/logout}" method="post" style="margin:0">
+          <button type="submit" class="ws-dropdown-item danger">
+            <i class="fas fa-sign-out-alt"></i> Déconnexion
+          </button>
+        </form>
+      </div>
+    </div>
+
+  </div>
+</header>
+
+</body>
+</html>

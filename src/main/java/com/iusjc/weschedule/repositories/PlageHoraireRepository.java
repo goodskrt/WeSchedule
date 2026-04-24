@@ -1,0 +1,39 @@
+package com.iusjc.weschedule.repositories;
+
+import com.iusjc.weschedule.models.CreneauDisponibilite;
+import com.iusjc.weschedule.models.Enseignant;
+import com.iusjc.weschedule.models.PlageHoraire;
+import org.springframework.data.jpa.repository.JpaRepository;
+import org.springframework.data.jpa.repository.Modifying;
+import org.springframework.data.jpa.repository.Query;
+import org.springframework.data.repository.query.Param;
+import org.springframework.stereotype.Repository;
+
+import java.time.LocalDate;
+import java.time.LocalTime;
+import java.util.List;
+import java.util.UUID;
+
+@Repository
+public interface PlageHoraireRepository extends JpaRepository<PlageHoraire, UUID> {
+    
+    List<PlageHoraire> findByCreneauDisponibilite(CreneauDisponibilite creneauDisponibilite);
+    
+    @Modifying
+    @Query("DELETE FROM PlageHoraire p WHERE p.creneauDisponibilite.id = :creneauId")
+    void deleteByCreneauDisponibiliteId(@Param("creneauId") UUID creneauId);
+    
+    @Modifying
+    @Query("DELETE FROM PlageHoraire p WHERE p.creneauDisponibilite.id IN (SELECT c.id FROM CreneauDisponibilite c WHERE c.disponibilite.id = :disponibiliteId)")
+    void deleteByDisponibiliteIdViaCreneaux(@Param("disponibiliteId") UUID disponibiliteId);
+
+    @Query("SELECT COUNT(p) > 0 FROM PlageHoraire p " +
+           "WHERE p.creneauDisponibilite.disponibilite.enseignant = :enseignant " +
+           "AND p.creneauDisponibilite.date = :date " +
+           "AND p.heureDebut <= :heureDebut " +
+           "AND p.heureFin >= :heureFin")
+    boolean isEnseignantDisponible(@Param("enseignant") Enseignant enseignant,
+                                   @Param("date") LocalDate date,
+                                   @Param("heureDebut") LocalTime heureDebut,
+                                   @Param("heureFin") LocalTime heureFin);
+}

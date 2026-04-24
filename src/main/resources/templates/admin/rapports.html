@@ -1,0 +1,26 @@
+<!DOCTYPE html>
+<html lang="fr" xmlns:th="http://www.thymeleaf.org">
+<head>
+    <meta charset="UTF-8">
+    <title>Rapports - WeSchedule</title>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <link rel="stylesheet" href="/css/modern-layout.css">
+</head>
+<body>
+    <div th:replace="~{fragments/sidebar :: admin-sidebar('rapports')}"></div>
+    <div class="ws-wrapper">
+        <div th:replace="~{fragments/header :: admin-header}"></div>
+        <main class="ws-main-content">
+            <h2 class="page-title">Rapports et Statistiques</h2>
+            <p class="page-subtitle">Consulter les rapports et analyses du systeme</p>
+            <div th:replace="~{fragments/admin-stats :: stat-row(${pageStats})}"></div>
+            <div class="card-custom p-5 text-center mt-4">
+                <div class="empty-state-icon"><i class="fas fa-chart-bar"></i></div>
+                <p class="text-muted">Fonctionnalite en cours de developpement</p>
+            </div>
+        </main>
+    </div>
+    <script src="/js/modern-layout.js"></script>
+</body>
+</html>

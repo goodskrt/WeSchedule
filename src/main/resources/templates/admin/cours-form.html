@@ -1,0 +1,402 @@
+<!DOCTYPE html>
+<html lang="fr" xmlns:th="http://www.thymeleaf.org">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title th:text="${mode == 'creation' ? 'Nouveau Cours - WeSchedule' : 'Modifier Cours - WeSchedule'}">Cours</title>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <link rel="stylesheet" href="/css/modern-layout.css">
+    <style>
+        .preview-card {
+            background: var(--white); border-radius: var(--radius-xl); padding: 1.5rem;
+            box-shadow: var(--shadow-sm); border: 1px solid var(--gray-200); position: sticky; top: 1.5rem;
+        }
+        .preview-avatar {
+            width: 64px; height: 64px; border-radius: var(--radius-xl);
+            display: flex; align-items: center; justify-content: center;
+            font-weight: 800; color: white; font-size: 1rem; margin: 0 auto 1rem;
+        }
+        .av-cm { background: linear-gradient(135deg, #3b82f6, #2563eb); }
+        .av-td { background: linear-gradient(135deg, #f59e0b, #d97706); }
+        .av-tp { background: linear-gradient(135deg, #10b981, #059669); }
+        .progress-track { height: 8px; border-radius: 4px; background: var(--gray-200); overflow: hidden; }
+        .progress-fill  { height: 100%; border-radius: 4px; background: linear-gradient(90deg, #3b82f6, #10b981); transition: width 0.3s; }
+        .info-row { display: flex; justify-content: space-between; padding: 0.5rem 0; border-bottom: 1px solid var(--gray-100); }
+        .info-row:last-child { border-bottom: none; }
+    </style>
+</head>
+<body>
+    <div th:replace="~{fragments/sidebar :: admin-sidebar('cours')}"></div>
+    <div class="ws-wrapper">
+        <div th:replace="~{fragments/header :: admin-header}"></div>
+        <main class="ws-main-content">
+
+            <!-- Header -->
+            <div class="d-flex justify-content-between align-items-center mb-4">
+                <div>
+                    <h2 class="page-title" th:text="${mode == 'creation' ? 'Nouveau Cours' : 'Modifier le Cours'}">Cours</h2>
+                    <p class="page-subtitle" th:text="${mode == 'creation' ? 'Créez un nouveau cours pour une classe' : 'Modifiez les informations du cours'}"></p>
+                </div>
+                <a href="/admin/cours" class="btn btn-outline-secondary">
+                    <i class="fas fa-arrow-left me-1"></i> Retour
+                </a>
+            </div>
+
+            <!-- Alertes -->
+            <div th:if="${error}" class="alert alert-danger alert-dismissible fade show mb-3">
+                <i class="fas fa-exclamation-circle me-2"></i><span th:text="${error}"></span>
+                <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+            </div>
+
+            <div class="row g-4">
+                <!-- Formulaire -->
+                <div class="col-lg-8">
+                    <form th:action="${mode == 'creation' ? '/admin/cours/creer' : '/admin/cours/modifier/' + cours.idCours}"
+                          method="post" id="coursForm">
+
+                        <!-- Informations générales -->
+                        <div class="card border-0 shadow-sm rounded-4 mb-4">
+                            <div class="card-body p-4">
+                                <h6 class="fw-bold mb-3" style="color:var(--gray-700);">
+                                    <i class="fas fa-info-circle me-2 text-primary"></i>Informations générales
+                                </h6>
+                                <div class="row g-3">
+                                    <div class="col-md-8">
+                                        <label class="form-label fw-semibold">Intitulé <span class="text-danger">*</span></label>
+                                        <input type="text" class="form-control" name="intitule" id="intitule"
+                                               th:value="${cours.intitule}" required
+                                               placeholder="Ex: CM - Algorithmique" oninput="updatePreview()">
+                                    </div>
+                                    <div class="col-md-4">
+                                        <label class="form-label fw-semibold">Type <span class="text-danger">*</span></label>
+                                        <select class="form-select" name="typeCours" id="typeCours" required onchange="updatePreview()">
+                                            <option value="">— Sélectionner —</option>
+                                            <option th:each="t : ${types}" th:value="${t.name()}"
+                                                    th:text="${t.name()}"
+                                                    th:selected="${cours.typeCours != null and cours.typeCours == t}"></option>
+                                        </select>
+                                    </div>
+                                    <div class="col-12">
+                                        <label class="form-label fw-semibold">Description</label>
+                                        <textarea class="form-control" name="description" rows="2"
+                                                  th:text="${cours.description}"
+                                                  placeholder="Description optionnelle du cours"></textarea>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- Affectation -->
+                        <div class="card border-0 shadow-sm rounded-4 mb-4">
+                            <div class="card-body p-4">
+                                <h6 class="fw-bold mb-3" style="color:var(--gray-700);">
+                                    <i class="fas fa-link me-2 text-primary"></i>Affectation
+                                </h6>
+                                <div class="row g-3">
+                                    <!-- Filtre école -->
+                                    <div class="col-md-6">
+                                        <label class="form-label fw-semibold">École</label>
+                                        <select class="form-select" id="ecoleFilterForm" onchange="onEcoleChange()">
+                                            <option value="">— Sélectionner une école —</option>
+                                            <option th:each="e : ${ecoles}" th:value="${e.idEcole}" th:text="${e.nomEcole}"
+                                                    th:selected="${cours.classe != null and cours.classe.ecole != null and cours.classe.ecole.idEcole == e.idEcole}"></option>
+                                        </select>
+                                    </div>
+                                    <!-- Classe — chargée dynamiquement après école -->
+                                    <div class="col-md-6">
+                                        <label class="form-label fw-semibold">Classe <span class="text-danger">*</span></label>
+                                        <select class="form-select" name="classeId" id="classeId" required onchange="onClasseChange()">
+                                            <option value="">— Sélectionner d'abord une école —</option>
+                                        </select>
+                                    </div>
+                                    <!-- UE — dépend de la classe -->
+                                    <div class="col-md-6">
+                                        <label class="form-label fw-semibold">UE associée <span class="text-danger">*</span></label>
+                                        <select class="form-select" name="ueId" id="ueId" required onchange="onUEChange()">
+                                            <option value="">— Sélectionner d'abord une classe —</option>
+                                            <!-- En modification : pré-remplir avec les UEs de la classe -->
+                                            <option th:if="${mode == 'modification'}"
+                                                    th:each="u : ${uesClasse}"
+                                                    th:value="${u.idUE}"
+                                                    th:text="${u.code} + ' - ' + ${u.intitule} + ' (S' + ${u.semestre != null ? u.semestre : '?'} + ')'"
+                                                    th:selected="${cours.ue != null and cours.ue.idUE == u.idUE}"></option>
+                                        </select>
+                                        <small class="text-muted">Seules les UEs de la classe sélectionnée sont affichées</small>
+                                    </div>
+                                    <!-- Enseignant -->
+                                    <div class="col-md-6">
+                                        <label class="form-label fw-semibold">Enseignant</label>
+                                        <select class="form-select" name="enseignantId" id="enseignantId" onchange="updatePreview()">
+                                            <option value="">— Sélectionner d'abord une UE —</option>
+                                            <option th:if="${mode == 'modification'}"
+                                                    th:each="e : ${enseignants}"
+                                                    th:value="${e.idUser}"
+                                                    th:text="${e.prenom + ' ' + e.nom}"
+                                                    th:selected="${cours.enseignant != null and cours.enseignant.idUser == e.idUser}"></option>
+                                        </select>
+                                        <small class="text-muted">Enseignants affectés à l'UE sélectionnée</small>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- Durée -->
+                        <div class="card border-0 shadow-sm rounded-4 mb-4">
+                            <div class="card-body p-4">
+                                <h6 class="fw-bold mb-3" style="color:var(--gray-700);">
+                                    <i class="fas fa-clock me-2 text-primary"></i>Durée
+                                </h6>
+                                <div class="row g-3">
+                                    <div class="col-md-4">
+                                        <label class="form-label fw-semibold">Durée totale (h) <span class="text-danger">*</span></label>
+                                        <input type="number" class="form-control" name="dureeTotal" id="dureeTotal"
+                                               th:value="${cours.dureeTotal}" min="1" required
+                                               oninput="syncRestante(); updatePreview()">
+                                        <small class="text-muted">Nombre d'heures total prévu</small>
+                                    </div>
+                                    <div class="col-md-4">
+                                        <label class="form-label fw-semibold">Durée séance/jour (h)</label>
+                                        <input type="number" class="form-control" name="dureeSeanceParJour" id="dureeSeanceParJour"
+                                               th:value="${cours.dureeSeanceParJour}" min="1" max="8"
+                                               oninput="updatePreview()">
+                                        <small class="text-muted">Heures par séance quotidienne</small>
+                                    </div>
+                                    <div class="col-md-4" th:if="${mode == 'modification'}">
+                                        <label class="form-label fw-semibold">Heures restantes (h)</label>
+                                        <input type="number" class="form-control" name="dureeRestante" id="dureeRestante"
+                                               th:value="${cours.dureeRestante}" min="0"
+                                               oninput="updatePreview()">
+                                        <small class="text-muted">Heures encore à planifier</small>
+                                    </div>
+                                    <input th:if="${mode == 'creation'}" type="hidden" name="dureeRestante" id="dureeRestante"
+                                           th:value="${cours.dureeTotal}">
+                                </div>
+                            </div>
+                        </div>
+
+                        <div class="d-flex gap-2">
+                            <button type="submit" class="btn btn-primary">
+                                <i class="fas fa-save me-1"></i>
+                                <span th:text="${mode == 'creation' ? 'Créer le cours' : 'Enregistrer'}">Créer</span>
+                            </button>
+                            <a href="/admin/cours" class="btn btn-outline-secondary">Annuler</a>
+                        </div>
+                    </form>
+                </div>
+
+                <!-- Live Preview -->
+                <div class="col-lg-4">
+                    <div class="preview-card">
+                        <h6 class="fw-bold mb-3 text-center" style="color:var(--gray-600);">
+                            <i class="fas fa-eye me-1"></i> Aperçu
+                        </h6>
+                        <div class="text-center mb-3">
+                            <div class="preview-avatar av-cm" id="previewAvatar">
+                                <span id="previewType">?</span>
+                            </div>
+                            <h6 class="fw-bold mb-0" id="previewIntitule" style="color:var(--gray-900);">Intitulé du cours</h6>
+                            <small class="text-muted" id="previewUE">—</small>
+                        </div>
+                        <div class="info-row">
+                            <span class="text-muted small">Classe</span>
+                            <span class="fw-semibold small" id="previewClasse">—</span>
+                        </div>
+                        <div class="info-row">
+                            <span class="text-muted small">Enseignant</span>
+                            <span class="fw-semibold small" id="previewEnseignant">—</span>
+                        </div>
+                        <div class="info-row">
+                            <span class="text-muted small">Durée totale</span>
+                            <span class="fw-semibold small" id="previewDureeTotal">—</span>
+                        </div>
+                        <div class="info-row">
+                            <span class="text-muted small">Heures restantes</span>
+                            <span class="fw-semibold small" id="previewDureeRestante">—</span>
+                        </div>
+                        <div class="info-row">
+                            <span class="text-muted small">Durée séance/jour</span>
+                            <span class="fw-semibold small" id="previewDureeSeance">—</span>
+                        </div>
+                        <div class="mt-3">
+                            <div class="d-flex justify-content-between mb-1">
+                                <small class="text-muted">Progression</small>
+                                <small class="fw-bold" id="previewPct">0%</small>
+                            </div>
+                            <div class="progress-track">
+                                <div class="progress-fill" id="previewBar" style="width:0%"></div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+        </main>
+    </div>
+
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js"></script>
+    <script src="/js/modern-layout.js"></script>
+    <script th:inline="javascript">
+        const TYPE_COLORS = { CM: 'av-cm', TD: 'av-td', TP: 'av-tp' };
+        const currentUeId     = /*[[${cours.ue     != null ? cours.ue.idUE         : null}]]*/ null;
+        const currentClasseId = /*[[${cours.classe  != null ? cours.classe.idClasse : null}]]*/ null;
+        const currentEcoleId  = /*[[${cours.classe  != null and cours.classe.ecole != null ? cours.classe.ecole.idEcole : null}]]*/ null;
+
+        function updatePreview() {
+            const intitule = document.getElementById('intitule').value || 'Intitulé du cours';
+            const type     = document.getElementById('typeCours').value;
+            const total    = parseInt(document.getElementById('dureeTotal').value) || 0;
+            const restEl   = document.getElementById('dureeRestante');
+            const restante = restEl ? (parseInt(restEl.value) ?? total) : total;
+            const seanceEl = document.getElementById('dureeSeanceParJour');
+            const seance   = seanceEl ? (parseInt(seanceEl.value) || 0) : 0;
+
+            document.getElementById('previewIntitule').textContent = intitule;
+            document.getElementById('previewType').textContent = type || '?';
+
+            const avatar = document.getElementById('previewAvatar');
+            avatar.className = 'preview-avatar ' + (TYPE_COLORS[type] || 'av-cm');
+
+            const ueOpt = document.getElementById('ueId');
+            document.getElementById('previewUE').textContent =
+                ueOpt && ueOpt.value ? ueOpt.options[ueOpt.selectedIndex].text : '—';
+
+            const clOpt = document.getElementById('classeId');
+            document.getElementById('previewClasse').textContent =
+                clOpt && clOpt.value ? clOpt.options[clOpt.selectedIndex].text : '—';
+
+            const enOpt = document.getElementById('enseignantId');
+            document.getElementById('previewEnseignant').textContent =
+                enOpt && enOpt.value ? enOpt.options[enOpt.selectedIndex].text : '—';
+
+            document.getElementById('previewDureeTotal').textContent    = total    ? total    + 'h' : '—';
+            document.getElementById('previewDureeRestante').textContent = restante !== null ? restante + 'h' : '—';
+            document.getElementById('previewDureeSeance').textContent   = seance   ? seance   + 'h' : '—';
+
+            const effectuees = Math.max(0, total - restante);
+            const pct = total > 0 ? Math.round((effectuees / total) * 100) : 0;
+            document.getElementById('previewPct').textContent = pct + '%';
+            document.getElementById('previewBar').style.width = pct + '%';
+        }
+
+        function syncRestante() {
+            const restanteInput = document.getElementById('dureeRestante');
+            const totalInput    = document.getElementById('dureeTotal');
+            if (restanteInput && totalInput && restanteInput.type === 'hidden') {
+                restanteInput.value = totalInput.value;
+            }
+        }
+
+        function onEcoleChange() {
+            const ecoleId = document.getElementById('ecoleFilterForm').value;
+            const sel = document.getElementById('classeId');
+            sel.innerHTML = '<option value="">— Sélectionner une classe —</option>';
+            document.getElementById('ueId').innerHTML = '<option value="">— Sélectionner d\'abord une classe —</option>';
+            if (!ecoleId) { updatePreview(); return; }
+
+            fetch('/admin/cours/api/classes-par-ecole/' + ecoleId)
+                .then(r => r.json())
+                .then(classes => {
+                    if (classes.length === 0) {
+                        sel.innerHTML = '<option value="">Aucune classe pour cette école</option>';
+                    } else {
+                        classes.forEach(cl => {
+                            const opt = document.createElement('option');
+                            opt.value = cl.id;
+                            opt.textContent = cl.nom;
+                            if (currentClasseId && cl.id === currentClasseId.toString()) opt.selected = true;
+                            sel.appendChild(opt);
+                        });
+                        // Si une classe était pré-sélectionnée, charger ses UEs
+                        if (sel.value) loadUEsForClasse(sel.value);
+                    }
+                    updatePreview();
+                })
+                .catch(() => {
+                    sel.innerHTML = '<option value="">Erreur de chargement</option>';
+                });
+        }
+
+        function onClasseChange() {
+            const classeId = document.getElementById('classeId').value;
+            loadUEsForClasse(classeId);
+            updatePreview();
+        }
+        
+        function onUEChange() {
+            const ueId = document.getElementById('ueId').value;
+            loadEnseignantsForUE(ueId);
+            updatePreview();
+        }
+
+        function loadUEsForClasse(classeId) {
+            const ueSelect = document.getElementById('ueId');
+            ueSelect.innerHTML = '<option value="">— Sélectionner une UE —</option>';
+            if (!classeId) { updatePreview(); return; }
+
+            fetch('/admin/cours/api/ues-par-classe/' + classeId)
+                .then(r => r.json())
+                .then(ues => {
+                    if (ues.length === 0) {
+                        ueSelect.innerHTML = '<option value="">Aucune UE pour cette classe</option>';
+                    } else {
+                        ues.forEach(ue => {
+                            const opt = document.createElement('option');
+                            opt.value = ue.id;
+                            opt.textContent = ue.code + ' - ' + ue.intitule + ' (S' + ue.semestre + ')';
+                            if (currentUeId && ue.id === currentUeId.toString()) opt.selected = true;
+                            ueSelect.appendChild(opt);
+                        });
+                        // Si une UE était pré-sélectionnée, charger ses enseignants
+                        if (ueSelect.value) loadEnseignantsForUE(ueSelect.value);
+                    }
+                    updatePreview();
+                })
+                .catch(() => {
+                    ueSelect.innerHTML = '<option value="">Erreur de chargement</option>';
+                });
+        }
+        
+        function loadEnseignantsForUE(ueId) {
+            const ensSelect = document.getElementById('enseignantId');
+            const currentEnsId = ensSelect.value; // Sauvegarder la sélection actuelle
+            
+            ensSelect.innerHTML = '<option value="">— Chargement... —</option>';
+            if (!ueId) { 
+                ensSelect.innerHTML = '<option value="">— Sélectionner d\'abord une UE —</option>';
+                updatePreview(); 
+                return; 
+            }
+
+            fetch('/admin/cours/api/enseignants-par-ue/' + ueId)
+                .then(r => r.json())
+                .then(enseignants => {
+                    ensSelect.innerHTML = '<option value="">— Aucun enseignant —</option>';
+                    if (enseignants.length > 0) {
+                        enseignants.forEach(ens => {
+                            const opt = document.createElement('option');
+                            opt.value = ens.id;
+                            opt.textContent = ens.prenom + ' ' + ens.nom;
+                            if (currentEnsId && ens.id === currentEnsId) opt.selected = true;
+                            ensSelect.appendChild(opt);
+                        });
+                    }
+                    updatePreview();
+                })
+                .catch(() => {
+                    ensSelect.innerHTML = '<option value="">— Erreur de chargement —</option>';
+                });
+        }
+
+        document.addEventListener('DOMContentLoaded', () => {
+            // En modification : pré-charger école → classes → UEs
+            if (currentEcoleId) {
+                document.getElementById('ecoleFilterForm').value = currentEcoleId;
+                onEcoleChange(); // va charger les classes et pré-sélectionner la bonne
+            }
+            updatePreview();
+        });
+    </script>
+</body>
+</html>

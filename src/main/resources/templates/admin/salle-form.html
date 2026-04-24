@@ -1,0 +1,461 @@
+<!DOCTYPE html>
+<html lang="fr" xmlns:th="http://www.thymeleaf.org">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title th:text="${mode == 'creation' ? 'Nouvelle Salle - WeSchedule' : 'Modifier Salle - WeSchedule'}">Salle - WeSchedule</title>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <link rel="stylesheet" href="/css/modern-layout.css">
+    <style>
+        /* ── Layout deux colonnes ── */
+        .form-layout {
+            display: grid;
+            grid-template-columns: 300px 1fr;
+            gap: 1.5rem;
+            align-items: start;
+        }
+        @media (max-width: 900px) {
+            .form-layout { grid-template-columns: 1fr; }
+            .form-sidebar { display: none; }
+        }
+
+        /* ── Sidebar aperçu ── */
+        .form-sidebar {
+            position: sticky;
+            top: 1.5rem;
+        }
+        .preview-card {
+            background: var(--white);
+            border-radius: var(--radius-xl);
+            border: 1px solid var(--gray-200);
+            box-shadow: var(--shadow-sm);
+            overflow: hidden;
+        }
+        .preview-banner {
+            height: 100px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 2.5rem;
+            color: white;
+            background: linear-gradient(135deg, #059669, #10b981);
+            transition: background 0.3s;
+        }
+        .preview-body { padding: 1.25rem; }
+        .preview-name {
+            font-size: 1.1rem;
+            font-weight: 700;
+            color: var(--gray-900);
+            margin-bottom: 0.25rem;
+            min-height: 1.5rem;
+        }
+        .preview-badge {
+            display: inline-block;
+            padding: 0.2rem 0.65rem;
+            border-radius: 1rem;
+            font-size: 0.75rem;
+            font-weight: 600;
+            background: #d1fae5;
+            color: #065f46;
+            margin-bottom: 1rem;
+            transition: all 0.2s;
+        }
+        .preview-meta {
+            display: flex;
+            flex-direction: column;
+            gap: 0.5rem;
+        }
+        .preview-meta-item {
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+            font-size: 0.85rem;
+            color: var(--gray-600);
+        }
+        .preview-meta-item i { width: 16px; color: var(--primary-color); }
+
+        /* ── Champs du formulaire ── */
+        .form-card {
+            background: var(--white);
+            border-radius: var(--radius-xl);
+            border: 1px solid var(--gray-200);
+            box-shadow: var(--shadow-sm);
+            padding: 1.75rem;
+        }
+        .form-section-title {
+            font-size: 0.7rem;
+            font-weight: 700;
+            text-transform: uppercase;
+            letter-spacing: 0.08em;
+            color: var(--gray-400);
+            margin-bottom: 1rem;
+            padding-bottom: 0.5rem;
+            border-bottom: 1px solid var(--gray-100);
+        }
+        .form-control, .form-select {
+            border-radius: var(--radius-md);
+            border: 1.5px solid var(--gray-200);
+            padding: 0.6rem 0.9rem;
+            font-size: 0.9rem;
+            transition: border-color 0.15s, box-shadow 0.15s;
+        }
+        .form-control:focus, .form-select:focus {
+            border-color: var(--primary-color);
+            box-shadow: 0 0 0 3px rgba(5,150,105,0.12);
+        }
+        .input-icon-wrap { position: relative; }
+        .input-icon-wrap .input-icon {
+            position: absolute;
+            left: 0.85rem;
+            top: 50%;
+            transform: translateY(-50%);
+            color: var(--gray-400);
+            font-size: 0.85rem;
+            pointer-events: none;
+        }
+        .input-icon-wrap .form-control,
+        .input-icon-wrap .form-select { padding-left: 2.25rem; }
+
+        /* ── Type cards ── */
+        .type-grid {
+            display: grid;
+            grid-template-columns: repeat(4, 1fr);
+            gap: 0.75rem;
+        }
+        @media (max-width: 700px) { .type-grid { grid-template-columns: repeat(2, 1fr); } }
+        .type-card {
+            border: 2px solid var(--gray-200);
+            border-radius: var(--radius-lg);
+            padding: 1rem 0.75rem;
+            cursor: pointer;
+            text-align: center;
+            transition: all 0.18s;
+            background: var(--white);
+            user-select: none;
+        }
+        .type-card:hover { border-color: var(--primary-color); background: #f0fdf4; }
+        .type-card.selected {
+            border-color: var(--primary-color);
+            background: #f0fdf4;
+            box-shadow: 0 0 0 3px rgba(5,150,105,0.12);
+        }
+        .type-card input[type="radio"] { display: none; }
+        .type-card-icon {
+            width: 48px; height: 48px;
+            border-radius: var(--radius-md);
+            display: flex; align-items: center; justify-content: center;
+            font-size: 1.4rem;
+            margin: 0 auto 0.6rem;
+            background: var(--gray-100);
+            color: var(--gray-500);
+            transition: all 0.18s;
+        }
+        .type-card.selected .type-card-icon {
+            background: linear-gradient(135deg, var(--primary-color), #10b981);
+            color: white;
+        }
+        .type-card-label {
+            font-size: 0.78rem;
+            font-weight: 600;
+            color: var(--gray-700);
+            line-height: 1.2;
+        }
+        .type-card.selected .type-card-label { color: var(--primary-color); }
+
+        /* ── Localisation pills ── */
+        .pill-group { display: flex; flex-wrap: wrap; gap: 0.5rem; }
+        .pill-option { display: none; }
+        .pill-label {
+            display: inline-flex; align-items: center; gap: 0.4rem;
+            padding: 0.4rem 0.9rem;
+            border-radius: 2rem;
+            border: 1.5px solid var(--gray-200);
+            font-size: 0.82rem;
+            font-weight: 500;
+            cursor: pointer;
+            transition: all 0.15s;
+            background: var(--white);
+            color: var(--gray-600);
+        }
+        .pill-label:hover { border-color: var(--primary-color); color: var(--primary-color); }
+        .pill-option:checked + .pill-label {
+            background: var(--primary-color);
+            border-color: var(--primary-color);
+            color: white;
+        }
+
+        /* ── Actions bar ── */
+        .actions-bar {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            padding-top: 1.25rem;
+            border-top: 1px solid var(--gray-100);
+            margin-top: 1.5rem;
+        }
+    </style>
+</head>
+<body>
+    <div th:replace="~{fragments/sidebar :: admin-sidebar('salles')}"></div>
+    <div class="ws-wrapper">
+        <div th:replace="~{fragments/header :: admin-header}"></div>
+        <main class="ws-main-content">
+
+            <!-- Breadcrumb + titre -->
+            <div class="mb-4">
+                <nav aria-label="breadcrumb">
+                    <ol class="breadcrumb mb-1">
+                        <li class="breadcrumb-item"><a th:href="@{/admin/salles}">Salles</a></li>
+                        <li class="breadcrumb-item active" th:text="${mode == 'creation' ? 'Nouvelle salle' : 'Modifier'}"></li>
+                    </ol>
+                </nav>
+                <h2 class="page-title mb-0" th:text="${mode == 'creation' ? 'Nouvelle salle' : 'Modifier la salle'}"></h2>
+                <p class="page-subtitle" th:text="${mode == 'creation' ? 'Renseignez les informations de la nouvelle salle' : 'Mettez à jour les informations de la salle'}"></p>
+            </div>
+
+            <!-- Alertes -->
+            <div th:if="${error}" class="alert alert-danger alert-dismissible fade show mb-4">
+                <i class="fas fa-exclamation-circle me-2"></i><span th:text="${error}"></span>
+                <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+            </div>
+
+            <form th:action="${mode == 'creation' ? '/admin/salles/creer' : '/admin/salles/modifier/' + salle.idSalle}"
+                  method="post" id="salleForm">
+                <div class="form-layout">
+
+                    <!-- ── Sidebar aperçu ── -->
+                    <div class="form-sidebar">
+                        <p class="form-section-title ms-1">Aperçu</p>
+                        <div class="preview-card">
+                            <div class="preview-banner" id="previewBanner">
+                                <i class="fas fa-door-open" id="previewIcon"></i>
+                            </div>
+                            <div class="preview-body">
+                                <div class="preview-name" id="previewName">Nom de la salle</div>
+                                <span class="preview-badge" id="previewType">Type</span>
+                                <div class="preview-meta">
+                                    <div class="preview-meta-item">
+                                        <i class="fas fa-users"></i>
+                                        <span id="previewCapacite">— places</span>
+                                    </div>
+                                    <div class="preview-meta-item">
+                                        <i class="fas fa-layer-group"></i>
+                                        <span id="previewEtage">Étage non précisé</span>
+                                    </div>
+                                    <div class="preview-meta-item">
+                                        <i class="fas fa-building"></i>
+                                        <span id="previewBatiment">Bâtiment non précisé</span>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- ── Formulaire principal ── -->
+                    <div>
+                        <!-- Identité -->
+                        <div class="form-card mb-3">
+                            <p class="form-section-title">Identité</p>
+                            <div class="row g-3">
+                                <div class="col-12">
+                                    <label for="nomSalle" class="form-label fw-semibold">Nom de la salle <span class="text-danger">*</span></label>
+                                    <div class="input-icon-wrap">
+                                        <i class="fas fa-door-open input-icon"></i>
+                                        <input type="text" class="form-control" id="nomSalle" name="nomSalle"
+                                               th:value="${salle.nomSalle}" required
+                                               placeholder="Ex : Salle A101, Amphi B…"
+                                               oninput="updatePreview()">
+                                    </div>
+                                </div>
+                                <div class="col-sm-6">
+                                    <label for="capacite" class="form-label fw-semibold">Capacité <span class="text-danger">*</span></label>
+                                    <div class="input-icon-wrap">
+                                        <i class="fas fa-users input-icon"></i>
+                                        <input type="number" class="form-control" id="capacite" name="capacite"
+                                               th:value="${salle.capacite}" required min="1"
+                                               placeholder="Ex : 30"
+                                               oninput="updatePreview()">
+                                    </div>
+                                    <small class="text-muted">Nombre de places assises</small>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- Type de salle -->
+                        <div class="form-card mb-3">
+                            <p class="form-section-title">Type de salle <span class="text-danger">*</span></p>
+                            <div class="type-grid">
+                                <label class="type-card" th:classappend="${salle.typeSalle?.name() == 'SALLE_DE_COURS'} ? 'selected' : ''" id="card-SALLE_DE_COURS">
+                                    <input type="radio" name="typeSalle" value="SALLE_DE_COURS"
+                                           th:checked="${salle.typeSalle?.name() == 'SALLE_DE_COURS'}" required
+                                           onchange="onTypeChange(this)">
+                                    <div class="type-card-icon"><i class="fas fa-chalkboard-teacher"></i></div>
+                                    <div class="type-card-label">Salle de Cours</div>
+                                </label>
+                                <label class="type-card" th:classappend="${salle.typeSalle?.name() == 'SALLE_DE_TD'} ? 'selected' : ''" id="card-SALLE_DE_TD">
+                                    <input type="radio" name="typeSalle" value="SALLE_DE_TD"
+                                           th:checked="${salle.typeSalle?.name() == 'SALLE_DE_TD'}"
+                                           onchange="onTypeChange(this)">
+                                    <div class="type-card-icon"><i class="fas fa-chalkboard"></i></div>
+                                    <div class="type-card-label">Salle de TD</div>
+                                </label>
+                                <label class="type-card" th:classappend="${salle.typeSalle?.name() == 'SALLE_INFORMATIQUE'} ? 'selected' : ''" id="card-SALLE_INFORMATIQUE">
+                                    <input type="radio" name="typeSalle" value="SALLE_INFORMATIQUE"
+                                           th:checked="${salle.typeSalle?.name() == 'SALLE_INFORMATIQUE'}"
+                                           onchange="onTypeChange(this)">
+                                    <div class="type-card-icon"><i class="fas fa-laptop"></i></div>
+                                    <div class="type-card-label">Salle Informatique</div>
+                                </label>
+                                <label class="type-card" th:classappend="${salle.typeSalle?.name() == 'LABORATOIRE'} ? 'selected' : ''" id="card-LABORATOIRE">
+                                    <input type="radio" name="typeSalle" value="LABORATOIRE"
+                                           th:checked="${salle.typeSalle?.name() == 'LABORATOIRE'}"
+                                           onchange="onTypeChange(this)">
+                                    <div class="type-card-icon"><i class="fas fa-flask"></i></div>
+                                    <div class="type-card-label">Laboratoire</div>
+                                </label>
+                                <label class="type-card" th:classappend="${salle.typeSalle?.name() == 'SALLE_DE_CONFERENCE'} ? 'selected' : ''" id="card-SALLE_DE_CONFERENCE">
+                                    <input type="radio" name="typeSalle" value="SALLE_DE_CONFERENCE"
+                                           th:checked="${salle.typeSalle?.name() == 'SALLE_DE_CONFERENCE'}"
+                                           onchange="onTypeChange(this)">
+                                    <div class="type-card-icon"><i class="fas fa-microphone-alt"></i></div>
+                                    <div class="type-card-label">Salle de Conférence</div>
+                                </label>
+                            </div>
+                        </div>
+
+                        <!-- Localisation -->
+                        <div class="form-card mb-3">
+                            <p class="form-section-title">Localisation &amp; Statut</p>
+                            <div class="row g-3">
+                                <div class="col-12">
+                                    <label class="form-label fw-semibold">Étage</label>
+                                    <div class="pill-group" id="etageGroup">
+                                        <th:block th:each="opt : ${ {'RDC','1er étage','2ème étage','3ème étage'} }">
+                                            <input type="radio" class="pill-option" name="etage"
+                                                   th:id="'etage-' + ${opt}"
+                                                   th:value="${opt}"
+                                                   th:checked="${salle.etage == opt}"
+                                                   onchange="updatePreview()">
+                                            <label th:for="'etage-' + ${opt}" class="pill-label">
+                                                <i class="fas fa-layer-group" style="font-size:0.75rem;"></i>
+                                                <span th:text="${opt}"></span>
+                                            </label>
+                                        </th:block>
+                                        <!-- option "aucun" cachée pour reset -->
+                                        <input type="radio" class="pill-option" name="etage" id="etage-none" value="" th:checked="${salle.etage == null or salle.etage == ''}" onchange="updatePreview()">
+                                        <label for="etage-none" class="pill-label" style="color:var(--gray-400); border-style:dashed;">
+                                            <i class="fas fa-times" style="font-size:0.7rem;"></i> Aucun
+                                        </label>
+                                    </div>
+                                </div>
+                                <div class="col-12">
+                                    <label class="form-label fw-semibold">Bâtiment</label>
+                                    <div class="pill-group">
+                                        <input type="radio" class="pill-option" name="batiment" id="bat-nouveau" value="Nouveau bâtiment"
+                                               th:checked="${salle.batiment == 'Nouveau bâtiment'}" onchange="updatePreview()">
+                                        <label for="bat-nouveau" class="pill-label">
+                                            <i class="fas fa-building" style="font-size:0.75rem;"></i> Nouveau bâtiment
+                                        </label>
+
+                                        <input type="radio" class="pill-option" name="batiment" id="bat-ancien" value="Ancien bâtiment"
+                                               th:checked="${salle.batiment == 'Ancien bâtiment'}" onchange="updatePreview()">
+                                        <label for="bat-ancien" class="pill-label">
+                                            <i class="fas fa-landmark" style="font-size:0.75rem;"></i> Ancien bâtiment
+                                        </label>
+
+                                        <input type="radio" class="pill-option" name="batiment" id="bat-none" value=""
+                                               th:checked="${salle.batiment == null or salle.batiment == ''}" onchange="updatePreview()">
+                                        <label for="bat-none" class="pill-label" style="color:var(--gray-400); border-style:dashed;">
+                                            <i class="fas fa-times" style="font-size:0.7rem;"></i> Aucun
+                                        </label>
+                                    </div>
+                                </div>
+                                <!-- Statut -->
+                                <div class="col-12">
+                                    <label class="form-label fw-semibold">Statut</label>
+                                    <div class="pill-group">
+                                        <input type="radio" class="pill-option" name="statut" id="statut-dispo" value="DISPONIBLE"
+                                               th:checked="${salle.statut == null or salle.statut.name() == 'DISPONIBLE'}" onchange="updatePreview()">
+                                        <label for="statut-dispo" class="pill-label" style="--pill-active-bg:#d1fae5; --pill-active-color:#065f46;">
+                                            <i class="fas fa-check-circle" style="font-size:0.75rem;"></i> Disponible
+                                        </label>
+
+                                        <input type="radio" class="pill-option" name="statut" id="statut-occupe" value="OCCUPE"
+                                               th:checked="${salle.statut != null and salle.statut.name() == 'OCCUPE'}" onchange="updatePreview()">
+                                        <label for="statut-occupe" class="pill-label">
+                                            <i class="fas fa-lock" style="font-size:0.75rem;"></i> Occupé
+                                        </label>
+
+                                        <input type="radio" class="pill-option" name="statut" id="statut-maintenance" value="EN_MAINTENANCE"
+                                               th:checked="${salle.statut != null and salle.statut.name() == 'EN_MAINTENANCE'}" onchange="updatePreview()">
+                                        <label for="statut-maintenance" class="pill-label">
+                                            <i class="fas fa-tools" style="font-size:0.75rem;"></i> En maintenance
+                                        </label>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- Actions -->
+                        <div class="actions-bar">
+                            <a th:href="@{/admin/salles}" class="btn btn-secondary">
+                                <i class="fas fa-arrow-left me-1"></i> Annuler
+                            </a>
+                            <button type="submit" class="btn btn-primary px-4">
+                                <i class="fas fa-save me-1"></i>
+                                <span th:text="${mode == 'creation' ? 'Créer la salle' : 'Enregistrer'}"></span>
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            </form>
+        </main>
+    </div>
+
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js"></script>
+    <script src="/js/modern-layout.js"></script>
+    <script>
+        const TYPE_CONFIG = {
+            'SALLE_DE_COURS':    { icon: 'fa-chalkboard-teacher', label: 'Salle de Cours',    gradient: 'linear-gradient(135deg,#3b82f6,#2563eb)', badge: '#dbeafe', badgeText: '#1e40af' },
+            'SALLE_DE_TD':       { icon: 'fa-chalkboard',         label: 'Salle de TD',        gradient: 'linear-gradient(135deg,#f59e0b,#d97706)', badge: '#fef3c7', badgeText: '#92400e' },
+            'SALLE_INFORMATIQUE':{ icon: 'fa-laptop',             label: 'Salle Informatique', gradient: 'linear-gradient(135deg,#059669,#10b981)', badge: '#d1fae5', badgeText: '#065f46' },
+            'LABORATOIRE':       { icon: 'fa-flask',              label: 'Laboratoire',        gradient: 'linear-gradient(135deg,#8b5cf6,#7c3aed)', badge: '#ede9fe', badgeText: '#4c1d95' },
+            'SALLE_DE_CONFERENCE':{ icon: 'fa-microphone-alt',   label: 'Salle de Conférence',gradient: 'linear-gradient(135deg,#ec4899,#db2777)', badge: '#fce7f3', badgeText: '#9d174d' },
+        };
+
+        function updatePreview() {
+            const nom      = document.getElementById('nomSalle').value.trim();
+            const capacite = document.getElementById('capacite').value;
+            const typeEl   = document.querySelector('input[name="typeSalle"]:checked');
+            const etageEl  = document.querySelector('input[name="etage"]:checked');
+            const batEl    = document.querySelector('input[name="batiment"]:checked');
+
+            document.getElementById('previewName').textContent = nom || 'Nom de la salle';
+            document.getElementById('previewCapacite').textContent = capacite ? capacite + ' places' : '— places';
+            document.getElementById('previewEtage').textContent   = (etageEl && etageEl.value) ? etageEl.value : 'Étage non précisé';
+            document.getElementById('previewBatiment').textContent = (batEl && batEl.value) ? batEl.value : 'Bâtiment non précisé';
+
+            if (typeEl) {
+                const cfg = TYPE_CONFIG[typeEl.value];
+                document.getElementById('previewBanner').style.background = cfg.gradient;
+                document.getElementById('previewIcon').className = 'fas ' + cfg.icon;
+                const badge = document.getElementById('previewType');
+                badge.textContent = cfg.label;
+                badge.style.background = cfg.badge;
+                badge.style.color = cfg.badgeText;
+            }
+        }
+
+        function onTypeChange(radio) {
+            document.querySelectorAll('.type-card').forEach(c => c.classList.remove('selected'));
+            radio.closest('.type-card').classList.add('selected');
+            updatePreview();
+        }
+
+        // Init aperçu au chargement
+        document.addEventListener('DOMContentLoaded', updatePreview);
+    </script>
+</body>
+</html>
