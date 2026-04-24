@@ -39,6 +39,9 @@ public class EnseignantService {
     @Autowired
     private EmailService emailService;
 
+    @org.springframework.beans.factory.annotation.Value("${app.base-url}")
+    private String baseUrl;
+
     private static final String CHARACTERS = "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789!@#$%";
     private static final SecureRandom random = new SecureRandom();
 
@@ -266,7 +269,7 @@ public class EnseignantService {
             "───────────────────────────────────────────────────────────\n" +
             "🔗 ACCÉDER À LA PLATEFORME\n" +
             "───────────────────────────────────────────────────────────\n\n" +
-            "   👉 http://localhost:8080/login\n\n" +
+            "   👉 " + baseUrl + "/login\n\n" +
             "🔒 Pour des raisons de sécurité, nous vous recommandons de\n" +
             "   changer votre mot de passe dès votre première connexion.\n\n" +
             "═══════════════════════════════════════════════════════════\n\n" +

@@ -26,5 +26,11 @@ public interface ReservationRepository extends JpaRepository<Reservation, UUID> 
     List<Reservation> findBySalle(Salle salle);
     
     // Trouver les réservations par statut
-    List<Reservation> findByStatut(StatutReservation statut);
+    List<Reservation> findByStatutOrderByDateCreationDesc(StatutReservation statut);
+
+    // Trouver toutes les réservations triées par date de création
+    List<Reservation> findAllByOrderByDateCreationDesc();
+
+    // Trouver les réservations d'un utilisateur
+    List<Reservation> findByReserveParOrderByDateCreationDesc(com.iusjc.weschedule.models.Utilisateur reservePar);
 }

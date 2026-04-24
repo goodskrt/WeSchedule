@@ -3,7 +3,7 @@ package com.iusjc.weschedule.service;
 import com.iusjc.weschedule.enums.StatutUE;
 import com.iusjc.weschedule.models.*;
 import com.iusjc.weschedule.repositories.*;
-import org.springframework.beans.factory.annotation.Autowired;
+import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -20,37 +20,19 @@ import java.util.stream.Collectors;
  * - De la classe concernée
  */
 @Service
+@RequiredArgsConstructor
 public class PlanificationSeanceService {
 
-    @Autowired
-    private CoursRepository coursRepository;
-
-    @Autowired
-    private ClasseRepository classeRepository;
-
-    @Autowired
-    private EnseignantRepository enseignantRepository;
-
-    @Autowired
-    private DisponibiliteEnseignantRepository disponibiliteRepository;
-
-    @Autowired
-    private CreneauDisponibiliteRepository creneauRepository;
-
-    @Autowired
-    private SeanceClasseRepository seanceRepository;
-
-    @Autowired
-    private SalleRepository salleRepository;
-
-    @Autowired
-    private EmploiDuTempsClasseRepository emploiDuTempsRepository;
-
-    @Autowired
-    private DureeService dureeService;
-
-    @Autowired
-    private ReservationSalleService reservationSalleService;
+    private final CoursRepository coursRepository;
+    private final ClasseRepository classeRepository;
+    private final EnseignantRepository enseignantRepository;
+    private final DisponibiliteEnseignantRepository disponibiliteRepository;
+    private final CreneauDisponibiliteRepository creneauRepository;
+    private final SeanceClasseRepository seanceRepository;
+    private final SalleRepository salleRepository;
+    private final EmploiDuTempsClasseRepository emploiDuTempsRepository;
+    private final DureeService dureeService;
+    private final ReservationSalleService reservationSalleService;
 
     /**
      * DTO pour représenter un cours planifiable
@@ -346,20 +328,19 @@ public class PlanificationSeanceService {
 
     /**
      * Trouver l'enseignant assigné à un cours
-     * (À adapter selon votre logique métier)
      */
     private Enseignant trouverEnseignantPourCours(Cours cours) {
-        // Option 1: Si le cours a un champ enseignant
-        // return cours.getEnseignant();
-
-        // Option 2: Chercher dans les séances existantes
-        List<SeanceClasse> seances = seanceRepository.findByCours(cours);
-        if (!seances.isEmpty()) {
-            return seances.get(0).getEnseignant();
+        // Option 1: Si le cours a un champ enseignant direct
+        if (cours.getEnseignant() != null) {
+            return cours.getEnseignant();
         }
 
-        // Option 3: Chercher via l'UE et les enseignants
-        // À implémenter selon votre logique
+        // Option 2: Chercher dans les séances existantes pour ce cours
+        List<SeanceClasse> seances = seanceRepository.findByCours(cours);
+        if (!seances.isEmpty()) {
+            // On prend l'enseignant de la dernière séance ou de la première
+            return seances.get(0).getEnseignant();
+        }
 
         return null;
     }

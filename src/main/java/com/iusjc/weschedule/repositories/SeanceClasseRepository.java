@@ -42,6 +42,10 @@ public interface SeanceClasseRepository extends JpaRepository<SeanceClasse, UUID
     List<SeanceClasse> findBySalleAndDateAndHeureDebutLessThanAndHeureFinGreaterThan(
         Salle salle, LocalDate date, LocalTime heureFin, LocalTime heureDebut
     );
+
+    boolean existsBySalleAndDateAndHeureDebutLessThanAndHeureFinGreaterThan(
+        Salle salle, LocalDate date, LocalTime heureFin, LocalTime heureDebut
+    );
     
     // Vérifier les conflits d'enseignant
     List<SeanceClasse> findByEnseignantAndDateAndHeureDebutLessThanAndHeureFinGreaterThan(

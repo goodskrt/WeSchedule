@@ -352,12 +352,24 @@ public Map<String, Object> genererEmploiDuTemps(UUID emploiDuTempsId, Integer se
 - 10 classes: ~1 minute
 - 46 classes: ~4 minutes
 
-### 2. Gestion des Erreurs
+### 3. Gestion des Erreurs et Contraintes des Salles
+
+**Ordre de filtrage des créneaux:**
+Lors de la tentative de placement d'un cours, le système suit un ordre de priorité strict pour le filtrage:
+1.  **Filtrage des Salles (Prioritaire)**: Recherche de toutes les salles opérationnelles (`StatutSalle.DISPONIBLE`) ayant une capacité suffisante pour l'effectif de la classe.
+2.  **Vérification de Disponibilité Salle**: Pour chaque salle candidate, vérifie l'absence de conflit avec:
+    *   D'autres séances de cours déjà programmées.
+    *   Des **réservations manuelles confirmées**.
+3.  **Filtrage Classe**: Vérifie que la classe n'a pas déjà un cours sur ce créneau.
+4.  **Filtrage Enseignant**: Vérifie les disponibilités de l'enseignant.
+
+**Optimisation du placement:**
+Le système choisit automatiquement la "meilleure" salle parmi les salles disponibles : celle dont la capacité est suffisante mais la plus proche de l'effectif de la classe (évite d'affecter un grand amphi à un petit groupe si une salle de classe est libre).
 
 **Types d'erreurs possibles:**
 1. **Pas d'enseignant assigné**: Cours rejeté lors de la génération des candidats
-2. **Pas de disponibilité**: Cours rejeté lors de la génération des candidats
-3. **Pas de salle disponible**: Cours rejeté lors de la génération des candidats
+2. **Pas de disponibilité enseignant**: Cours rejeté lors de la génération des candidats
+3. **Pas de salle compatible**: Aucun salle n'a la capacité requise ou toutes sont occupées/réservées.
 4. **Contraintes non respectées**: Cours non placé (CM et TP même semaine, etc.)
 5. **Erreur serveur**: Exception capturée et retournée
 

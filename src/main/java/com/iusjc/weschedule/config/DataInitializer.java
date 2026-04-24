@@ -53,7 +53,8 @@ public class DataInitializer {
             EquipmentRepository equipmentRepo,
             EquipmentAssignmentRepository equipmentAssignmentRepo,
             TypeEquipementRepository typeEquipementRepo,
-            CategorieEquipementRepository categorieEquipementRepo) {
+            CategorieEquipementRepository categorieEquipementRepo,
+            DemandeReservationSalleRepository demandeReservationSalleRepo) {
         return args -> {
             log.info("=== INITIALISATION COMPLETE DE LA BASE DE DONNEES AVEC DONNEES FRONTEND ===");
 
@@ -70,6 +71,7 @@ public class DataInitializer {
             disponibiliteRepo.deleteAll();
             passwordResetTokenRepo.deleteAll();
             notificationRepo.deleteAll();
+            demandeReservationSalleRepo.deleteAll();
 
             // 2. Supprimer les cours AVANT les enseignants (car cours a FK vers enseignants)
             coursRepo.deleteAll();

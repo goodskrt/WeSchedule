@@ -13,6 +13,9 @@ import java.util.List;
 @Configuration
 public class OpenApiConfig {
 
+    @org.springframework.beans.factory.annotation.Value("${app.base-url}")
+    private String baseUrl;
+
     @Bean
     public OpenAPI wescheduleOpenAPI() {
         return new OpenAPI()
@@ -27,7 +30,7 @@ public class OpenApiConfig {
                                 .name("Apache 2.0")
                                 .url("http://www.apache.org/licenses/LICENSE-2.0")))
                 .servers(List.of(
-                        new Server().url("http://localhost:8080").description("Serveur de développement")
+                        new Server().url(baseUrl).description("Serveur de développement")
                 ));
     }
 }

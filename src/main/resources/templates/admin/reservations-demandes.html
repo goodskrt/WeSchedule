@@ -3,92 +3,171 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Réservations — WeSchedule</title>
+    <title>Gestion des Réservations — WeSchedule</title>
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
     <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css" rel="stylesheet">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
     <link rel="stylesheet" href="/css/modern-layout.css">
+    <style>
+        .badge-en_attente { background-color: #fef3c7; color: #92400e; border: 1px solid #fde68a; }
+        .badge-confirmee { background-color: #d1fae5; color: #065f46; border: 1px solid #a7f3d0; }
+        .badge-annulee { background-color: #fee2e2; color: #991b1b; border: 1px solid #fecaca; }
+        .badge-terminee { background-color: #f3f4f6; color: #374151; border: 1px solid #e5e7eb; }
+        .table-sm th, .table-sm td { padding: 0.75rem 0.5rem; }
+        .btn-action { width: 32px; height: 32px; padding: 0; display: inline-flex; align-items: center; justify-content: center; border-radius: 8px; transition: all 0.2s; }
+        .btn-action:hover { transform: translateY(-2px); }
+    </style>
 </head>
 <body>
 <div th:replace="~{fragments/sidebar :: admin-sidebar('reservations')}"></div>
 <div class="ws-wrapper">
     <div th:replace="~{fragments/header :: admin-header}"></div>
     <main class="ws-main-content">
-        <nav aria-label="breadcrumb" class="mb-2">
-            <ol class="breadcrumb mb-0">
-                <li class="breadcrumb-item active">Réservations de salles</li>
-            </ol>
-        </nav>
-
-        <div th:if="${success}" class="alert alert-success alert-dismissible fade show">
-            <span th:text="${success}"></span>
-            <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+        <div class="d-flex justify-content-between align-items-center mb-4">
+            <div>
+                <h2 class="h4 fw-bold mb-0">Toutes les réservations</h2>
+                <p class="text-muted small mb-0">Gérez les demandes enseignants et les réservations administratives</p>
+            </div>
+            <a href="/admin/reservations/nouveau" class="btn btn-primary shadow-sm">
+                <i class="fas fa-plus me-2"></i>Nouvelle réservation
+            </a>
         </div>
-        <div th:if="${error}" class="alert alert-danger alert-dismissible fade show">
-            <span th:text="${error}"></span>
-            <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+
+        <!-- Notifications Modales -->
+        <div th:replace="~{fragments/notifications :: notification-modals}"></div>
+
+        <div class="card border-0 shadow-sm mb-4">
+            <div class="card-body py-3">
+                <div class="row g-2 align-items-center">
+                    <div class="col-md-4">
+                        <div class="input-group input-group-sm">
+                            <span class="input-group-text bg-white border-end-0"><i class="fas fa-search text-muted"></i></span>
+                            <input type="text" id="filterSearch" class="form-control border-start-0" placeholder="Rechercher...">
+                        </div>
+                    </div>
+                    <div class="col-md-2">
+                        <select id="filterStatus" class="form-select form-select-sm">
+                            <option value="">Tous les statuts</option>
+                            <option value="EN_ATTENTE">En attente</option>
+                            <option value="CONFIRMEE">Confirmée</option>
+                            <option value="TERMINEE">Terminée</option>
+                            <option value="ANNULEE">Annulée</option>
+                        </select>
+                    </div>
+                </div>
+            </div>
         </div>
 
         <div class="card border-0 shadow-sm">
-            <div class="card-body">
-                <h5 class="card-title fw-bold mb-3"><i class="fas fa-inbox me-2 text-primary"></i>Demandes des enseignants</h5>
+            <div class="card-body p-0">
                 <div class="table-responsive">
-                    <table class="table table-sm align-middle">
-                        <thead class="table-light">
+                    <table class="table table-hover align-middle mb-0" id="reservationsTable">
+                        <thead class="bg-light">
                         <tr>
-                            <th>Date demande</th>
-                            <th>Enseignant</th>
+                            <th class="ps-4">Responsable</th>
                             <th>Salle</th>
-                            <th>Créneau</th>
+                            <th>Période</th>
                             <th>Motif</th>
                             <th>Équipements</th>
                             <th>Statut</th>
-                            <th class="text-end">Actions</th>
+                            <th class="text-end pe-4">Actions</th>
                         </tr>
                         </thead>
                         <tbody>
-                        <tr th:if="${demandes == null or demandes.isEmpty()}">
-                            <td colspan="8" class="text-muted text-center py-4">Aucune demande.</td>
-                        </tr>
-                        <tr th:each="d : ${demandes}">
-                            <td class="small text-muted text-nowrap" th:text="${d.createdAt != null} ? ${#temporals.format(d.createdAt, 'dd/MM/yyyy HH:mm')} : '—'">—</td>
-                            <td class="small">
-                                <span th:if="${d.enseignant != null}"
-                                      th:text="${d.enseignant.prenom + ' ' + d.enseignant.nom}">—</span>
-                                <div th:if="${d.enseignant != null}" class="text-muted" style="font-size:0.75rem;" th:text="${d.enseignant.email}"></div>
-                            </td>
-                            <td th:text="${d.salle != null} ? ${d.salle.nomSalle} : '—'">—</td>
-                            <td class="small text-nowrap">
-                                <span th:text="${#temporals.format(d.startAt, 'dd/MM HH:mm')}"></span>
-                                <span class="text-muted">→</span>
-                                <span th:text="${#temporals.format(d.endAt, 'dd/MM HH:mm')}"></span>
-                            </td>
-                            <td class="small" style="max-width:200px;">
-                                <span th:text="${#strings.abbreviate(d.motif, 120)}"></span>
-                            </td>
-                            <td class="small">
-                                <span th:if="${d.equipements == null or d.equipements.isEmpty()}" class="text-muted">—</span>
-                                <th:block th:if="${d.equipements != null and !d.equipements.isEmpty()}">
-                                    <th:block th:each="equip, it : ${d.equipements}">
-                                        <span th:text="${equip.nom != null and !#strings.isEmpty(equip.nom)} ? ${equip.nom} : ${equip.numeroSerie}"></span><span th:if="${!it.last}">, </span>
-                                    </th:block>
-                                </th:block>
+                        <tr th:each="res : ${reservations}" class="reservation-row" th:data-status="${res.statut}">
+                            <td class="ps-4">
+                                <div class="fw-bold text-dark" th:text="${res.reservePar != null ? (res.reservePar.prenom + ' ' + res.reservePar.nom) : '—'}">Responsable</div>
+                                <div class="text-muted small" th:text="${res.reservePar?.role}">Rôle</div>
                             </td>
                             <td>
-                                <span th:if="${d.statut.name() == 'EN_ATTENTE'}" class="badge bg-warning text-dark">En attente</span>
-                                <span th:if="${d.statut.name() == 'ACCEPTEE'}" class="badge bg-success">Acceptée</span>
-                                <span th:if="${d.statut.name() == 'REFUSEE'}" class="badge bg-danger">Refusée</span>
-                                <span th:if="${d.statut.name() == 'ANNULEE'}" class="badge bg-secondary">Annulée</span>
+                                <div class="fw-medium" th:text="${res.salle?.nomSalle}">Salle</div>
+                                <div class="text-muted small" th:text="${res.salle != null ? (res.salle.batiment + ' - Etage ' + res.salle.etage) : ''}">Bâtiment</div>
                             </td>
-                            <td class="text-end">
-                                <th:block th:if="${d.statut.name() == 'EN_ATTENTE'}">
-                                    <form th:action="@{/admin/reservations/{id}/accepter(id=${d.id})}" method="post" class="d-inline">
-                                        <button type="submit" class="btn btn-sm btn-success" onclick="return confirm('Valider cette réservation ?');">Accepter</button>
+                            <td>
+                                <div class="d-flex align-items-center">
+                                    <div class="me-3 text-primary bg-primary-subtle rounded-3 p-2 d-flex align-items-center justify-content-center" style="width: 40px; height: 40px;">
+                                        <i class="far fa-calendar-alt fs-5"></i>
+                                    </div>
+                                    <div>
+                                        <div th:if="${res.startAt != null}">
+                                            <div class="fw-bold text-dark" th:text="${#temporals.format(res.startAt, 'dd MMMM yyyy')}">Date</div>
+                                            <div class="text-muted small">
+                                                <i class="far fa-clock me-1"></i>
+                                                <span th:text="${#temporals.format(res.startAt, 'HH:mm') + (res.endAt != null ? ' - ' + #temporals.format(res.endAt, 'HH:mm') : '')}">Heure</span>
+                                            </div>
+                                        </div>
+                                        <div th:if="${res.plageHoraire != null}">
+                                            <div class="fw-bold text-dark" th:text="${res.plageHoraire.creneauDisponibilite != null ? #temporals.format(res.plageHoraire.creneauDisponibilite.date, 'dd MMMM yyyy') : ''}">Date</div>
+                                            <div class="text-muted small">
+                                                <i class="far fa-clock me-1"></i>
+                                                <span th:text="${res.plageHoraire.heureDebut + ' - ' + res.plageHoraire.heureFin}">Heure</span>
+                                            </div>
+                                        </div>
+                                    </div>
+                                </div>
+                            </td>
+                            <td th:text="${res.motif}">Motif</td>
+                            <td>
+                                <div class="d-flex flex-wrap gap-1">
+                                    <span th:each="equip : ${res.equipements}" class="badge bg-light text-dark border small fw-normal" th:text="${equip.nom}">Équipement</span>
+                                    <span th:if="${#lists.isEmpty(res.equipements)}" class="text-muted small fst-italic">Aucun</span>
+                                </div>
+                            </td>
+                            <td>
+                                <span th:if="${res.statut != null}" 
+                                      th:class="${'badge rounded-pill px-3 py-2 ' + (res.statut.name() == 'EN_ATTENTE' ? 'badge-en_attente' : (res.statut.name() == 'CONFIRMEE' ? 'badge-confirmee' : (res.statut.name() == 'TERMINEE' ? 'badge-terminee' : 'badge-annulee')))}"
+                                      th:text="${res.statut}">Statut</span>
+                            </td>
+                            <td class="text-end pe-4">
+                                <div class="d-flex justify-content-end gap-1">
+                                    <button class="btn btn-action btn-outline-info" title="Détails" data-bs-toggle="modal" th:data-bs-target="${'#modalDetails' + res.idResa}">
+                                        <i class="fas fa-eye"></i>
+                                    </button>
+                                    
+                                    <a th:href="@{/admin/reservations/editer/{id}(id=${res.idResa})}" class="btn btn-action btn-outline-primary" title="Modifier">
+                                        <i class="fas fa-edit"></i>
+                                    </a>
+
+                                    <th:block th:if="${res.statut != null and res.statut.name() == 'EN_ATTENTE'}">
+                                        <form th:action="@{/admin/reservations/{id}/valider(id=${res.idResa})}" method="post" class="d-inline">
+                                            <button type="submit" class="btn btn-action btn-success" title="Valider">
+                                                <i class="fas fa-check"></i>
+                                            </button>
+                                        </form>
+                                    </th:block>
+
+                                    <th:block th:if="${res.statut != null and res.statut.name() == 'CONFIRMEE'}">
+                                        <form th:action="@{/admin/reservations/{id}/terminer(id=${res.idResa})}" method="post" class="d-inline">
+                                            <button type="submit" class="btn btn-action btn-info text-white" title="Terminer">
+                                                <i class="fas fa-flag-checkered"></i>
+                                            </button>
+                                        </form>
+                                    </th:block>
+
+                                    <th:block th:if="${res.statut != null and res.statut.name() != 'ANNULEE'}">
+                                        <form th:id="${'formAnnuler' + res.idResa}" th:action="@{/admin/reservations/{id}/annuler(id=${res.idResa})}" method="post" class="d-inline">
+                                            <button type="button" class="btn btn-action btn-warning text-white" title="Annuler" 
+                                                    th:data-form-id="${'formAnnuler' + res.idResa}"
+                                                    onclick="wsConfirm('Annuler cette réservation ?', () => document.getElementById(this.getAttribute('data-form-id')).submit())">
+                                                <i class="fas fa-times"></i>
+                                            </button>
+                                        </form>
+                                    </th:block>
+
+                                    <form th:id="${'formSuppr' + res.idResa}" th:action="@{/admin/reservations/{id}/supprimer(id=${res.idResa})}" method="post" class="d-inline">
+                                        <button type="button" class="btn btn-action btn-outline-danger" title="Supprimer" 
+                                                th:data-form-id="${'formSuppr' + res.idResa}"
+                                                onclick="wsConfirm('Supprimer définitivement cette réservation ?', () => document.getElementById(this.getAttribute('data-form-id')).submit())">
+                                            <i class="fas fa-trash"></i>
+                                        </button>
                                     </form>
-                                    <button type="button" class="btn btn-sm btn-outline-danger" data-bs-toggle="modal" th:data-bs-target="|#modalRefus${d.id}|">Refuser</button>
-                                </th:block>
-                                <div th:if="${d.statut.name() == 'ACCEPTEE'}" class="small text-muted" th:text="${d.traiteParEmail != null ? 'Par ' + d.traiteParEmail : ''}"></div>
-                                <div th:if="${d.statut.name() == 'REFUSEE' and d.commentaireAdmin != null}" class="small text-danger text-start" th:text="${d.commentaireAdmin}"></div>
+                                </div>
+                            </td>
+                        </tr>
+                        <tr th:if="${#lists.isEmpty(reservations)}">
+                            <td colspan="6" class="text-center py-5 text-muted fst-italic">
+                                <i class="fas fa-calendar-times fa-3x mb-3 opacity-25"></i>
+                                <p>Aucune réservation trouvée.</p>
                             </td>
                         </tr>
                         </tbody>
@@ -99,30 +178,106 @@
     </main>
 </div>
 
-<th:block th:each="d : ${demandes}">
-    <div class="modal fade" tabindex="-1" th:id="|modalRefus${d.id}|" th:if="${d.statut.name() == 'EN_ATTENTE'}">
-        <div class="modal-dialog">
-            <div class="modal-content">
-                <div class="modal-header">
-                    <h5 class="modal-title">Refuser la demande</h5>
+<!-- MODALS DE DÉTAILS -->
+<!-- MODALS DE DÉTAILS -->
+<th:block th:each="resDetail : ${reservations}">
+    <div class="modal fade" th:id="${'modalDetails' + resDetail.idResa}" tabindex="-1">
+        <div class="modal-dialog modal-dialog-centered">
+            <div class="modal-content border-0 shadow-lg">
+                <div class="modal-header border-bottom-0 pt-4 px-4">
+                    <h5 class="modal-title fw-bold text-primary">
+                        <i class="fas fa-info-circle me-2"></i>Détails de la réservation
+                    </h5>
                     <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
                 </div>
-                <form th:action="@{/admin/reservations/{id}/refuser(id=${d.id})}" method="post">
-                    <div class="modal-body">
-                        <label class="form-label">Motif du refus <span class="text-danger">*</span></label>
-                        <textarea class="form-control" name="commentaire" rows="3" required placeholder="Expliquez la raison du refus…"></textarea>
+                <div class="modal-body p-4">
+                    <div class="row g-4">
+                        <div class="col-md-6">
+                            <label class="text-muted small fw-bold text-uppercase d-block mb-1">Responsable</label>
+                            <div class="fw-bold" th:text="${resDetail.reservePar != null ? (resDetail.reservePar.prenom + ' ' + resDetail.reservePar.nom) : '—'}">Responsable</div>
+                            <div class="small text-muted" th:text="${resDetail.reservePar?.role}">Rôle</div>
+                        </div>
+                        <div class="col-md-6 text-end">
+                            <label class="text-muted small fw-bold text-uppercase d-block mb-1">Statut</label>
+                            <span th:if="${resDetail.statut != null}" 
+                                  th:class="${'badge rounded-pill px-3 py-2 ' + (resDetail.statut.name() == 'EN_ATTENTE' ? 'badge-en_attente' : (resDetail.statut.name() == 'CONFIRMEE' ? 'badge-confirmee' : (resDetail.statut.name() == 'TERMINEE' ? 'badge-terminee' : 'badge-annulee')))}"
+                                  th:text="${resDetail.statut}">Statut</span>
+                        </div>
+                        <div class="col-12">
+                            <hr class="my-0 opacity-10">
+                        </div>
+                        <div class="col-md-12">
+                            <label class="text-muted small fw-bold text-uppercase d-block mb-1">Salle</label>
+                            <div class="fw-bold text-primary" th:text="${resDetail.salle?.nomSalle}">Salle</div>
+                            <div class="small text-muted" th:text="${resDetail.salle != null ? (resDetail.salle.batiment + ' - Etage ' + resDetail.salle.etage) : ''}">Bâtiment</div>
+                        </div>
+                        <div class="col-12">
+                            <label class="text-muted small fw-bold text-uppercase d-block mb-1">Période réservée</label>
+                            <div class="d-flex align-items-center mt-1">
+                                <div class="bg-light rounded-3 p-3 border w-100">
+                                    <div th:if="${resDetail.startAt != null}">
+                                        <div class="fw-bold text-dark mb-1">
+                                            <i class="far fa-calendar-check me-2 text-primary"></i>
+                                            <span th:text="${#temporals.format(resDetail.startAt, 'dd MMMM yyyy')}">Date</span>
+                                        </div>
+                                        <div class="text-muted fw-medium">
+                                            <i class="far fa-clock me-2 text-primary"></i>
+                                            <span th:text="${#temporals.format(resDetail.startAt, 'HH:mm') + (resDetail.endAt != null ? ' - ' + #temporals.format(resDetail.endAt, 'HH:mm') : '')}">Heure</span>
+                                        </div>
+                                    </div>
+                                    <div th:if="${resDetail.plageHoraire != null}">
+                                        <div class="fw-bold text-dark mb-1">
+                                            <i class="far fa-calendar-check me-2 text-primary"></i>
+                                            <span th:text="${resDetail.plageHoraire.creneauDisponibilite != null ? #temporals.format(resDetail.plageHoraire.creneauDisponibilite.date, 'dd MMMM yyyy') : ''}">Date</span>
+                                        </div>
+                                        <div class="text-muted fw-medium">
+                                            <i class="far fa-clock me-2 text-primary"></i>
+                                            <span th:text="${resDetail.plageHoraire.heureDebut + ' - ' + resDetail.plageHoraire.heureFin}">Heure</span>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="col-12">
+                            <label class="text-muted small fw-bold text-uppercase d-block mb-1">Motif de la demande</label>
+                            <div class="p-3 bg-light rounded-3 small border" th:text="${resDetail.motif}">Motif</div>
+                        </div>
+                        <div class="col-12">
+                            <label class="text-muted small fw-bold text-uppercase d-block mb-1">Équipements réservés</label>
+                            <div class="d-flex flex-wrap gap-2 mt-1">
+                                <span th:each="equip : ${resDetail.equipements}" class="badge bg-white text-dark border px-3 py-2 fw-normal" th:text="${equip.nom}">Équipement</span>
+                                <span th:if="${#lists.isEmpty(resDetail.equipements)}" class="text-muted italic small fst-italic">Aucun équipement spécifique</span>
+                            </div>
+                        </div>
                     </div>
-                    <div class="modal-footer">
-                        <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Annuler</button>
-                        <button type="submit" class="btn btn-danger">Confirmer le refus</button>
-                    </div>
-                </form>
+                </div>
+                <div class="modal-footer border-top-0 pb-4 px-4">
+                    <button type="button" class="btn btn-light px-4" data-bs-dismiss="modal">Fermer</button>
+                </div>
             </div>
         </div>
     </div>
 </th:block>
 
 <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js"></script>
-<script src="/js/modern-layout.js"></script>
+<script>
+    document.getElementById('filterSearch').addEventListener('keyup', function() {
+        let val = this.value.toLowerCase();
+        document.querySelectorAll('.reservation-row').forEach(row => {
+            row.style.display = row.innerText.toLowerCase().includes(val) ? '' : 'none';
+        });
+    });
+
+    document.getElementById('filterStatus').addEventListener('change', function() {
+        let val = this.value;
+        document.querySelectorAll('.reservation-row').forEach(row => {
+            if (!val || row.getAttribute('data-status') === val) {
+                row.style.display = '';
+            } else {
+                row.style.display = 'none';
+            }
+        });
+    });
+</script>
 </body>
 </html>

@@ -16,11 +16,7 @@ import org.springframework.ui.Model;
 import org.springframework.web.bind.annotation.*;
 import org.springframework.web.servlet.mvc.support.RedirectAttributes;
 
-import java.util.ArrayList;
-import java.util.Collections;
-import java.util.List;
-import java.util.Optional;
-import java.util.UUID;
+import java.util.*;
 
 @Controller
 @RequestMapping("/admin/salles")
@@ -29,7 +25,6 @@ public class SalleController {
     @Autowired private SalleRepository salleRepository;
     @Autowired private EquipmentRepository equipmentRepository;
 
-    // ── Helper : évite les null renvoyés par le repository ──────────────────
     private <T> List<T> safe(List<T> list) {
         return list != null ? list : Collections.emptyList();
     }
@@ -48,7 +43,6 @@ public class SalleController {
         model.addAttribute("salle", new Salle());
         model.addAttribute("typesSalle", TypeSalle.values());
         model.addAttribute("statuts", StatutSalle.values());
-        // CORRECTION : safe() garantit une liste non-null → plus de "Iteration variable cannot be null"
         model.addAttribute("equipementsDisponibles", safe(equipmentRepository.findBySalleIsNull()));
         model.addAttribute("equipementsActuels", Collections.emptyList());
         model.addAttribute("mode", "creation");
@@ -160,7 +154,6 @@ public class SalleController {
             salle.setStatut(StatutSalle.valueOf(statut));
             salleRepository.save(salle);
 
-            // CORRECTION : safe() avant forEach
             safe(equipmentRepository.findBySalle(salle)).forEach(eq -> {
                 eq.setSalle(null);
                 EquipmentStatutRules.syncStatutAvecSalle(eq, StatutEquipement.DISPONIBLE);
@@ -191,7 +184,6 @@ public class SalleController {
         try {
             Salle salle = salleRepository.findById(id)
                     .orElseThrow(() -> new RuntimeException("Salle non trouvée"));
-            // CORRECTION : safe() avant forEach
             safe(equipmentRepository.findBySalle(salle)).forEach(eq -> {
                 eq.setSalle(null);
                 EquipmentStatutRules.syncStatutAvecSalle(eq, StatutEquipement.DISPONIBLE);
@@ -211,12 +203,25 @@ public class SalleController {
             Salle salle = salleRepository.findById(id)
                     .orElseThrow(() -> new RuntimeException("Salle non trouvée"));
             model.addAttribute("salle", salle);
-            // CORRECTION : safe() garantit une liste non-null → plus de "Iteration variable cannot be null"
             model.addAttribute("equipements", safe(equipmentRepository.findBySalle(salle)));
             return "admin/salle-details";
         } catch (Exception e) {
             ra.addFlashAttribute("error", "Erreur : " + e.getMessage());
             return "redirect:/admin/salles";
         }
+    }
+
+    @GetMapping("/api/{id}/equipements")
+    @ResponseBody
+    public List<Map<String, String>> getEquipements(@PathVariable UUID id) {
+        return salleRepository.findById(id)
+                .map(salle -> safe(equipmentRepository.findBySalle(salle)).stream()
+                        .map(e -> {
+                            Map<String, String> map = new HashMap<>();
+                            map.put("id", e.getId().toString());
+                            map.put("nom", e.getNom() != null ? e.getNom() : e.getNumeroSerie());
+                            return map;
+                        }).toList())
+                .orElse(Collections.emptyList());
     }
 }

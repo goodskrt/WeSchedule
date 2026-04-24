@@ -42,6 +42,9 @@ public class AutoGenerationEmploiDuTempsService {
     @Autowired
     private EmploiDuTempsService emploiDuTempsService;
 
+    @Autowired
+    private ReservationSalleService reservationSalleService;
+
     /**
      * Génère automatiquement l'emploi du temps pour une classe
      * VERSION OPTIMISÉE pour réduire le temps de génération
@@ -252,9 +255,10 @@ public class AutoGenerationEmploiDuTempsService {
                 continue;
             }
 
-            // CSP: Vérifier qu'il existe au moins une salle disponible
-            if (!hasRoomAvailable(emploiDuTemps)) {
-                log.warn("  -> REJETÉ : Aucune salle disponible dans le système");
+            // CSP: Vérifier qu'il existe au moins une salle avec capacité suffisante
+            if (!hasRoomAvailable(cours)) {
+                log.warn("  -> REJETÉ : Aucune salle avec capacité suffisante ({}) pour la classe {}", 
+                    cours.getClasse().getEffectif(), cours.getClasse().getNom());
                 continue;
             }
 
@@ -290,6 +294,16 @@ public class AutoGenerationEmploiDuTempsService {
      */
     private boolean isSlotAvailable(Cours cours, LocalDate date, LocalTime debut, LocalTime fin, 
                                     EmploiDuTempsClasse emploiDuTemps) {
+        // [CRITÈRE PRIORITAIRE] CSP: Vérifier qu'une salle est disponible pour ce créneau
+        // On récupère les salles avec capacité suffisante et opérationnelles
+        List<ReservationSalleService.SalleDisponible> sallesDisponibles = 
+                reservationSalleService.getSallesAvecCapaciteSuffisante(
+                        emploiDuTemps.getClasse().getIdClasse(), date, debut, fin);
+        
+        if (sallesDisponibles.isEmpty()) {
+            return false;
+        }
+
         // CSP: Vérifier que la classe n'a rien à cette heure
         List<SeanceClasse> seancesClasse = seanceRepository
                 .findByEmploiDuTempsAndDateAndHeureDebutLessThanAndHeureFinGreaterThan(
@@ -305,22 +319,7 @@ public class AutoGenerationEmploiDuTempsService {
         boolean hasAvailability = disponibilites.stream()
                 .anyMatch(d -> !date.isBefore(d.getDateDebut()) && !date.isAfter(d.getDateFin()));
         
-        if (!hasAvailability) {
-            return false;
-        }
-
-        // CSP: Vérifier qu'une salle est disponible
-        List<Salle> salles = salleRepository.findAll();
-        for (Salle salle : salles) {
-            List<SeanceClasse> seancesSalle = seanceRepository
-                    .findBySalleAndDateAndHeureDebutLessThanAndHeureFinGreaterThan(
-                            salle, date, fin, debut);
-            if (seancesSalle.isEmpty()) {
-                return true;
-            }
-        }
-        
-        return false;
+        return hasAvailability;
     }
 
     /**
@@ -454,30 +453,35 @@ public class AutoGenerationEmploiDuTempsService {
         
         try {
             // Trouver une salle disponible pour toutes les séances
-            List<Salle> salles = salleRepository.findAll();
-            Salle salleTrouvee = null;
+            // On utilise le service pour avoir les salles triées par capacité optimale
+            List<ReservationSalleService.SalleDisponible> sallesCandidates = 
+                    reservationSalleService.getSallesAvecCapaciteSuffisante(
+                            emploiDuTemps.getClasse().getIdClasse(), currentDate, heureDebut, currentHeure);
             
-            for (Salle salle : salles) {
-                boolean salleDisponiblePourTout = true;
-                
-                // Vérifier que la salle est disponible pour toutes les séances
-                for (SeanceClasse seance : seancesACreer) {
-                    List<SeanceClasse> seancesSalle = seanceRepository
-                            .findBySalleAndDateAndHeureDebutLessThanAndHeureFinGreaterThan(
-                                    salle, seance.getDate(), seance.getHeureFin(), seance.getHeureDebut());
-                    if (!seancesSalle.isEmpty()) {
-                        salleDisponiblePourTout = false;
+            Salle salleTrouvee = null;
+            if (!sallesCandidates.isEmpty()) {
+                // On vérifie que la salle est libre pour chaque séance individuelle
+                // (important s'il y a eu un saut au-dessus de la pause déjeuner)
+                for (ReservationSalleService.SalleDisponible candidateRoom : sallesCandidates) {
+                    Salle salle = candidateRoom.getSalle();
+                    boolean salleDisponiblePourTout = true;
+                    
+                    for (SeanceClasse seance : seancesACreer) {
+                        if (!reservationSalleService.estSalleDisponible(salle, seance.getDate(), seance.getHeureDebut(), seance.getHeureFin())) {
+                            salleDisponiblePourTout = false;
+                            break;
+                        }
+                    }
+                    
+                    if (salleDisponiblePourTout) {
+                        salleTrouvee = salle;
                         break;
                     }
-                }
-                
-                if (salleDisponiblePourTout) {
-                    salleTrouvee = salle;
-                    break;
                 }
             }
             
             if (salleTrouvee == null) {
+                log.debug("Aucune salle disponible pour le créneau {} - {} le {}", heureDebut, currentHeure, currentDate);
                 return false; // Aucune salle disponible
             }
             
@@ -528,11 +532,15 @@ public class AutoGenerationEmploiDuTempsService {
     }
 
     /**
-     * CSP: Vérifie s'il y a au moins une salle disponible
+     * CSP: Vérifie s'il y a au moins une salle capable d'accueillir la classe
      */
-    private boolean hasRoomAvailable(EmploiDuTempsClasse emploiDuTemps) {
-        List<Salle> salles = salleRepository.findAll();
-        return !salles.isEmpty();
+    private boolean hasRoomAvailable(Cours cours) {
+        int effectif = (cours.getClasse() != null && cours.getClasse().getEffectif() != null) 
+                       ? cours.getClasse().getEffectif() : 0;
+        
+        return salleRepository.findAll().stream()
+                .anyMatch(s -> s.getStatut() == com.iusjc.weschedule.enums.StatutSalle.DISPONIBLE 
+                               && s.getCapacite() >= effectif);
     }
 
     /**

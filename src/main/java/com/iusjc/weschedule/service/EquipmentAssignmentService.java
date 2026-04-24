@@ -97,10 +97,27 @@ public class EquipmentAssignmentService {
     }
 
     /**
-     * Après création d'une affectation vers une salle : met à jour la salle courante de l'équipement.
+     * Vérifie si une affectation est actuellement active temporellement.
+     */
+    public boolean isAssignmentCurrent(EquipmentAssignment a) {
+        if (a == null || !STATUS_ACTIVE.equals(a.getStatus())) {
+            return false;
+        }
+        LocalDateTime now = LocalDateTime.now();
+        boolean afterStart = !a.getStartAt().isAfter(now);
+        boolean beforeEnd = (a.getEndAt() == null || !a.getEndAt().isBefore(now));
+        return afterStart && beforeEnd;
+    }
+
+    /**
+     * Après création ou activation d'une affectation vers une salle : met à jour la salle courante de l'équipement
+     * si l'affectation est actuellement en cours.
      */
     @Transactional
-    public void syncEquipmentSalleFromRoomAssignment(Equipment equipment, UUID salleId) {
+    public void syncEquipmentSalleFromRoomAssignment(Equipment equipment, UUID salleId, EquipmentAssignment assignment) {
+        if (!isAssignmentCurrent(assignment)) {
+            return;
+        }
         salleRepository.findById(salleId).ifPresent(s -> {
             equipment.setSalle(s);
             EquipmentStatutRules.syncStatutAvecSalle(equipment, StatutEquipement.DISPONIBLE);
@@ -197,14 +214,16 @@ public class EquipmentAssignmentService {
                 && eq.getSalle() != null
                 && previousTargetId != null
                 && previousTargetId.equals(eq.getSalle().getIdSalle());
-        boolean newIsLinkedRoom = TYPE_ROOM.equalsIgnoreCase(newType) && STATUS_ACTIVE.equals(newStatus);
+        boolean newIsLinkedRoom = TYPE_ROOM.equalsIgnoreCase(newType) 
+                && STATUS_ACTIVE.equals(newStatus)
+                && isAssignmentCurrent(updated);
 
         if (prevWasLinkedRoom && !newIsLinkedRoom) {
             eq.setSalle(null);
             EquipmentStatutRules.syncStatutAvecSalle(eq, StatutEquipement.DISPONIBLE);
             equipmentRepository.save(eq);
         } else if (newIsLinkedRoom) {
-            syncEquipmentSalleFromRoomAssignment(eq, newTarget);
+            syncEquipmentSalleFromRoomAssignment(eq, newTarget, updated);
         }
     }
 }

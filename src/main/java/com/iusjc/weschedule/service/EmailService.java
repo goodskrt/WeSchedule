@@ -17,6 +17,9 @@ public class EmailService {
     @Value("${spring.mail.username}")
     private String fromEmail;
 
+    @Value("${app.base-url}")
+    private String baseUrl;
+
     /**
      * Envoie un email de réinitialisation de mot de passe avec un lien d'accès direct
      */
@@ -61,7 +64,7 @@ public class EmailService {
      * Construit le contenu du mail de réinitialisation avec lien direct
      */
     private String buildPasswordResetEmailContent(String recipientName, String resetToken) {
-        String resetLink = "http://localhost:8080/reset-password?token=" + resetToken;
+        String resetLink = baseUrl + "/reset-password?token=" + resetToken;
         return "Bonjour " + recipientName + ",\n\n" +
                 "Vous avez demandé la réinitialisation de votre mot de passe pour IUSJC WeSchedule.\n\n" +
                 "Cliquez sur le lien ci-dessous pour réinitialiser votre mot de passe :\n" +

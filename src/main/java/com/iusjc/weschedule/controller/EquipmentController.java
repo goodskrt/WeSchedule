@@ -362,7 +362,7 @@ public class EquipmentController {
             equipmentAssignmentRepository.save(a);
 
             if (ASSIGNMENT_TYPE_ROOM.equals(type)) {
-                equipmentAssignmentService.syncEquipmentSalleFromRoomAssignment(eq, tid);
+                equipmentAssignmentService.syncEquipmentSalleFromRoomAssignment(eq, tid, a);
             }
 
             ra.addFlashAttribute("success", "Affectation enregistrée");
